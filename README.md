@@ -4,13 +4,13 @@ Live at **https://northpoint-dashboard-7fd.pages.dev** (Cloudflare Pages, deploy
 
 ## What the page does
 
-- **Escalations to the President**: three cards. Hover one to dim the page, highlight the linked rows and pop up the numbered call-outs. Each card has a **Follow up** button that opens an email draft (written by AI when connected) with selectable recipients.
-- **Other issues**: a collapsible list of further issues. With an AI key it's written by AI from the current figures and refreshes when the data changes; without one it uses rule-based checks. Each issue has its own Follow up button.
+- **Escalations to the President**: three cards. Click one to dim the page, jump to and highlight the linked rows, and pop up the numbered call-outs. Each card has a **Follow up** button that opens an email draft (written by AI when connected).
+- **Other issues**: a collapsible list of further issues in the same Issue / Impact / Next step format, leaving out what the escalations cover. With an AI key it's written by AI from the current figures and refreshes when the data changes; without one it uses rule-based checks. Each issue has its own Follow up button.
 - **1 Commercial**: Recognized revenue (collapsible) and Bookings & pipeline with a period selector (current quarter / next 2 quarters / both), deal value, weight and share of pipeline.
 - **2 Cost**: cloud run-rate per month broken into cost per active account and implied accounts, plus NorthPoint cost to serve from the deal model with revenue and gross margin per offer.
-- **3 Operations**: each project with owner, risk dots, deadline countdown, status, blockers and a timeline of its steps (sample steps until owners send real plans).
+- **3 Operations**: each project with owner, last updated, deadline countdown, status, notes tagged by issue type (Reporting, Staffing, Funding, Ownership), a Follow up button for blockers, and a timeline of its steps (sample steps until owners send real plans).
 
-**Live / Draft**: the President sees Live. Switch to Draft to edit in place: figures, data owner (switching owner switches to their number), dots, dates, step status, blockers and any text. Shaded cells differ from Live. **Publish** sends the draft live.
+**Live / Draft**: the President sees Live. Switch to Draft to edit in place: figures, data owner (switching owner switches to their number), dots, dates, step status, blockers and any text. Shaded cells differ from Live. **Publish** sends the draft live. The Live chip in the top bar lists earlier versions; **Restore** makes one live again.
 
 ## Files
 
