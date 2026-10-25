@@ -180,6 +180,13 @@ tr.stage .sn{padding-left:22px;display:block}
 .sc.done{background:var(--ok-bg);color:var(--ok-fg)}.sc.active{background:var(--act-bg);color:var(--act-fg)}.sc.planned{background:#fff;color:var(--grey-text);border:1px solid var(--rule)}
 .sc.blocked{background:var(--bad-bg);color:var(--bad-fg)}.sc.noupdate{background:var(--off-bg);color:var(--off-fg)}.sc.late{background:var(--warn-bg);color:var(--warn-fg)}
 .nl{display:block;font-size:12px;margin:1px 0}
+.ol{display:block;white-space:nowrap;line-height:1.5}
+td .ol + .ol{margin-top:2px}
+td.srcc{min-width:150px;max-width:200px}
+td.srcc .ol{white-space:normal;font-size:12px}
+.inT{font:700 9px var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--grey-text);border:1px solid var(--rule);border-radius:2px;padding:0 3px;margin-left:6px;vertical-align:1px}
+.flag{font:700 9px var(--sans);text-transform:uppercase;border:1px dashed #C8B66A;background:#fff;color:var(--grey-text);border-radius:2px;padding:1px 4px;cursor:pointer;margin-left:4px}
+.flag.on{background:var(--bad-bg);color:var(--bad-fg);border:1px solid var(--dot-red)}
 table.ops td:nth-child(6){min-width:270px}
 table.ops td:nth-child(4){white-space:nowrap}
 .nl .tag{margin-right:5px}
@@ -307,7 +314,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 3, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 4, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Q3 2026 LEADERSHIP REVIEW · PRESIDENT'S VIEW",
@@ -330,17 +337,17 @@ const DATA = {
   commercial: [
     { id: "revenue", name: "Recognized revenue", rows: [
       { id: "rev-fy", metric: "FY-2026 Recognized revenue", plan: 95, field: "forecast",
-        owners: [ { role: "Head of Sales", source: "Head of Sales spreadsheet", value: 95 },
-                  { role: "Finance BP", source: "Finance general ledger", value: null } ], owner: 0, ownerWarn: true,
+        owners: [ { role: "Head of Sales", source: "Spreadsheet (Head of Sales)", value: 95, unreliable: true },
+                  { role: "Finance BP", source: "Finance general ledger", value: null } ], owner: 0,
         risk: { reporting: "red" }, tips: { reporting: { text: "Head of Sales spreadsheet; no Finance figure" } }, updated: "2026-09-30" }
     ]},
     { id: "bookings", name: "Bookings & pipeline", timeframe: true, rows: [
       { id: "book-q3", period: "cq", metric: "Q3-2026 Booking revenue", plan: 60, field: "actual",
         owners: [ { role: "Finance BP", source: "Finance booking log", value: 41 },
-                  { role: "Head of Sales", source: "CRM", value: 48 } ], owner: 0, ownerWarn: true,
+                  { role: "Head of Sales", source: "CRM", value: 48, unreliable: true } ], owner: 0,
         risk: { reporting: "amber" }, tips: { reporting: { text: "CRM shows $48M vs $41M in Finance's booking log" } },
         varTip: { text: "$19M below plan", esc: 2 }, updated: "2026-09-30" },
-      { id: "pipe", period: "n2q", metric: "Q4 2026-Q1 2027 Booking pipeline revenue", plan: 210, field: "forecast", rollup: true,
+      { id: "pipe", period: "n2q", metric: "Q4 2026-Q1 2027 Booking pipeline revenue", plan: 210, field: "forecast", rollup: true, varSub: false,
         owners: [ { role: "Head of Sales", source: "CRM, weighted" } ], owner: 0,
         risk: { concentration: "red", reporting: "amber" },
         tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 1 },
@@ -383,7 +390,7 @@ const DATA = {
     }
   },
   operations: [
-    { id: "banka", section: "Client delivery", name: "Bank A Go-Live", owner: "", deadline: "2026-11-01",
+    { id: "banka", section: "Client delivery", name: "Bank A Go-Live", owner: "", source: "", deadline: "2026-11-01",
       forecast: "2026-11-01", forecastNote: "Green, reported", updated: null, sample: true,
       risk: { reporting: "red", staffing: "nodata" },
       tips: { reporting: { text: "No owner or date", esc: 3 }, staffing: { text: "Staffing not tracked" } },
@@ -394,8 +401,8 @@ const DATA = {
         { name: "Bank A user acceptance", start: "2026-10-12", end: "2026-10-28", status: "noupdate", tag: "Ownership", blocker: "Start not confirmed; no owner to confirm it" },
         { name: "Go-live", start: "2026-11-01", end: "2026-11-01", status: "planned", milestone: true }
       ]},
-    { id: "npexec", section: "Client delivery", name: "NorthPoint Execution", owner: "Head of Delivery", deadline: "2027-01-04",
-      kpi: { label: "Engineers available", plan: 24, actual: 4 }, updated: "2026-09-25", sample: true,
+    { id: "npexec", section: "Client delivery", name: "NorthPoint Execution", owner: "Head of Delivery", source: "Delivery plan", deadline: "2027-01-04",
+      kpi: { label: "Engineers available", plan: 24, actual: 4, source: "HR system, Head of Talent" }, updated: "2026-09-25", sample: true,
       risk: { reporting: "green", staffing: "red" },
       tips: { reporting: { text: "Delivery plan, updated 25 Sep" }, staffing: { text: "4 of 24 engineers available", esc: 1 } },
       stages: [
@@ -404,8 +411,8 @@ const DATA = {
         { name: "Onboarding & environments", start: "2026-12-01", end: "2026-12-23", status: "planned" },
         { name: "Delivery start, 24 engineers", start: "2027-01-04", end: "2027-01-04", status: "planned", milestone: true }
       ]},
-    { id: "rel42", section: "Product delivery", name: "Release 4.2", owner: "Head of Product", deadline: "2026-09-15",
-      forecast: "2026-09-15", forecastNote: "as of 12 Aug", updated: "2026-08-12", sample: true,
+    { id: "rel42", section: "Product delivery", name: "Release 4.2", owner: "Head of Product", source: "Jira", deadline: "2026-09-15",
+      forecast: "2026-09-15", forecastNote: "On track in Jira, as of 12 Aug", updated: "2026-08-12", sample: true,
       risk: { reporting: "amber" }, tips: { reporting: { text: "Last update 12 Aug", esc: 3 } },
       stages: [
         { name: "Development", start: "2026-07-01", end: "2026-08-21", status: "active", note: "In progress at last update, 12 Aug" },
@@ -513,7 +520,7 @@ function variance(d, row){
   if(blank(p) || blank(v)) return null;
   const diff = row.fmt === "usd" ? r1(v - p) : v - p, pct = p ? (v - p) / p * 100 : 0, rp = Math.round(pct);
   const adverse = row.better === "lower" ? diff > 1e-9 : diff < -1e-9;
-  return { main: rp < 0 ? `(${-rp}%)` : rp > 0 ? `+${rp}%` : "0%", sub: fmtDiff(row, diff), adverse, diff, pct: rp, basis };
+  return { main: rp < 0 ? `(${-rp}%)` : rp > 0 ? `+${rp}%` : "0%", sub: row.varSub === false ? "" : fmtDiff(row, diff), adverse, diff, pct: rp, basis };
 }
 function dealOf(d, row){
   if(!blank(row.dealValue)) return +row.dealValue;
@@ -528,11 +535,11 @@ function weightOf(d, row){
 function shareOf(d, row){
   if(row.fmt !== "usd" || row.perMonth) return null;
   const w = val(d, row, "forecast"); if(blank(w)) return null;
-  if(row.rollup){ const p = val(d, row, "plan"); return { main:"100%", sub: p ? `covers ${Math.round(w / p * 100)}% of plan` : "" }; }
+  if(row.rollup) return { main:"100%", sub:"" };
   if(!row.parent) return null;
   const par = findRow(d, row.parent), tot = par ? val(d, par, "forecast") : null, p = par ? val(d, par, "plan") : null;
   if(!tot) return null;
-  return { main: Math.round(w / tot * 100) + "%", sub: p ? `${Math.round(w / p * 100)}% of plan` : "" };
+  return { main: Math.round(w / tot * 100) + "%", sub:"" };
 }
 
 /* What each cell shows; used for rendering and for marking draft changes. */
@@ -549,7 +556,7 @@ function cellData(d, row){
     concentration:{ st: row.risk.concentration, tip: t("concentration").text || "", esc: t("concentration").esc || null },
     reporting:{ st: row.risk.reporting, tip: t("reporting").text || "", esc: t("reporting").esc || null },
     staffing:{ st: row.risk.staffing, tip: t("staffing").text || "", esc: t("staffing").esc || null },
-    owner:{ t: o ? o.role : "None", sub: o ? o.source : "", warn: row.ownerWarn || !o },
+    owner:{ t: row.owners.map(x => x.role + (x.unreliable ? " (unreliable)" : "")).join(", ") || "None", sub: row.owners.map(x => x.source + ("value" in x && row.owners.length > 1 ? " " + (blank(x.value) ? "no figure" : fmtV(row, x.value)) : "")).join(", "), warn: row.ownerWarn || !o, shown: row.owner || 0 },
     updated:{ t: fmtDate(row.updated), stale: !!row.updated && !!d.meta.asOf && row.updated < d.meta.asOf }
   };
 }
@@ -685,12 +692,16 @@ function varCell(c, chg){
   const inner = `<span class="b${c.adverse ? " neg" : ""}">${h(c.main)}</span><span class="sub">${h(c.sub)}</span>`;
   return `<td class="num${chg}"${escA}>${c.tip ? `<span class="vt" tabindex="0" data-tip="${h(c.tip)}">${inner}</span>` : inner}</td>`;
 }
-function ownerCell(r, c, chg){
-  if(editing() && r.owners.length > 1){
-    const opts = r.owners.map((o, i) => `<option value="${i}"${i === (r.owner || 0) ? " selected" : ""}>${h(o.role)}${"value" in o ? ` · ${blank(o.value) ? "no figure" : fmtV(r, o.value)}` : ""}</option>`).join("");
-    return `<td class="${chg}"><select class="osel${c.warn ? " neg" : ""}" data-set="row:${h(r.id)}:@owner" data-t="int" aria-label="Data owner">${opts}</select><span class="sub">${h(c.sub)}</span></td>`;
-  }
-  return `<td class="${chg}"><span class="${c.warn ? "neg b" : ""}">${h(c.t)}</span>${c.sub ? `<span class="sub">${h(c.sub)}</span>` : ""}</td>`;
+function ownerCells(r, chg){
+  const own = r.owners, multi = own.length > 1, ed = editing(), shown = r.owner || 0;
+  if(!own.length) return `<td class="${chg}"><span class="neg b">None</span></td><td class="srcc${chg}">${na()}</td>`;
+  const fig = o => multi && "value" in o ? ` · ${blank(o.value) ? "no figure" : fmtV(r, o.value)}` : "";
+  const bad = o => o.unreliable || (!multi && r.ownerWarn);
+  let oh;
+  if(ed && multi) oh = own.map((o, i) => `<label class="ol" title="Pick whose figure the table shows"><input type="radio" name="sh-${h(r.id)}" data-set="row:${h(r.id)}:@owner" data-t="int" value="${i}" ${i === shown ? "checked" : ""}> <span class="${bad(o) ? "neg b" : ""}">${h(o.role)}</span> <button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${i}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button></label>`).join("");
+  else oh = own.map((o, i) => `<span class="ol${bad(o) ? " neg b" : ""}">${h(o.role)}${multi && i === shown ? '<span class="inT" title="Figure shown in the table">in table</span>' : ""}</span>`).join("");
+  const sh = own.map(o => `<span class="ol${bad(o) ? " neg" : ""}">${h(o.source || "—")}${h(fig(o))}</span>`).join("");
+  return `<td class="${chg}">${oh}</td><td class="srcc${chg}">${sh}</td>`;
 }
 function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
@@ -707,13 +718,14 @@ function finTable(el, secs, kind){
   const head = { metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
     var:'<th class="r g">Vs plan</th>', deal:'<th class="r g">Deal value</th>', weight:'<th class="r g">Weight</th>', share:'<th class="r g">Share of pipeline</th>',
     annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting</th>', staffing:'<th class="c g">Staffing</th>',
-    owner:"<th>Data owner</th>", updated:"<th>Updated</th>" };
+    owner:"<th>Data owner</th><th>Source</th>", updated:"<th>Updated</th>" };
   const grp = [];
   cols.forEach(c => {
     const g = ["deal","weight","share"].includes(c) ? "PIPELINE WEIGHTING" : ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
-  let html = `<thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
+  const N2 = N + 1;
+  let html = `<thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n + (x.g === "" && cols.indexOf("owner") >= 0 && x === grp[grp.length - 1] ? 1 : 0)}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
   secs.forEach(sec => {
     const collapsed = !!S.collapsed[sec.id];
     let rows = sec.rows;
@@ -721,7 +733,7 @@ function finTable(el, secs, kind){
     let summary = "";
     if(collapsed && rows.length) summary = `<span class="csum">${rows.filter(r => !r.child).map(r => { const c = cellData(d, r), v = c.var; return `${h(r.metric)}: <b>${h(c[r.field].t || "—")}</b>${v.main ? ` <span class="${v.adverse ? "neg" : ""}">${h(v.main)}</span>` : ""} ${r.risk.reporting ? `<i class="dot ${r.risk.reporting}"></i>` : ""}`; }).join(" · ")}</span>`;
     const tfSel = sec.timeframe ? `<label class="csum">Period <select class="tf" data-act="tf" aria-label="Booking period">${Object.entries(TF).map(([k, l]) => `<option value="${k}"${S.tf === k ? " selected" : ""}>${h(l)}</option>`).join("")}</select></label>` : "";
-    html += `<tr class="sh dimmable"><th colspan="${N}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}</div></th></tr>`;
+    html += `<tr class="sh dimmable"><th colspan="${N2}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}</div></th></tr>`;
     if(collapsed) return;
     rows.forEach(r => {
       const c = cellData(d, r), ch = changedMap(d, r), C = k => ch[k] || "";
@@ -735,14 +747,14 @@ function finTable(el, secs, kind){
         else if(k === "share") tr += `<td class="num${C("share")}">${c.share.t ? `<span class="b">${h(c.share.t)}</span><span class="sub">${h(c.share.sub)}</span>` : na()}</td>`;
         else if(k === "annual") tr += `<td class="num${C("annual")}">${c.annual.t ? `<span class="b${c.annual.adverse ? " neg" : ""}">${h(c.annual.t)}</span><span class="sub">vs plan</span>` : na()}</td>`;
         else if(COLS.some(x => x[0] === k)) tr += dotCell(`row:${r.id}:${k}`, COLS.find(x => x[0] === k)[1], c[k], C(k));
-        else if(k === "owner") tr += ownerCell(r, c.owner, C("owner"));
+        else if(k === "owner") tr += ownerCells(r, C("owner"));
         else if(k === "updated") tr += r.derive ? `<td>${na()}</td>` : updCell(`row:${r.id}:updated`, r.updated, c.updated, C("updated"));
       });
       html += tr + "</tr>";
     });
   });
   el.innerHTML = html + "</tbody>";
-  el.style.minWidth = kind === "com" ? (showPipe ? "1240px" : "1000px") : "960px";
+  el.style.minWidth = kind === "com" ? (showPipe ? "1270px" : "1040px") : "1000px";
 }
 
 /* ---------- cost-to-serve table ---------- */
@@ -839,16 +851,17 @@ function opsTable(el){
     let subline = "";
     if(p.kpi){ const dd = p.kpi.actual - p.kpi.plan, pc = p.kpi.plan ? Math.round(dd / p.kpi.plan * 100) : 0;
       subline = ed ? `${h(p.kpi.label)}: ${numInput(`proj:${p.id}:kpi.actual`, p.kpi.actual, "w")} of ${numInput(`proj:${p.id}:kpi.plan`, p.kpi.plan, "w plain")}`
-        : `${h(p.kpi.label)}: <b>${p.kpi.actual} of ${p.kpi.plan}</b> <span class="${dd < 0 ? "neg b" : ""}">(${dd < 0 ? MINUS : "+"}${Math.abs(dd)}, ${pc < 0 ? MINUS : "+"}${Math.abs(pc)}%)</span>`; }
+        : `${h(p.kpi.label)}: <b>${p.kpi.actual} of ${p.kpi.plan}</b> <span class="${dd < 0 ? "neg b" : ""}">(${dd < 0 ? MINUS : "+"}${Math.abs(dd)}, ${pc < 0 ? MINUS : "+"}${Math.abs(pc)}%)</span>${p.kpi.source ? ` · ${h(p.kpi.source)}` : ""}`; }
     else if(p.forecast) subline = `Forecast ${h(fmtDate(p.forecast))}${p.forecastNote ? " · " + h(p.forecastNote) : ""}`;
     const ownerHtml = ed ? `<select class="osel${p.owner ? "" : " neg"}" data-set="proj:${h(p.id)}:owner" data-t="text" aria-label="Owner"><option value="">None</option>${roles.map(r => `<option${r === p.owner ? " selected" : ""}>${h(r)}</option>`).join("")}</select>`
       : `<span class="${p.owner ? "" : "neg b"}">${h(p.owner || "None")}</span>`;
+    const srcLine = `<span class="sub">${h(p.source || "No source")}</span>`;
     const upd = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:updated" data-t="date" value="${h(p.updated || "")}" aria-label="Last update">`
       : (p.updated ? `<span class="${p.updated < d.meta.asOf ? "neg" : ""}">${h(fmtDate(p.updated))}</span>` : na());
     const dl = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:deadline" data-t="date" value="${h(p.deadline || "")}" aria-label="Deadline">` : `<span class="b">${h(fmtDate(p.deadline) || "—")}</span>`;
     html += `<tr class="proj dimmable" data-row="${h(p.id)}">
       <td class="sticky${chg("name","kpi")}"><button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}"><span class="cv">▾</span><span ${ed ? `contenteditable="true" data-edit="proj:${h(p.id)}:name"` : ""}>${h(p.name)}</span></button>${p.sample ? '<span class="tag" style="margin-left:6px" title="Mock steps until the project owner sends the real plan">Sample steps</span>' : ""}<span class="sub" style="padding-left:22px">${subline}</span></td>
-      <td class="${chg("owner").trim()}">${ownerHtml}</td>
+      <td class="${chg("owner").trim()}">${ownerHtml}${srcLine}</td>
       <td class="${chg("updated").trim()}">${upd}</td>
       <td class="${chg("deadline").trim()}">${dl}<span class="sub${cd && cd.bad ? " neg b" : ""}">${cd ? h(cd.t) : ""}</span></td>
       <td><span class="sc ${st.k}">${h(st.label)}</span></td>
@@ -1229,6 +1242,7 @@ document.addEventListener("click", async e => {
     case "restore-no": S.restoreAsk = null; renderVMenu(); break;
     case "restore-go": await restoreVersion(+a.dataset.v); break;
     case "unfocus": clearFocus(); break;
+    case "flag": { const r = findRow(S.draft, a.dataset.rid), o = r && r.owners[+a.dataset.i]; if(o){ o.unreliable = !o.unreliable; dirty(true); } break; }
     case "sec": { const k = a.dataset.sec; S.collapsed[k] = !S.collapsed[k]; savePrefs(); renderDashboard(); break; }
     case "issues": S.issuesOpen = !S.issuesOpen; savePrefs(); if(S.focus && S.focus.startsWith("iss")) clearFocus(); renderIssues(); break;
     case "ai-refresh": maybeAI(S.view === "draft" ? "draft" : "live", true); break;
