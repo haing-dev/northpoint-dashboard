@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>NorthPoint President's Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: slide-style page (header → escalation cards → tracker table), with two slide-in drawers for the PM. */
+:root{
+  --ink:#000000; --deep:#051C2C; --grey-text:#595959; --na:#A6A6A6; --card-bg:#F2F2F2;
+  --rule:#D9D9D9; --rule-strong:#7F7F7F; --neg:#C00000;
+  --dot-green:#2E9B4F; --dot-amber:#F2A900; --dot-red:#D7342A; --dot-nodata:#8C8C8C;
+  --bg:#FFFFFF; --soft:#F6F7F8; --chg:#FFF3C4; --focus:#1F5FBF;
+  --ok-bg:#E5F3E9; --ok-fg:#1D6232; --warn-bg:#FCF0D2; --warn-fg:#6E4E00; --bad-bg:#FBE3E1; --bad-fg:#9A1F17; --off-bg:#ECEDEE; --off-fg:#595959;
+  --serif:Georgia,"Times New Roman",serif; --sans:Arial,Helvetica,sans-serif;
+  --drawer-w:540px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;font-family:var(--sans);font-size:14px;line-height:1.4;color:var(--ink);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+[hidden]{display:none!important}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* ---------- top bar ---------- */
+.bar,.page{max-width:1280px;margin-left:auto;margin-right:auto;padding-left:8px;padding-right:8px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-block:10px;border-bottom:1px solid var(--rule);font-size:12px;color:var(--grey-text)}
+.brand{font-weight:700;color:var(--ink);letter-spacing:.02em}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:10px;background:var(--soft);white-space:nowrap}
+.chip.warn{background:var(--warn-bg);color:var(--warn-fg)}
+.chip .dot{width:8px;height:8px;cursor:default}
+.bar .sp{flex:1}
+.btn{font:700 12px/1 var(--sans);padding:8px 12px;border:1px solid var(--deep);background:#fff;color:var(--deep);border-radius:2px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--deep);color:#fff}
+.btn.primary:hover{background:#0B2F48}
+.btn.ghost{border-color:transparent;text-decoration:underline;padding-inline:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn .n{background:var(--deep);color:#fff;border-radius:9px;padding:2px 6px;font-size:11px}
+.btn.primary .n{background:#fff;color:var(--deep)}
+.segv{display:inline-flex;border:1px solid var(--rule-strong);border-radius:2px;overflow:hidden}
+.segv button{border:0;background:#fff;color:var(--grey-text);font:700 11px var(--sans);padding:6px 10px;cursor:pointer;text-transform:uppercase;letter-spacing:.04em}
+.segv button[aria-pressed="true"]{background:var(--deep);color:#fff}
+
+/* ---------- page ---------- */
+.page{padding-block:20px 32px}
+.dbanner{background:var(--chg);border-left:3px solid var(--dot-amber);padding:8px 12px;font-size:12px;margin-bottom:16px}
+.kicker{font-size:12px;letter-spacing:.08em;color:var(--grey-text);text-transform:uppercase}
+h1{font:700 30px/1.2 var(--serif);margin:6px 0 8px;max-width:1040px;text-wrap:balance}
+.meta{font-size:12px;color:var(--grey-text)}
+.lbl{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text);margin:24px 0 8px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{background:var(--card-bg);padding:16px;outline-offset:0;transition:outline-color .15s}
+.card.hl{outline:2px solid var(--deep)}
+.card:focus-visible{outline:2px solid var(--deep)}
+.ct{display:flex;align-items:center;gap:10px;font:700 15px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px}
+.cb{flex:none;width:24px;height:24px;border-radius:50%;background:var(--deep);color:#fff;font:700 13px/24px var(--sans);text-align:center}
+.kv{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;margin-top:10px;font-size:14px}
+.kv>span:first-child{font:700 11px/1.7 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--grey-text)}
+.kv .b{font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--grey-text);margin:24px 0 8px;align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .dot{cursor:default}
+
+/* ---------- tracker table ---------- */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tr{border-collapse:collapse;width:100%;min-width:1180px;font-size:13px;font-variant-numeric:tabular-nums}
+.tr th{font:400 11px var(--sans);text-transform:uppercase;letter-spacing:.03em;color:var(--grey-text);text-align:left;padding:4px 8px;vertical-align:bottom;background:#fff}
+.tr th.r{text-align:right}.tr th.c{text-align:center}
+.tr th.g{font-weight:700;color:var(--ink);text-transform:none;font-size:12px;letter-spacing:0}
+.tr tr.grp th{padding-bottom:0}
+.tr tr.grp th span{display:block;border-bottom:1px solid var(--rule-strong);padding-bottom:3px;text-align:center;font-weight:700;color:var(--ink)}
+.tr tr.cols th{border-bottom:2px solid var(--deep);padding-bottom:6px}
+.tr td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:middle;position:relative;background:#fff;transition:opacity .15s}
+.tr tr.area-end td,.tr td.area,.tr td.sec.end-area{border-bottom:1.5px solid var(--rule-strong)}
+.tr td.area,.tr td.sec{vertical-align:top}
+.tr td.num{text-align:right;white-space:nowrap}
+.tr td.ctr{text-align:center;white-space:nowrap}
+.tr .sticky{position:sticky;left:0;z-index:1}
+.tr th.sticky{z-index:2}
+.anum{font:400 30px/1 var(--serif)}
+.aname{font-weight:700;font-size:14px;margin-top:4px}
+td.sec{font-weight:700;color:var(--grey-text);width:110px}
+.m{font-weight:700}
+tr.child .m{font-weight:400;padding-left:20px}
+.sub{display:block;font-size:11px;color:var(--grey-text);font-weight:400}
+.na{color:var(--na)}
+.b{font-weight:700}
+.neg{color:var(--neg)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;cursor:help}
+.dot.green{background:var(--dot-green)}.dot.amber{background:var(--dot-amber)}.dot.red{background:var(--dot-red)}
+.dot.nodata{background:transparent;border:1.5px dotted var(--dot-nodata)}
+.dot:focus-visible,.vt:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:50%}
+.vt{cursor:help;display:inline-block}
+.vt:focus-visible{border-radius:2px}
+.badge{position:absolute;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;border:1.5px solid var(--deep);background:#fff;color:var(--deep);font:700 10px/15px var(--sans);text-align:center;padding:0;cursor:pointer}
+.badge:hover,.badge.on{background:var(--deep);color:#fff}
+td.ctr .badge{left:calc(50% + 10px)}
+td.num .badge{left:4px}
+.tr td.num.hb{padding-left:30px}
+table.dim tbody td{opacity:.45}
+table.dim tbody td.hl{opacity:1;outline:2px solid var(--deep);outline-offset:-2px}
+table.editable tbody tr{cursor:pointer}
+table.editable tbody tr:hover td:not(.area):not(.sec){background:var(--soft)}
+td.chg{background:var(--chg)!important}
+tr.sel td:not(.area):not(.sec){box-shadow:inset 0 2px 0 var(--focus),inset 0 -2px 0 var(--focus)}
+.foot{font-size:11px;color:var(--grey-text);margin-top:12px}
+
+/* ---------- tooltip ---------- */
+#tip{position:fixed;z-index:80;background:var(--deep);color:#fff;font:700 12px/1.35 var(--sans);padding:6px 8px;border-radius:2px;max-width:240px;pointer-events:none;left:0;top:0}
+#tip::after{content:"";position:absolute;left:var(--ax,50%);transform:translateX(-50%);border:6px solid transparent}
+#tip[data-pos="top"]::after{top:100%;border-top-color:var(--deep)}
+#tip[data-pos="bottom"]::after{bottom:100%;border-bottom-color:var(--deep)}
+
+/* ---------- drawers ---------- */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(var(--drawer-w),100vw);background:#fff;border-left:1px solid var(--rule-strong);box-shadow:-10px 0 28px rgba(5,28,44,.14);display:flex;flex-direction:column;z-index:40;transform:translateX(102%);visibility:hidden;transition:transform .22s ease,visibility 0s .22s}
+.drawer.open{transform:none;visibility:visible;transition:transform .22s ease}
+.dh{padding:14px 18px 0;padding-right:max(18px,env(safe-area-inset-right,0px));padding-top:max(14px,env(safe-area-inset-top,0px))}
+.dht{display:flex;align-items:flex-start;gap:12px}
+.dht h2{font:700 20px/1.2 var(--serif);margin:2px 0 0}
+.dk{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text)}
+.dht .sp{flex:1}
+.x{border:0;background:none;font:700 12px var(--sans);color:var(--deep);text-decoration:underline;cursor:pointer;padding:4px}
+.save{font-size:11px;color:var(--grey-text);padding:6px 0}
+.sum{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--grey-text);margin:10px 0 8px}
+.sum b{color:var(--ink)}
+.prog{height:4px;background:var(--rule);margin-bottom:10px}
+.prog i{display:block;height:100%;background:var(--dot-green);transition:width .2s}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--rule);overflow-x:auto}
+.tab{border:0;background:none;padding:9px 10px;font:700 12px var(--sans);color:var(--grey-text);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--deep);border-bottom-color:var(--deep)}
+.db{flex:1;overflow-y:auto;padding:14px 18px 24px;padding-right:max(18px,env(safe-area-inset-right,0px))}
+.df{border-top:1px solid var(--rule);padding:12px 18px;padding-right:max(18px,env(safe-area-inset-right,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px));background:#fff}
+.fa{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.fs{font-size:12px;color:var(--grey-text)}
+.why{font-size:12px;color:var(--bad-fg);margin:8px 0 0}
+.cfm{border:1px solid var(--deep);padding:12px;margin-top:10px;background:var(--soft)}
+.cfm h4{margin:0 0 6px;font-size:13px}
+.cfm ul{margin:6px 0 10px;padding-left:18px;font-size:12px;max-height:160px;overflow:auto}
+.cfm .fa{justify-content:flex-start}
+@media (min-width:1200px){ body.dopen .bar, body.dopen .page{margin-right:var(--drawer-w)} }
+@media (prefers-reduced-motion:reduce){ .drawer,.drawer.open,.tr td,.prog i{transition:none} }
+
+.hint{font-size:12px;color:var(--grey-text);margin:0 0 12px}
+.grp-h{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text);margin:18px 0 4px;padding-bottom:4px;border-bottom:2px solid var(--deep)}
+.grp-h:first-of-type{margin-top:4px}
+.sec-h{font-size:12px;font-weight:700;color:var(--grey-text);margin:10px 0 2px;display:flex;align-items:center;gap:8px}
+.ri{display:flex;width:100%;align-items:center;gap:10px;padding:9px 4px;border:0;border-bottom:1px solid var(--rule);background:none;text-align:left;cursor:pointer;font-size:13px;color:var(--ink)}
+.ri:hover{background:var(--soft)}
+.ri[aria-expanded="true"]{background:var(--soft)}
+.ri .rm{flex:1;min-width:0}
+.ri .rm b{display:block;font-weight:700}
+.ri .rm small{color:var(--grey-text)}
+.ri.child .rm{padding-left:14px}
+.ri .chev{color:var(--grey-text);font-size:11px}
+.pill{display:inline-block;font:700 10px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:10px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.pill.pend{background:var(--warn-bg);color:var(--warn-fg)}
+.pill.bad{background:var(--bad-bg);color:var(--bad-fg)}
+.pill.off{background:var(--off-bg);color:var(--off-fg)}
+.ed{border:1px solid var(--rule-strong);border-top:0;padding:12px;margin-bottom:10px;background:#fff}
+.ed h5,.blk h5{font:700 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--deep);margin:16px 0 8px}
+.ed h5:first-child{margin-top:4px}
+.f{display:block;min-width:0}
+.f>span{display:block;font:700 11px var(--sans);color:var(--grey-text);margin-bottom:3px}
+.in{width:100%;font:13px var(--sans);padding:6px 8px;border:1px solid #B5B5B5;border-radius:2px;background:#fff;color:var(--ink);min-width:0}
+.in:focus{outline:2px solid var(--focus);outline-offset:-1px;border-color:var(--focus)}
+.in::placeholder{color:#8a8a8a}
+textarea.in{resize:vertical;line-height:1.45}
+textarea.mono{font:12.5px/1.5 var(--sans)}
+.g2,.g3{display:grid;gap:10px;margin-bottom:10px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.rk{display:grid;grid-template-columns:96px 128px minmax(0,1fr) 112px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px}
+.rk .rkl{font-weight:700;color:var(--grey-text)}
+.src{display:grid;grid-template-columns:minmax(0,1fr) 110px 28px;gap:6px;margin-bottom:6px}
+.del{border:1px solid var(--rule);background:#fff;color:var(--grey-text);cursor:pointer;border-radius:2px;font-size:14px;line-height:1}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0}
+.cf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cf>span{width:90px;font:700 11px var(--sans);color:var(--grey-text);text-transform:uppercase;letter-spacing:.05em}
+.segc{display:inline-flex;border:1px solid var(--deep);border-radius:2px;overflow:hidden;flex-wrap:wrap}
+.segc button{border:0;border-right:1px solid var(--deep);background:#fff;color:var(--deep);font:700 12px var(--sans);padding:6px 10px;cursor:pointer}
+.segc button:last-child{border-right:0}
+.segc button[aria-pressed="true"]{background:var(--deep);color:#fff}
+.by{font-size:11px;color:var(--grey-text);margin:4px 0 0}
+.iss{list-style:none;margin:0 0 8px;padding:0}
+.iss li{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:6px 8px;margin-bottom:4px;border-radius:2px}
+.iss li.high{background:var(--bad-bg);color:var(--bad-fg)}
+.iss li.med{background:var(--warn-bg);color:var(--warn-fg)}
+.iss li.low{background:var(--off-bg);color:var(--off-fg)}
+.iss li .t{flex:1}
+.iss li a,.lnk{color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;background:none;border:0;padding:0;font-size:12px}
+.blk{border-top:1px solid var(--rule);padding-top:4px;margin-top:12px}
+.hv{border-bottom:1px solid var(--rule);padding:10px 0;font-size:12px}
+.hv .hvh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.hv .hvh b{font-size:13px}
+.hv ul{margin:6px 0;padding-left:18px;color:var(--grey-text)}
+.muted{color:var(--grey-text);font-size:12px}
+
+/* follow-ups */
+.mc{border:1px solid var(--rule);padding:12px;margin-bottom:12px;background:#fff}
+.mc.ap{border-color:var(--deep);box-shadow:inset 3px 0 0 var(--deep)}
+.mch{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.mch .who{flex:1;min-width:0}
+.mch .who span{color:var(--grey-text);font-size:12px;margin-left:4px}
+.apv{display:inline-flex;align-items:center;gap:6px;font:700 12px var(--sans);color:var(--deep);cursor:pointer}
+.apv input{width:16px;height:16px;accent-color:var(--deep)}
+.sev{font:700 10px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;padding:4px 7px;border-radius:10px}
+.sev.s3{background:var(--bad-bg);color:var(--bad-fg)}.sev.s2{background:var(--warn-bg);color:var(--warn-fg)}.sev.s1{background:var(--off-bg);color:var(--off-fg)}
+.mm{display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px;font-size:12px;margin-bottom:4px;align-items:baseline}
+.mm>span:first-child{color:var(--grey-text);font-weight:700}
+.mm select{width:auto;padding:3px 6px;font-size:12px}
+.mbody{white-space:pre-wrap;font:12.5px/1.5 var(--sans);background:var(--soft);padding:10px;margin-top:8px;max-height:150px;overflow:hidden;position:relative;overflow-wrap:anywhere}
+.mbody::after{content:"";position:absolute;inset:auto 0 0;height:36px;background:linear-gradient(rgba(246,247,248,0),var(--soft))}
+.mbody.open{max-height:none}
+.mbody.open::after{display:none}
+.mact{display:flex;gap:4px 14px;flex-wrap:wrap;margin-top:8px}
+.st{font:700 10px/1 var(--sans);text-transform:uppercase;padding:4px 7px;border-radius:10px;background:var(--off-bg);color:var(--off-fg)}
+.st.sent{background:var(--ok-bg);color:var(--ok-fg)}.st.failed{background:var(--bad-bg);color:var(--bad-fg)}
+.dir{width:100%;border-collapse:collapse;font-size:12px}
+.dir th{text-align:left;font:700 11px var(--sans);color:var(--grey-text);text-transform:uppercase;padding:4px}
+.dir td{padding:3px 4px;border-bottom:1px solid var(--rule)}
+.dir td:first-child{font-weight:700;width:30%}
+.addrow{display:flex;gap:6px;margin-top:10px}
+
+#toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--deep);color:#fff;font:700 13px var(--sans);padding:10px 14px;border-radius:2px;z-index:90;max-width:calc(100vw - 32px);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+
+@media (max-width:1100px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:700px){
+  .bar,.page{padding-left:0;padding-right:0}
+  .cards{grid-template-columns:minmax(0,1fr)}
+  h1{font-size:24px}
+  .rk{grid-template-columns:1fr 1fr}
+  .rk .rkl{grid-column:1/-1}
+  .g3{grid-template-columns:1fr 1fr}
+}
+@media print{
+  .bar,.drawer,#tip,#toast,.dbanner{display:none!important}
+  body{padding:0} .page{max-width:none;margin:0!important;padding:0}
+  @page{size:landscape;margin:10mm}
+  .tw{overflow:visible} table.tr{min-width:0;font-size:10px}
+  .card{break-inside:avoid}
+  h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+
+<main class="page" id="page">
+  <div class="dbanner" id="dbanner" hidden></div>
+  <header>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title"></h1>
+    <div class="meta" id="meta"></div>
+  </header>
+  <div class="lbl">Escalations to the President</div>
+  <section class="cards" id="cards" aria-label="Escalations to the President"></section>
+  <div class="legend" aria-label="Legend">
+    <span><i class="dot green"></i>On track</span>
+    <span><i class="dot amber"></i>Needs attention</span>
+    <span><i class="dot red"></i>Off track</span>
+    <span><i class="dot nodata"></i>No data</span>
+  </div>
+  <div class="tw" id="tw"><table class="tr" id="tracker"></table></div>
+  <p class="foot" id="foot"></p>
+</main>
+
+<aside class="drawer" id="dReview" aria-label="Review and publish" aria-hidden="true">
+  <div class="dh">
+    <div class="dht">
+      <div><div class="dk" id="rvKicker">Draft</div><h2>Review &amp; publish</h2></div>
+      <div class="sp"></div><span class="save" id="rvSave"></span>
+      <button class="x" data-act="close">Close</button>
+    </div>
+    <div id="rvSummary"></div>
+    <div class="tabs" role="tablist" id="rvTabs"></div>
+  </div>
+  <div class="db" id="rvBody"></div>
+  <div class="df" id="rvFoot"></div>
+</aside>
+
+<aside class="drawer" id="dMail" aria-label="Follow-ups" aria-hidden="true">
+  <div class="dh">
+    <div class="dht">
+      <div><div class="dk">Reminders to data owners</div><h2>Follow-ups</h2></div>
+      <div class="sp"></div><span class="save" id="mSave"></span>
+      <button class="x" data-act="close">Close</button>
+    </div>
+    <div id="mSummary"></div>
+    <div class="tabs" role="tablist" id="mTabs"></div>
+  </div>
+  <div class="db" id="mBody"></div>
+  <div class="df" id="mFoot"></div>
+</aside>
+
+<div id="tip" role="tooltip" hidden></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* =====================================================================
+   DATA — every figure on the page comes from here.
+   Amounts are in $M. Dates are YYYY-MM-DD. Variances are calculated.
+   status values: "green" | "amber" | "red" | "nodata" | null (not assessed)
+   esc: the escalation card a note belongs to (1, 2, 3) or null
+   ===================================================================== */
+const DATA = {
+  version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  meta: { asOf: "2026-09-30", currency: "USD", checkedAt: null },
+  header: {
+    kicker: "Q3 2026 LEADERSHIP REVIEW · PRESIDENT'S VIEW",
+    title: "Q3 bookings are 32% short, the pipeline beat rests on one deal, and we can't staff that deal"
+  },
+  escalations: [
+    { id: 1, title: "NORTHPOINT EXECUTION RISK",
+      issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
+      impact: "NorthPoint failure would jeopardize 40% of pipeline",
+      next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date" },
+    { id: 2, title: "Q3 BOOKING SHORTAGE",
+      issue: "Q3 bookings are 32% ($19M) below plan",
+      impact: "Q426-Q127 pipeline must cover for the shortfall, and North Point delivery is key",
+      next: "Ask Head of Sales for a recovery plan by the next review" },
+    { id: 3, title: "DELIVERY REPORTING",
+      issue: "Bank A and Release 4.2 status not updated",
+      impact: "We can't confirm Bank A's 1 Nov go-live or that Release 4.2 shipped",
+      next: "Ask Head of Delivery and Head of Product to report every project with an owner and date" }
+  ],
+  areas: [
+    { id: "commercial", name: "Commercial", sections: [
+      { name: "Recognized revenue", rows: [
+        { id: "rev-fy", metric: "FY-2026 Recognized revenue", plan: 95, forecast: 95,
+          risk: { reporting: "red" }, tips: { reporting: { text: "Head of Sales spreadsheet; no Finance figure" } },
+          owner: "Head of Sales", ownerWarn: true, updated: "2026-09-30",
+          sources: [ { name: "Head of Sales spreadsheet", value: 95 }, { name: "Finance (general ledger)", value: null } ] }
+      ]},
+      { name: "Bookings", rows: [
+        { id: "book-q3", metric: "Q3-2026 Booking revenue", plan: 60, actual: 41,
+          risk: { reporting: "amber" }, tips: { reporting: { text: "CRM shows $48M vs $41M in Finance's booking log" } },
+          varTips: { actual: { text: "$19M below plan", esc: 2 } },
+          owner: "Finance BP/ Head of Sales", ownerWarn: true, updated: "2026-09-30",
+          sources: [ { name: "Finance booking log", value: 41 }, { name: "CRM", value: 48 } ] }
+      ]},
+      { name: "Pipeline", rows: [
+        { id: "pipe", metric: "Q4 2026-Q1 2027 Booking pipeline revenue", plan: 210, rollup: true,
+          risk: { concentration: "red", reporting: "amber" },
+          tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 1 },
+                  reporting: { text: "NorthPoint is also counted in the Payments BU pipeline" } },
+          owner: "Head of Sales", updated: "2026-09-30", sources: [ { name: "CRM (weighted)", value: 245 } ] },
+        { id: "np", metric: "NorthPoint", child: true, parent: "pipe", calc: { dealValue: 140, prob: 70 },
+          risk: { concentration: "red", staffing: "red" },
+          tips: { concentration: { text: "40% of weighted pipeline" },
+                  staffing: { text: "Needs 24 engineers from Jan 2027; 4 available" } },
+          owner: "Head of Sales", updated: "2026-09-30" },
+        { id: "other", metric: "Other deals", child: true, parent: "pipe", forecast: 147,
+          risk: { reporting: "amber" }, tips: { reporting: { text: "CRM figure, not yet checked" } },
+          owner: "Head of Sales", updated: "2026-09-30" }
+      ]}
+    ]},
+    { id: "cost", name: "Cost", sections: [
+      { name: "Cloud", rows: [
+        { id: "cloud", metric: "Cloud run-rate (per month)", plan: 1.1, actual: 1.4, better: "lower",
+          risk: { reporting: "green" }, tips: { reporting: { text: "From cloud billing, 30 Sep" } },
+          owner: "Head of Platform", updated: "2026-09-30", sources: [ { name: "Cloud billing", value: 1.4 } ] }
+      ]},
+      { name: "Operating cost", rows: [
+        { id: "opex", metric: "Q3-2026 Total operating cost", rollup: true, better: "lower", show: false, awaitingModel: true, owner: "Finance BP" },
+        { id: "opex-people", metric: "People", child: true, parent: "opex", better: "lower", show: false, awaitingModel: true, owner: "Finance BP" },
+        { id: "opex-contract", metric: "Contractors", child: true, parent: "opex", better: "lower", show: false, awaitingModel: true, owner: "Finance BP" },
+        { id: "opex-cloud", metric: "Cloud & hosting", child: true, parent: "opex", better: "lower", show: false, awaitingModel: true, owner: "Head of Platform" },
+        { id: "opex-sw", metric: "Software & licences", child: true, parent: "opex", better: "lower", show: false, awaitingModel: true, owner: "Finance BP" },
+        { id: "opex-sm", metric: "Sales & marketing", child: true, parent: "opex", better: "lower", show: false, awaitingModel: true, owner: "Finance BP" },
+        { id: "opex-ga", metric: "General & admin", child: true, parent: "opex", better: "lower", show: false, awaitingModel: true, owner: "Finance BP" }
+      ]}
+    ]},
+    { id: "ops", name: "Operations", sections: [
+      { name: "Client delivery", rows: [
+        { id: "banka", metric: "Bank A Go-Live", kind: "date", plan: "2026-11-01", forecast: "2026-11-01", forecastSub: "Green, reported",
+          risk: { reporting: "red", staffing: "nodata" },
+          tips: { reporting: { text: "No owner or date", esc: 3 }, staffing: { text: "Staffing not tracked" } },
+          owner: "", ownerWarn: true, updated: null },
+        { id: "npexec", metric: "NorthPoint Execution", kind: "count", plan: 24, actual: 4, actualSub: "available",
+          risk: { reporting: "green", staffing: "red" },
+          tips: { reporting: { text: "Delivery plan, updated 25 Sep" }, staffing: { text: "4 of 24 engineers available", esc: 1 } },
+          owner: "Head of Delivery", updated: "2026-09-25", sources: [ { name: "Delivery plan", value: 4 } ] }
+      ]},
+      { name: "Product delivery", rows: [
+        { id: "rel42", metric: "Release 4.2", kind: "date", plan: "2026-09-15", forecast: "2026-09-15", forecastSub: "as of 12 Aug",
+          risk: { reporting: "amber" }, tips: { reporting: { text: "Last update 12 Aug", esc: 3 } },
+          owner: "Head of Product", updated: "2026-08-12" }
+      ]}
+    ]}
+  ],
+  footnote: "Note: NorthPoint's $140M in the CRM is taken as deal value, so at 70% it adds $98M to the weighted pipeline. Source: Q3 tracker extract, 30 Sep 2026."
+};
+
+/* Where the current review cycle starts: confirmations already gathered for the draft. */
+const SEED_CHECKS = {
+  "rev-fy": { owner: "ok", data: "exception", note: "Finance general-ledger figure not available yet; showing the Head of Sales spreadsheet." },
+  "pipe":   { owner: "ok", data: "ok", note: "CRM weighted pipeline, 30 Sep." },
+  "np":     { owner: "ok", data: "ok", note: "" },
+  "other":  { owner: "ok", data: "pending", note: "" },
+  "cloud":  { owner: "ok", data: "ok", note: "Matches cloud billing export." },
+  "banka":  { owner: "none", data: "exception", note: "No owner. Status is self-reported Green with no date." },
+  "npexec": { owner: "ok", data: "ok", note: "" }
+};
+
+/* People, email templates and settings for follow-ups. Contacts are samples. */
+const OPS_DEFAULT = {
+  directory: {
+    "Head of Sales":    { name: "Daniel Reyes", email: "daniel.reyes@northpoint.example" },
+    "Finance BP":       { name: "Priya Shah",   email: "priya.shah@northpoint.example" },
+    "Head of Platform": { name: "Marcus Lee",   email: "marcus.lee@northpoint.example" },
+    "Head of Delivery": { name: "Elena Novak",  email: "elena.novak@northpoint.example" },
+    "Head of Product":  { name: "Tom Becker",   email: "tom.becker@northpoint.example" },
+    "Head of Talent":   { name: "Aisha Okafor", email: "aisha.okafor@northpoint.example" }
+  },
+  templates: {
+    first: { name: "First reminder",
+      subject: "[{{severity}}] Q3 tracker: {{itemsWord}} for you to review by {{replyBy}}",
+      body: "Hi {{firstName}},\n\nAhead of the leadership review on {{reviewDate}}, here is what the Q3 tracker (as of {{asOf}}) shows for your area:\n\n{{items}}\n\nPlease reply by {{replyBy}} with updated figures, an owner and a date for each item. If a figure is correct as it stands, a one-line confirmation is enough.\n\nThanks,\n{{sender}}" },
+    followup: { name: "Follow-up",
+      subject: "Follow-up: Q3 tracker, {{itemsWord}} still open (reply by {{replyBy}})",
+      body: "Hi {{firstName}},\n\nFollowing up on my note from {{lastSent}}. These items are still open in the Q3 tracker:\n\n{{items}}\n\nThe President reviews this page on {{reviewDate}}. Items without an update will show as unconfirmed. Could you reply by {{replyBy}}?\n\nThanks,\n{{sender}}" }
+  },
+  settings: { senderName: "Programme Management Office", senderEmail: "pmo@northpoint.example", cc: "pmo@northpoint.example",
+              replyBy: "2026-10-28", reviewDate: "2026-10-30", fallbackRole: "Head of Delivery", nudgeDays: 3 },
+  outbox: [],
+  overrides: {}
+};
+
+/* ===================================================================== */
+const LSKEY = "northpoint-dash-v1";
+const COLS = [["concentration","Concentration"],["reporting","Reporting"],["staffing","Staffing"]];
+const STATUS = { green:"on track", amber:"needs attention", red:"off track", nodata:"no data" };
+const SEV = { 3:"Action needed", 2:"Please review", 1:"Quick confirmation" };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MINUS = "−";
+const S = { mode:"demo", me:{ admin:false, email:"", setup:false }, mail:{ enabled:false, from:"" },
+  live:null, draft:null, ops:null, history:[], view:"live", drawer:null, rtab:"rows", mtab:"drafts",
+  openRow:null, approvals:{}, expanded:{}, confirm:null, pending:null };
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const clone = o => JSON.parse(JSON.stringify(o));
+const h = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const r1 = v => Math.round(v * 10) / 10;
+const blank = v => v == null || v === "";
+function pd(iso){ if(!iso) return null; const [y,m,d] = String(iso).slice(0,10).split("-").map(Number); return { y, m, d }; }
+function fmtDate(iso){ const p = pd(iso); return p ? `${p.d} ${MON[p.m-1]}` : null; }
+function fmtLong(iso){ const p = pd(iso); return p ? `${p.d} ${MON[p.m-1]} ${p.y}` : ""; }
+function fmtDow(iso){ const p = pd(iso); if(!p) return ""; return `${DOW[new Date(Date.UTC(p.y,p.m-1,p.d)).getUTCDay()]} ${p.d} ${MON[p.m-1]}`; }
+function fmtTime(iso){ try{ const d = new Date(iso); if(isNaN(d) || String(iso).length <= 10) return fmtLong(iso); return `${fmtLong(iso)}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }catch(e){ return fmtLong(iso); } }
+function days(a, b){ const A = pd(a), B = pd(b); return Math.round((Date.UTC(B.y,B.m-1,B.d) - Date.UTC(A.y,A.m-1,A.d)) / 864e5); }
+function todayISO(){ const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; }
+function money(v){ if(blank(v)) return null; v = +v; if(Math.abs(v) < 0.05) return "$0"; return (v < 0 ? MINUS : "") + "$" + r1(Math.abs(v)) + "M"; }
+function smoney(v){ if(Math.abs(v) < 0.05) return "$0"; return (v > 0 ? "+" : MINUS) + "$" + r1(Math.abs(v)) + "M"; }
+function getP(o, p){ return p.split(".").reduce((a, k) => a == null ? undefined : a[k], o); }
+function setP(o, p, v){ const ks = p.split("."); let a = o; for(let i = 0; i < ks.length - 1; i++){ if(a[ks[i]] == null || typeof a[ks[i]] !== "object") a[ks[i]] = /^\d+$/.test(ks[i+1]) ? [] : {}; a = a[ks[i]]; } a[ks[ks.length-1]] = v; }
+const uniq = a => [...new Set(a)];
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const titleCase = s => String(s).toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase()).replace(/Northpoint/g, "NorthPoint").replace(/\bQ3\b/i,"Q3");
+
+/* ---------- data model ---------- */
+function normRow(r){
+  const o = Object.assign({ sub:null, child:false, parent:null, kind:"usd", better:"higher", plan:null, actual:null, forecast:null,
+    actualSub:null, forecastSub:null, owner:"", ownerWarn:false, updated:null, show:true, done:false, rollup:false, awaitingModel:false, calc:null }, r);
+  o.risk = Object.assign({ concentration:null, reporting:null, staffing:null }, r.risk || {});
+  o.tips = r.tips || {}; o.varTips = r.varTips || {}; o.sources = r.sources || [];
+  o.check = Object.assign({ owner:"pending", data:"pending", note:"", by:"", at:"" }, r.check || {});
+  return o;
+}
+function normalize(d){ d = clone(d); d.areas.forEach(a => a.sections.forEach(s => { s.rows = s.rows.map(normRow); })); d.meta = Object.assign({ asOf:null, currency:"USD", checkedAt:null }, d.meta || {}); return d; }
+function forEachRow(d, fn){ d.areas.forEach(a => a.sections.forEach(s => s.rows.forEach(r => fn(r, s, a)))); }
+function allRows(d){ const o = []; forEachRow(d, r => o.push(r)); return o; }
+function shownRows(d){ return allRows(d).filter(r => r.show); }
+function findRow(d, id){ let f = null; forEachRow(d, r => { if(r.id === id) f = r; }); return f; }
+function children(d, row){ return allRows(d).filter(r => r.parent === row.id); }
+function val(d, row, f){
+  const v = row[f];
+  if(!blank(v)) return v;
+  if(f === "forecast" && row.calc && !blank(row.calc.dealValue) && !blank(row.calc.prob)) return r1(row.calc.dealValue * row.calc.prob / 100);
+  if(row.rollup && row.kind === "usd"){ const ch = children(d, row).map(c => val(d, c, f)).filter(x => !blank(x)); if(ch.length) return r1(ch.reduce((a, b) => a + +b, 0)); }
+  return null;
+}
+function fmtVal(row, v){ if(blank(v)) return null; if(row.kind === "usd") return money(v); if(row.kind === "date") return fmtDate(v); return String(v); }
+function variance(d, row, which){
+  const p = val(d, row, "plan"), v = val(d, row, which);
+  if(blank(p) || blank(v)) return null;
+  if(row.kind === "date"){ const diff = days(p, v); const a = Math.abs(diff);
+    return { main: diff === 0 ? "0 days" : (diff > 0 ? "+" : MINUS) + a + (a === 1 ? " day" : " days"), sub:null, adverse: diff > 0, diff }; }
+  const diff = r1(+v - +p), pct = +p ? (+v - +p) / +p * 100 : 0, rp = Math.round(pct);
+  const adverse = row.better === "lower" ? diff > 0 : diff < 0;
+  if(row.kind === "count") return { main: diff === 0 ? "0" : (diff > 0 ? "+" : MINUS) + Math.abs(diff), sub: rp === 0 ? "0%" : (rp > 0 ? "+" : MINUS) + Math.abs(rp) + "%", adverse, diff, pct:rp };
+  return { main: rp < 0 ? `(${-rp}%)` : rp > 0 ? `+${rp}%` : "0%", sub: smoney(diff), adverse, diff, pct:rp };
+}
+function seedLive(){ return normalize(DATA); }
+function seedDraft(){ const d = normalize(DATA); forEachRow(d, r => { if(SEED_CHECKS[r.id]) Object.assign(r.check, SEED_CHECKS[r.id], { by:"PMO", at:"2026-10-23" }); }); return d; }
+
+/* What each table cell shows: used for rendering, change marking and the publish diff. */
+function cellData(d, row){
+  const tip = c => (row.tips[c] || {});
+  return {
+    metric: { t: row.metric, sub: row.sub },
+    plan:   { t: fmtVal(row, val(d, row, "plan")) },
+    actual: { t: fmtVal(row, val(d, row, "actual")), sub: row.actualSub },
+    forecast:{ t: fmtVal(row, val(d, row, "forecast")), sub: row.forecastSub },
+    varA:   Object.assign({}, variance(d, row, "actual"), { tip:(row.varTips.actual||{}).text||"", esc:(row.varTips.actual||{}).esc||null }),
+    varF:   Object.assign({}, variance(d, row, "forecast"), { tip:(row.varTips.forecast||{}).text||"", esc:(row.varTips.forecast||{}).esc||null }),
+    concentration: { st: row.risk.concentration, tip: tip("concentration").text || "", esc: tip("concentration").esc || null },
+    reporting:     { st: row.risk.reporting, tip: tip("reporting").text || "", esc: tip("reporting").esc || null },
+    staffing:      { st: row.risk.staffing, tip: tip("staffing").text || "", esc: tip("staffing").esc || null },
+    owner:  { t: row.owner || "None", warn: row.ownerWarn || !row.owner },
+    updated:{ t: fmtDate(row.updated), stale: !!row.updated && !!d.meta.asOf && row.updated < d.meta.asOf }
+  };
+}
+const CELLKEYS = [["metric","Name"],["plan","Plan"],["actual","Actual"],["forecast","Forecast"],["varA","Variance (actual)"],["varF","Variance (forecast)"],
+  ["concentration","Concentration"],["reporting","Reporting"],["staffing","Staffing"],["owner","Data owner"],["updated","Last updated"]];
+function cellText(c){
+  if(!c) return "";
+  if("st" in c) return c.st ? STATUS[c.st] + (c.tip ? " · " + c.tip : "") + (c.esc ? ` · card ${c.esc}` : "") : "";
+  if("main" in c) return (c.main || "") + (c.sub ? " " + c.sub : "") + (c.tip ? " · " + c.tip : "");
+  return [c.t, c.sub].filter(Boolean).join(" ");
+}
+
+/* ---------- consistency checks ---------- */
+function knownFigures(d){
+  const k = new Set();
+  const addM = v => { if(!blank(v)) { const m = money(Math.abs(+v)); if(m) k.add(m); } };
+  shownRows(d).forEach(row => {
+    if(row.kind === "usd"){ ["plan","actual","forecast"].forEach(f => addM(val(d, row, f))); row.sources.forEach(s => addM(s.value)); }
+    ["actual","forecast"].forEach(w => { const v = variance(d, row, w); if(v && row.kind !== "date"){ k.add(Math.abs(v.pct) + "%"); if(row.kind === "usd") addM(Math.abs(v.diff)); } });
+    if(row.calc){ addM(row.calc.dealValue); if(!blank(row.calc.prob)) k.add(+row.calc.prob + "%"); }
+    if(row.rollup){ const tot = val(d, row, "forecast"); if(+tot) children(d, row).forEach(c => { const cv = val(d, c, "forecast"); if(!blank(cv)) k.add(Math.round(cv / tot * 100) + "%"); }); }
+  });
+  return k;
+}
+function narrativeTexts(d){
+  const t = [{ label:"Page title", text:d.header.title }, { label:"Footnote", text:d.footnote }];
+  d.escalations.forEach(e => ["issue","impact","next"].forEach(f => t.push({ label:`Card ${e.id}`, text:e[f] })));
+  shownRows(d).forEach(r => { Object.values(r.tips).concat(Object.values(r.varTips)).forEach(tp => { if(tp && tp.text) t.push({ label:`${r.metric} note`, text:tp.text, rowId:r.id }); }); });
+  return t;
+}
+function computeIssues(d){
+  const out = [], asOf = d.meta.asOf;
+  shownRows(d).forEach(row => {
+    const add = (lvl, text, block = false) => out.push({ rowId:row.id, where:row.metric, lvl, text, block });
+    if(!row.owner) add("high", "No data owner");
+    else if(row.owner.includes("/")) add("med", `Shared ownership (${row.owner}). Name one owner.`);
+    if(!row.updated) add("high", "No last-updated date");
+    else if(asOf){ const age = days(row.updated, asOf); if(age > 14) add("med", `Last updated ${fmtDate(row.updated)}, ${age} days before the as-of date`); }
+    const shownVal = !blank(val(d, row, "actual")) ? val(d, row, "actual") : val(d, row, "forecast");
+    row.sources.forEach(s => {
+      if(!s.name) return;
+      if(blank(s.value)) add("med", `No figure from ${s.name} yet`);
+      else if(row.kind !== "date" && !blank(shownVal) && Math.abs(+s.value - +shownVal) > Math.max(0.05, Math.abs(+shownVal) * 0.005))
+        add("med", `${s.name} shows ${fmtVal(row, +s.value)} vs ${fmtVal(row, shownVal)} on the dashboard`);
+    });
+    if(row.kind === "date" && asOf){ const f = val(d, row, "forecast"); if(f && f < asOf && !row.done) add("med", `${fmtDate(f)} has passed with no confirmation it happened`); }
+    if(row.rollup && row.kind === "usd"){
+      const ch = children(d, row);
+      ["plan","actual","forecast"].forEach(f => { if(blank(row[f])) return; const vs = ch.map(c => val(d, c, f)); if(!ch.length || vs.some(blank)) return;
+        const sum = r1(vs.reduce((a, b) => a + +b, 0)); if(Math.abs(sum - +row[f]) > 0.05) add("high", `${cap(f)} ${money(row[f])} doesn't equal the sum of its lines (${money(sum)})`, true); });
+    }
+    if(row.calc && !blank(row.forecast) && !blank(row.calc.dealValue) && !blank(row.calc.prob)){ const c = r1(row.calc.dealValue * row.calc.prob / 100);
+      if(Math.abs(c - +row.forecast) > 0.05) add("med", `Forecast ${money(row.forecast)} differs from deal value × probability (${money(c)})`); }
+    COLS.forEach(([c, l]) => { if(row.risk[c] && row.risk[c] !== "nodata" && !(row.tips[c] && row.tips[c].text)) add("low", `${l} status has no hover note`); });
+    if(row.check.data === "exception" && !row.check.note.trim()) add("high", "Exception needs a note", true);
+  });
+  const known = knownFigures(d);
+  narrativeTexts(d).forEach(({ label, text, rowId }) => {
+    (String(text || "").match(/\$\d+(?:\.\d+)?M|\d+(?:\.\d+)?%/g) || []).forEach(tok => {
+      if(!known.has(tok)) out.push({ rowId: rowId || null, where: label, lvl:"high", block:true, text:`Mentions ${tok}, which no figure in the tracker matches. Update the text or the figures.` });
+    });
+  });
+  return out;
+}
+function rowReady(r){ return r.check.owner !== "pending" && r.check.data !== "pending" && !(r.check.data === "exception" && !r.check.note.trim()); }
+function rowState(r, issues){
+  if(!r.show) return { cls:"off", label: r.awaitingModel ? "Awaiting model" : "Hidden" };
+  if(issues.some(i => i.rowId === r.id && i.block)) return { cls:"bad", label:"Fix" };
+  return rowReady(r) ? { cls:"ok", label:"Ready" } : { cls:"pend", label:"To check" };
+}
+function diffList(a, b){
+  const out = [];
+  const T = (label, x, y) => { x = x ?? ""; y = y ?? ""; if(x !== y) out.push({ label, from: x || "—", to: y || "—" }); };
+  T("Kicker", a.header.kicker, b.header.kicker); T("Title", a.header.title, b.header.title);
+  T("As-of date", fmtLong(a.meta.asOf), fmtLong(b.meta.asOf)); T("Currency", a.meta.currency, b.meta.currency); T("Footnote", a.footnote, b.footnote);
+  b.escalations.forEach((e, i) => { const o = a.escalations[i] || {}; [["title","title"],["issue","issue"],["impact","impact"],["next","next step"]].forEach(([k, l]) => T(`Card ${e.id} ${l}`, o[k], e[k])); });
+  forEachRow(b, row => {
+    const o = findRow(a, row.id);
+    if(!o){ if(row.show) out.push({ label: row.metric, from:"—", to:"New row" }); return; }
+    if(o.show !== row.show) T(`${row.metric}: on dashboard`, o.show ? "Shown" : "Hidden", row.show ? "Shown" : "Hidden");
+    if(!row.show) return;
+    const ca = cellData(a, o), cb = cellData(b, row);
+    CELLKEYS.forEach(([k, l]) => { const x = cellText(ca[k]), y = cellText(cb[k]); if(x !== y) out.push({ label:`${row.metric}: ${l}`, from: x || "—", to: y || "—" }); });
+  });
+  return out;
+}
+
+/* ---------- rendering: dashboard ---------- */
+function curData(){ return S.view === "draft" ? S.draft : S.live; }
+function na(){ return '<span class="na">—</span>'; }
+function badge(n, d){ const e = d.escalations.find(x => x.id === n); return `<button type="button" class="badge" data-badge="${n}" aria-label="Linked to escalation ${n}${e ? ": " + h(titleCase(e.title)) : ""}">${n}</button>`; }
+function riskCell(d, col, label, c, chg){
+  const escA = c.esc ? ` data-esc="${c.esc}"` : "";
+  if(!c.st) return `<td class="ctr${chg}"${escA}></td>`;
+  const tip = c.tip || cap(STATUS[c.st]);
+  return `<td class="ctr${chg}"${escA}><span class="dot ${c.st}" tabindex="0" role="img" data-tip="${h(tip)}" aria-label="${h(`${label}: ${STATUS[c.st]}. ${c.tip || ""}`.trim())}"></span>${c.esc ? badge(c.esc, d) : ""}</td>`;
+}
+function varCell(d, v, chg){
+  if(!v || !v.main) return `<td class="num${chg}">${na()}</td>`;
+  const escA = v.esc ? ` data-esc="${v.esc}"` : "";
+  const inner = `<span class="b${v.adverse ? " neg" : ""}">${h(v.main)}</span>${v.sub ? `<span class="sub">${h(v.sub)}</span>` : ""}`;
+  const wrapped = v.tip ? `<span class="vt" tabindex="0" data-tip="${h(v.tip)}" aria-label="${h(v.main + ". " + v.tip)}">${inner}</span>` : inner;
+  return `<td class="num${v.esc ? " hb" : ""}${chg}"${escA}>${wrapped}${v.esc ? badge(v.esc, d) : ""}</td>`;
+}
+function renderTable(d){
+  const marking = S.view === "draft";
+  let html = `<thead><tr class="grp"><th colspan="6"></th><th colspan="2"><span>VARIANCE VS PLAN</span></th><th colspan="3"><span>RISK ASSESSMENT</span></th><th colspan="2"></th></tr>
+  <tr class="cols"><th>Area</th><th></th><th class="sticky">Metric</th><th class="r">Plan</th><th class="r">Actual</th><th class="r">Forecast</th>
+  <th class="r g">Actual</th><th class="r g">Forecast</th><th class="c g">Concentration</th><th class="c g">Reporting</th><th class="c g">Staffing</th><th>Data owner</th><th>Last updated</th></tr></thead><tbody>`;
+  let areaNo = 0;
+  d.areas.forEach(area => {
+    const secs = area.sections.map(s => ({ s, rows: s.rows.filter(r => r.show) })).filter(x => x.rows.length);
+    if(!secs.length) return;
+    areaNo++;
+    const total = secs.reduce((a, x) => a + x.rows.length, 0);
+    let first = true;
+    secs.forEach((sec, si) => sec.rows.forEach((row, ri) => {
+      const lastSec = si === secs.length - 1, lastRow = ri === sec.rows.length - 1;
+      const cd = cellData(d, row);
+      let chg = {};
+      if(marking){ const o = findRow(S.live, row.id); const ca = o && o.show ? cellData(S.live, o) : null;
+        CELLKEYS.forEach(([k]) => { chg[k] = (!ca || cellText(ca[k]) !== cellText(cd[k])) ? " chg" : ""; }); }
+      const C = k => chg[k] || "";
+      let tr = `<tr data-row="${h(row.id)}" class="${row.child ? "child " : ""}${lastSec && lastRow ? "area-end " : ""}${S.openRow === row.id && S.drawer === "review" ? "sel" : ""}">`;
+      if(first){ tr += `<td class="area" rowspan="${total}"><div class="anum">${areaNo}</div><div class="aname">${h(area.name)}</div></td>`; first = false; }
+      if(ri === 0) tr += `<td class="sec${lastSec ? " end-area" : ""}" rowspan="${sec.rows.length}">${h(sec.s.name)}</td>`;
+      tr += `<td class="sticky${C("metric")}"><span class="m">${h(row.metric)}</span>${row.sub ? `<span class="sub">${h(row.sub)}</span>` : ""}</td>`;
+      tr += `<td class="num${C("plan")}">${cd.plan.t ? h(cd.plan.t) : na()}</td>`;
+      tr += `<td class="num${C("actual")}">${cd.actual.t ? `<span class="b">${h(cd.actual.t)}</span>${cd.actual.sub ? `<span class="sub">${h(cd.actual.sub)}</span>` : ""}` : na()}</td>`;
+      tr += `<td class="num${C("forecast")}">${cd.forecast.t ? `<span class="b">${h(cd.forecast.t)}</span>${cd.forecast.sub ? `<span class="sub">${h(cd.forecast.sub)}</span>` : ""}` : na()}</td>`;
+      tr += varCell(d, cd.varA, C("varA")) + varCell(d, cd.varF, C("varF"));
+      COLS.forEach(([c, l]) => { tr += riskCell(d, c, l, cd[c], C(c)); });
+      tr += `<td class="${C("owner")}"><span class="${cd.owner.warn ? "neg b" : ""}">${h(cd.owner.t)}</span></td>`;
+      tr += `<td class="${C("updated")}">${cd.updated.t ? `<span class="${cd.updated.stale ? "neg" : ""}">${h(cd.updated.t)}</span>` : na()}</td></tr>`;
+      html += tr;
+    }));
+  });
+  html += "</tbody>";
+  const t = $("#tracker"); t.innerHTML = html;
+  t.classList.toggle("editable", S.drawer === "review" && S.view === "draft");
+}
+function renderDashboard(){
+  const d = curData();
+  $("#kicker").textContent = d.header.kicker;
+  $("#title").textContent = d.header.title;
+  $("#meta").textContent = `As of ${fmtLong(d.meta.asOf)} · ${d.meta.checkedAt ? "tracker checked " + fmtLong(d.meta.checkedAt) : "tracker not yet checked"} · ${d.meta.currency}`;
+  $("#cards").innerHTML = d.escalations.map(e => `<article class="card" tabindex="0" data-card="${e.id}" aria-label="Escalation ${e.id}: ${h(titleCase(e.title))}">
+    <div class="ct"><span class="cb">${e.id}</span><span>${h(e.title)}</span></div>
+    <div class="kv"><span>Issue</span><span class="b">${h(e.issue)}</span></div>
+    <div class="kv"><span>Impact</span><span>${h(e.impact)}</span></div>
+    <div class="kv"><span>Next step</span><span>${h(e.next)}</span></div></article>`).join("");
+  renderTable(d);
+  $("#foot").textContent = d.footnote;
+  const ban = $("#dbanner");
+  ban.hidden = S.view !== "draft";
+  if(S.view === "draft") ban.innerHTML = `<b>Draft preview.</b> Shaded cells differ from the live version. ${S.drawer === "review" ? "Click a row to edit it." : ""} The President sees the live version until you publish.`;
+}
+function renderBar(){
+  const L = S.live;
+  let html = `<span class="brand">NorthPoint · Q3 tracker</span>
+    <span class="chip"><i class="dot green"></i>Live v${L.version} · published ${h(fmtLong(L.publishedAt))}</span>`;
+  if(S.mode === "demo") html += `<span class="chip">Preview: changes stay in this browser</span>`;
+  else if(S.me.setup) html += `<span class="chip warn">Setup mode: anyone who can open this page can edit</span>`;
+  html += `<span class="sp"></span>`;
+  if(S.me.admin){
+    const ps = publishState(), fu = buildFollowups();
+    html += `<div class="segv" role="group" aria-label="Version shown"><button data-act="view" data-v="live" aria-pressed="${S.view === "live"}">Live</button><button data-act="view" data-v="draft" aria-pressed="${S.view === "draft"}">Draft</button></div>
+      <button class="btn${S.drawer === "review" ? " primary" : ""}" data-act="open-review">Review &amp; publish <span class="n">${ps.total - ps.ready}</span></button>
+      <button class="btn${S.drawer === "mail" ? " primary" : ""}" data-act="open-mail">Follow-ups <span class="n">${fu.length}</span></button>`;
+  }
+  $("#bar").innerHTML = html;
+}
+
+/* ---------- review drawer ---------- */
+function publishState(){
+  const d = S.draft, issues = computeIssues(d), rows = shownRows(d);
+  const ready = rows.filter(rowReady).length, blocking = issues.filter(i => i.block), changes = diffList(S.live, d);
+  const reasons = [];
+  if(ready < rows.length) reasons.push(`${rows.length - ready} row${rows.length - ready === 1 ? "" : "s"} still to confirm`);
+  if(blocking.length) reasons.push(`${blocking.length} blocking issue${blocking.length === 1 ? "" : "s"} to fix`);
+  return { ready, total: rows.length, issues, blocking, changes, can: !reasons.length, reasons };
+}
+function renderReview(){
+  $("#rvKicker").textContent = `Draft for live v${S.live.version + 1}`;
+  const tabs = [["rows","Rows"],["text","Headline & cards"],["checks","Checks"],["history","History"]];
+  const ps = publishState();
+  $("#rvTabs").innerHTML = tabs.map(([k, l]) => `<button class="tab" role="tab" data-act="rtab" data-tab="${k}" aria-selected="${S.rtab === k}">${l}${k === "checks" ? ` (${ps.issues.length})` : ""}</button>`).join("");
+  renderReviewBody();
+  updateReviewChrome();
+}
+function renderReviewBody(){
+  const b = $("#rvBody"), top = b.scrollTop;
+  b.innerHTML = S.rtab === "rows" ? rowsTab() : S.rtab === "text" ? textTab() : S.rtab === "checks" ? checksTab() : historyTab();
+  b.scrollTop = top;
+}
+function updateReviewChrome(){
+  if(S.drawer !== "review") return;
+  const ps = publishState();
+  $("#rvSummary").innerHTML = `<div class="sum"><span><b>${ps.ready} of ${ps.total}</b> rows confirmed</span><span><b>${ps.changes.length}</b> change${ps.changes.length === 1 ? "" : "s"} vs live</span><span><b>${ps.issues.length}</b> open issue${ps.issues.length === 1 ? "" : "s"}${ps.blocking.length ? ` (${ps.blocking.length} blocking)` : ""}</span></div>
+    <div class="prog" aria-hidden="true"><i style="width:${ps.total ? Math.round(ps.ready / ps.total * 100) : 0}%"></i></div>`;
+  const ct = document.querySelector('#rvTabs [data-tab="checks"]'); if(ct) ct.textContent = `Checks (${ps.issues.length})`;
+  document.querySelectorAll("#rvBody .ri[data-open]").forEach(el => { const r = findRow(S.draft, el.dataset.open); if(!r) return; const st = rowState(r, ps.issues); const p = el.querySelector(".pill"); p.className = "pill " + st.cls; p.textContent = st.label; const m = el.querySelector(".rm b"); if(m) m.textContent = r.metric; const o = el.querySelector(".rm small"); if(o) o.textContent = ownerLine(r); });
+  const ei = $("#edIssues"); if(ei && S.openRow) ei.innerHTML = issueList(ps.issues.filter(i => i.rowId === S.openRow), false);
+  const orow = S.openRow && findRow(S.draft, S.openRow);
+  if(orow) document.querySelectorAll("#rvBody [data-vprev]").forEach(el => { el.textContent = cellText(variance(S.draft, orow, el.dataset.vprev)) || "—"; });
+  let f = `<div class="fa"><span class="fs">${ps.can ? "Ready to publish." : ps.reasons.join(" · ")}</span>
+    <span><button class="btn ghost" data-act="discard-open">Discard draft</button> <button class="btn primary" data-act="pub-open" ${ps.can ? "" : "disabled"}>Publish to live</button></span></div>`;
+  if(S.confirm === "publish"){
+    const ch = ps.changes;
+    f += `<div class="cfm"><h4>Publish v${S.live.version + 1}? The President will see it straight away.</h4>
+      <ul>${ch.slice(0, 14).map(c => `<li><b>${h(c.label)}</b>: ${h(trunc(c.from))} → ${h(trunc(c.to))}</li>`).join("")}${ch.length > 14 ? `<li>${ch.length - 14} more</li>` : ""}<li>Tracker marked as checked on ${h(fmtLong(todayISO()))}</li></ul>
+      <label class="f" style="margin-bottom:10px"><span>Note for the history (optional)</span><input class="in" id="pubNote" placeholder="e.g. Q3 figures confirmed with owners"></label>
+      <div class="fa"><button class="btn primary" data-act="pub-go">Confirm publish</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
+  }
+  if(S.confirm === "discard") f += `<div class="cfm"><h4>Discard all draft changes and go back to live v${S.live.version}?</h4><div class="fa"><button class="btn primary" data-act="discard-go">Discard draft</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
+  $("#rvFoot").innerHTML = f;
+}
+const trunc = s => { s = String(s); return s.length > 70 ? s.slice(0, 68) + "…" : s; };
+function ownerLine(r){ return `${r.owner || "No owner"}${r.updated ? " · updated " + fmtDate(r.updated) : ""}`; }
+function issueList(list, withLinks){
+  if(!list.length) return withLinks ? '<p class="muted">No open issues.</p>' : "";
+  return `<ul class="iss">${list.map(i => `<li class="${i.lvl}"><span class="t">${withLinks ? `<b>${h(i.where)}</b>: ` : ""}${h(i.text)}${i.block ? " <b>(blocks publishing)</b>" : ""}</span>${withLinks ? (i.rowId ? `<button class="lnk" data-act="goto" data-id="${h(i.rowId)}">Open row</button>` : `<button class="lnk" data-act="rtab" data-tab="text">Edit text</button>`) : ""}</li>`).join("")}</ul>`;
+}
+function rowsTab(){
+  const d = S.draft, issues = computeIssues(d);
+  let html = `<p class="hint">Open a row to change figures, risk notes and owner, then confirm it. The dashboard behind this panel shows the draft as you type.</p>`;
+  d.areas.forEach(area => {
+    html += `<h3 class="grp-h">${h(area.name)}</h3>`;
+    area.sections.forEach(sec => {
+      html += `<div class="sec-h">${h(sec.name)}${sec.rows.every(r => r.awaitingModel && !r.show) ? ' <span class="pill off">Waiting for the financial model</span>' : ""}</div>`;
+      sec.rows.forEach(r => {
+        const st = rowState(r, issues), open = S.openRow === r.id;
+        html += `<button class="ri${r.child ? " child" : ""}" data-open="${h(r.id)}" aria-expanded="${open}"><span class="pill ${st.cls}">${st.label}</span><span class="rm"><b>${h(r.metric)}</b><small>${h(ownerLine(r))}</small></span><span class="chev">${open ? "▲" : "▼"}</span></button>`;
+        if(open) html += `<div class="ed" data-scope="row" data-id="${h(r.id)}">${editorHtml(r, issues)}</div>`;
+      });
+    });
+  });
+  return html;
+}
+function opt(v, l, cur){ return `<option value="${h(v)}"${String(cur ?? "") === String(v) ? " selected" : ""}>${h(l)}</option>`; }
+function seg(path, cur, items){ return `<div class="segc" role="group">${items.map(([v, l]) => `<button type="button" data-set="${path}" data-val="${v}" aria-pressed="${cur === v}">${l}</button>`).join("")}</div>`; }
+function editorHtml(r, issues){
+  const d = S.draft, k = r.kind, unit = k === "usd" ? " ($M)" : k === "count" ? " (count)" : "";
+  const type = k === "date" ? "date" : "number", t = k === "date" ? "date" : "num";
+  const auto = f => { if(!blank(r[f])) return ""; const v = val(d, r, f); return !blank(v) ? `Auto: ${fmtVal(r, v)}` : ""; };
+  const inp = (label, path, tt, ph = "", typ) => `<label class="f"><span>${label}</span><input class="in" data-f="${path}" data-t="${tt}" type="${typ || (tt === "num" ? "number" : tt === "date" ? "date" : "text")}" step="any" value="${h(getP(r, path) ?? "")}" placeholder="${h(ph)}"></label>`;
+  const escSel = (path, cur) => `<select class="in" data-f="${path}" data-t="esc" aria-label="Escalation link">${opt("", "No call-out", cur)}${d.escalations.map(e => opt(e.id, `Call-out ${e.id}`, cur)).join("")}</select>`;
+  let html = `<div id="edIssues">${issueList(issues.filter(i => i.rowId === r.id), false)}</div>`;
+  html += `<h5>Row</h5><div class="g2">${inp("Metric name", "metric", "text")}${inp("Sub-text (optional)", "sub", "text")}</div>
+    <label class="chk"><input type="checkbox" data-f="show" data-t="bool" ${r.show ? "checked" : ""}> Show on the dashboard</label>`;
+  html += `<h5>Figures${unit}</h5><div class="g3">${inp("Plan", "plan", t, auto("plan"), type)}${inp("Actual", "actual", t, auto("actual"), type)}${inp("Forecast", "forecast", t, auto("forecast"), type)}</div>
+    <div class="g3"><span></span>${inp("Actual sub-text", "actualSub", "text", "e.g. available")}${inp("Forecast sub-text", "forecastSub", "text", "e.g. as of 12 Aug")}</div>`;
+  if(r.calc) html += `<div class="g3">${inp("Deal value ($M)", "calc.dealValue", "num")}${inp("Probability (%)", "calc.prob", "num")}<label class="f"><span>Weighted value</span><input class="in" disabled value="${h(money(val(d, r, "forecast")) || "")}"></label></div><p class="hint">Leave Forecast empty to use deal value × probability.</p>`;
+  if(r.rollup) html += `<p class="hint">Leave a figure empty to add up the rows below it (${h(children(d, r).map(c => c.metric).join(", "))}).</p>`;
+  if(k !== "date") html += `<label class="f" style="max-width:220px"><span>Good direction</span><select class="in" data-f="better" data-t="text">${opt("higher", "Higher is better", r.better)}${opt("lower", "Lower is better", r.better)}</select></label>`;
+  else html += `<label class="chk"><input type="checkbox" data-f="done" data-t="bool" ${r.done ? "checked" : ""}> Milestone has happened</label>`;
+  html += `<h5>Risk assessment</h5>`;
+  COLS.forEach(([c, l]) => {
+    html += `<div class="rk"><span class="rkl">${l}</span><select class="in" data-f="risk.${c}" data-t="status" aria-label="${l} status">${opt("", "Not assessed", r.risk[c])}${opt("green", "On track", r.risk[c])}${opt("amber", "Needs attention", r.risk[c])}${opt("red", "Off track", r.risk[c])}${opt("nodata", "No data", r.risk[c])}</select>
+      <input class="in" data-f="tips.${c}.text" data-t="text" value="${h((r.tips[c] || {}).text || "")}" placeholder="Hover note" aria-label="${l} hover note">${escSel(`tips.${c}.esc`, (r.tips[c] || {}).esc)}</div>`;
+  });
+  [["actual","Variance (actual)"],["forecast","Variance (forecast)"]].forEach(([w, l]) => {
+    html += `<div class="rk"><span class="rkl">${l}</span><span class="muted" data-vprev="${w}">${h(cellText(variance(d, r, w)) || "—")}</span><input class="in" data-f="varTips.${w}.text" data-t="text" value="${h((r.varTips[w] || {}).text || "")}" placeholder="Hover note" aria-label="${l} hover note">${escSel(`varTips.${w}.esc`, (r.varTips[w] || {}).esc)}</div>`;
+  });
+  html += `<h5>Ownership</h5><div class="g2"><label class="f"><span>Data owner</span><input class="in" list="roles" data-f="owner" data-t="text" value="${h(r.owner)}" placeholder="None"></label>${inp("Last updated", "updated", "date", "", "date")}</div>
+    <label class="chk"><input type="checkbox" data-f="ownerWarn" data-t="bool" ${r.ownerWarn ? "checked" : ""}> Show owner in red on the dashboard</label>
+    <datalist id="roles">${Object.keys(S.ops.directory).map(x => `<option value="${h(x)}">`).join("")}</datalist>`;
+  html += `<h5>Sources to reconcile</h5>${r.sources.map((s, i) => `<div class="src"><input class="in" data-f="sources.${i}.name" data-t="text" value="${h(s.name)}" placeholder="Source, e.g. CRM" aria-label="Source name"><input class="in" type="${type}" step="any" data-f="sources.${i}.value" data-t="${t}" value="${h(s.value ?? "")}" placeholder="Figure" aria-label="Source figure"><button type="button" class="del" data-act="src-del" data-i="${i}" aria-label="Remove source">×</button></div>`).join("") || '<p class="muted">No sources listed.</p>'}
+    <button type="button" class="lnk" data-act="src-add">Add a source</button>`;
+  html += `<h5>Confirmation</h5>
+    <div class="cf"><span>Data owner</span>${seg("check.owner", r.check.owner, [["pending","Not confirmed"],["ok","Confirmed"],["none","No owner"]])}</div>
+    <div class="cf"><span>Figures</span>${seg("check.data", r.check.data, [["pending","Not checked"],["ok","Reconciled"],["exception","Exception"]])}</div>
+    <label class="f"><span>Note</span><textarea class="in" rows="2" data-f="check.note" data-t="text" placeholder="What you checked and with whom, or why this is an exception">${h(r.check.note)}</textarea></label>
+    ${r.check.by ? `<p class="by">Last set by ${h(r.check.by)} on ${h(fmtLong(r.check.at))}</p>` : ""}`;
+  return html;
+}
+function textTab(){
+  const d = S.draft, iss = computeIssues(d).filter(i => !i.rowId || i.where.endsWith(" note"));
+  const ta = (label, path, rows = 2) => `<label class="f" style="margin-bottom:10px"><span>${label}</span><textarea class="in" rows="${rows}" data-f="${path}" data-t="text">${h(getP(d, path))}</textarea></label>`;
+  let html = `<div data-scope="draft">${issueList(iss.filter(i => !i.rowId), true)}
+    <h5 class="grp-h">Header</h5>
+    <label class="f" style="margin-bottom:10px"><span>Kicker</span><input class="in" data-f="header.kicker" data-t="text" value="${h(d.header.kicker)}"></label>
+    ${ta("Title (the one-line message)", "header.title", 3)}
+    <div class="g2"><label class="f"><span>As-of date</span><input class="in" type="date" data-f="meta.asOf" data-t="date" value="${h(d.meta.asOf || "")}"></label><label class="f"><span>Currency</span><input class="in" data-f="meta.currency" data-t="text" value="${h(d.meta.currency)}"></label></div>
+    <p class="hint">Starting a new month or quarter? <button class="lnk" data-act="cycle-open">Start a new review cycle</button> to clear every confirmation.</p>
+    ${S.confirm === "cycle" ? `<div class="cfm"><h4>Clear all row confirmations so owners re-confirm for the new cycle?</h4><div class="fa"><button class="btn primary" data-act="cycle-go">Start new cycle</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>` : ""}`;
+  d.escalations.forEach((e, i) => {
+    html += `<h5 class="grp-h">Escalation card ${e.id}</h5>
+      <label class="f" style="margin-bottom:10px"><span>Title</span><input class="in" data-f="escalations.${i}.title" data-t="text" value="${h(e.title)}"></label>
+      ${ta("Issue", `escalations.${i}.issue`)}${ta("Impact", `escalations.${i}.impact`)}${ta("Next step", `escalations.${i}.next`)}`;
+  });
+  html += `<h5 class="grp-h">Footnote</h5>${ta("Footnote", "footnote", 3)}</div>`;
+  return html;
+}
+function checksTab(){
+  const iss = computeIssues(S.draft), rows = shownRows(S.draft).filter(r => !rowReady(r));
+  let html = `<p class="hint">Automatic checks run on every change: owners, stale dates, sources that disagree, totals that don't add up, and numbers in the headline or cards that the tracker doesn't support.</p>`;
+  const grp = (title, list) => list.length ? `<h5 class="grp-h">${title} (${list.length})</h5>${issueList(list, true)}` : "";
+  html += grp("Blocks publishing", iss.filter(i => i.block));
+  html += rows.length ? `<h5 class="grp-h">Still to confirm (${rows.length})</h5><ul class="iss">${rows.map(r => `<li class="med"><span class="t"><b>${h(r.metric)}</b>: ${r.check.owner === "pending" ? "owner not confirmed" : ""}${r.check.owner === "pending" && r.check.data === "pending" ? ", " : ""}${r.check.data === "pending" ? "figures not checked" : ""}${r.check.data === "exception" && !r.check.note.trim() ? "exception needs a note" : ""}</span><button class="lnk" data-act="goto" data-id="${h(r.id)}">Open row</button></li>`).join("")}</ul>` : "";
+  html += grp("Warnings", iss.filter(i => !i.block && i.lvl !== "low"));
+  html += grp("Notes", iss.filter(i => !i.block && i.lvl === "low"));
+  if(!iss.length && !rows.length) html += '<p class="muted">Everything checks out.</p>';
+  return html;
+}
+function historyTab(){
+  let html = `<p class="hint">Every publish is saved. Restoring copies that version into the draft; nothing goes live until you publish again.</p>`;
+  html += S.history.map(v => `<div class="hv"><div class="hvh"><b>v${v.version}</b><span class="muted">${h(fmtTime(v.at))} · ${h(v.by || "")}</span>${v.version === S.live.version ? '<span class="pill ok">Live</span>' : ""}<span class="sp"></span>${v.snapshot && v.version !== S.live.version ? `<button class="lnk" data-act="restore" data-v="${v.version}">Restore to draft</button>` : ""}</div>
+    ${v.note ? `<div>${h(v.note)}</div>` : ""}${(v.changes || []).length ? `<ul>${v.changes.slice(0, 8).map(c => `<li>${h(c.label)}: ${h(trunc(c.from))} → ${h(trunc(c.to))}</li>`).join("")}${v.changes.length > 8 ? `<li>${v.changes.length - 8} more</li>` : ""}</ul>` : ""}
+    ${S.confirm === "restore:" + v.version ? `<div class="cfm"><h4>Replace the current draft with v${v.version}?</h4><div class="fa"><button class="btn primary" data-act="restore-go" data-v="${v.version}">Restore</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>` : ""}</div>`).join("") || '<p class="muted">No versions yet.</p>';
+  html += `<h5 class="grp-h">Backup</h5><p class="hint">Copy the draft as JSON to keep a backup, or load a JSON file to replace the draft.</p>
+    <div class="fa" style="justify-content:flex-start"><button class="btn" data-act="export">Copy draft as JSON</button><label class="btn" for="importFile">Load JSON file</label><input type="file" id="importFile" accept=".json,application/json" hidden></div>
+    <textarea class="in" id="exportBox" rows="6" hidden readonly style="margin-top:10px"></textarea>
+    ${S.confirm === "import" ? `<div class="cfm"><h4>Replace the draft with the loaded file?</h4><div class="fa"><button class="btn primary" data-act="import-go">Replace draft</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>` : ""}`;
+  if(S.mode === "demo") html += `<h5 class="grp-h">Preview data</h5><button class="lnk" data-act="reset-demo">Reset the preview to the original Q3 data</button>`;
+  return html;
+}
+
+/* ---------- follow-ups ---------- */
+function rowFacts(d, r){ return ["plan","actual","forecast"].map(f => { const v = val(d, r, f); return blank(v) ? null : `${f} ${fmtVal(r, v)}`; }).filter(Boolean).join(", "); }
+function buildFollowups(){
+  const d = S.draft, ops = S.ops, issues = computeIssues(d), by = {};
+  const push = (role, it) => { (by[role] = by[role] || []).push(it); };
+  shownRows(d).forEach(r => {
+    const reasons = []; let sev = 0; const bump = s => { sev = Math.max(sev, s); };
+    if(!r.owner){ reasons.push("No data owner or update date on record"); bump(3); }
+    COLS.forEach(([c, l]) => {
+      const st = r.risk[c], tip = (r.tips[c] || {}).text;
+      if(!st || st === "green") return;
+      if(!r.owner && tip && /owner/i.test(tip)) return;
+      reasons.push(tip || `${l} ${STATUS[st]}`); bump(st === "red" ? 3 : 2);
+    });
+    ["actual","forecast"].forEach(w => { const vt = r.varTips[w], v = variance(d, r, w); if(v && v.adverse && vt && vt.text){ reasons.unshift(vt.text); bump(3); } });
+    issues.filter(i => i.rowId === r.id && /has passed|No figure from|doesn't equal|differs from/.test(i.text)).forEach(i => { reasons.push(i.text); bump(2); });
+    if(r.updated && d.meta.asOf && days(r.updated, d.meta.asOf) > 14 && !reasons.some(x => x.includes(fmtDate(r.updated)))){ reasons.push(`Last updated ${fmtDate(r.updated)}`); bump(2); }
+    if(r.owner && r.check.owner === "pending"){ reasons.push("Please confirm you own this figure"); bump(1); }
+    if(!reasons.length) return;
+    const roles = r.owner ? r.owner.split("/").map(x => x.trim()).filter(Boolean) : [ops.settings.fallbackRole];
+    roles.forEach(role => push(role, { sev, title: r.metric, facts: rowFacts(d, r), reasons: uniq(reasons), ref: r.id }));
+  });
+  d.escalations.forEach(e => Object.keys(ops.directory).forEach(role => {
+    if(e.next.toLowerCase().includes(role.toLowerCase())) push(role, { sev:3, title:`Escalation ${e.id}: ${titleCase(e.title)}`, facts:"", reasons:[e.next], ref:"esc" + e.id });
+  }));
+  return Object.entries(by).map(([role, items]) => ({ role, items: items.sort((a, b) => b.sev - a.sev), sev: Math.max(...items.map(i => i.sev)), person: ops.directory[role] || { name:"", email:"" } }))
+    .sort((a, b) => b.sev - a.sev || a.role.localeCompare(b.role));
+}
+function itemsText(items){ return items.map((it, i) => `${i + 1}. ${it.title}${it.facts ? ` (${it.facts})` : ""}\n${it.reasons.map(r => `   - ${r}`).join("\n")}`).join("\n\n"); }
+function lastSend(role){ return S.ops.outbox.find(m => m.role === role); }
+function renderTpl(t, vars){ return String(t).replace(/\{\{(\w+)\}\}/g, (m, k) => vars[k] != null ? vars[k] : m); }
+function mailFor(f){
+  const ov = S.ops.overrides[f.role] || {}, last = lastSend(f.role);
+  const kind = ov.tpl || (last && !last.responded ? "followup" : "first");
+  const tpl = S.ops.templates[kind], st = S.ops.settings, n = f.items.length;
+  const vars = { firstName: f.person.name ? f.person.name.split(" ")[0] : "there", name: f.person.name || f.role, role: f.role, count: n,
+    itemsWord: `${n} item${n === 1 ? "" : "s"}`, items: itemsText(f.items), replyBy: fmtDow(st.replyBy), reviewDate: fmtDow(st.reviewDate),
+    asOf: fmtLong(S.draft.meta.asOf), sender: st.senderName, severity: SEV[f.sev], lastSent: last ? fmtLong(last.at) : "last week" };
+  return { kind, subject: ov.subject != null ? ov.subject : renderTpl(tpl.subject, vars), body: ov.body != null ? ov.body : renderTpl(tpl.body, vars), edited: ov.body != null };
+}
+function renderMail(){
+  const fu = buildFollowups(), urgent = fu.filter(f => f.sev === 3).length;
+  $("#mSummary").innerHTML = `<div class="sum"><span><b>${fu.length}</b> people to remind</span><span><b>${urgent}</b> urgent</span><span><b>${S.ops.outbox.length}</b> sent</span></div>`;
+  const tabs = [["drafts", `Drafts (${fu.length})`],["sent", `Sent (${S.ops.outbox.length})`],["template","Template & settings"],["directory","Directory"]];
+  $("#mTabs").innerHTML = tabs.map(([k, l]) => `<button class="tab" role="tab" data-act="mtab" data-tab="${k}" aria-selected="${S.mtab === k}">${l}</button>`).join("");
+  const b = $("#mBody"), top = b.scrollTop;
+  b.innerHTML = S.mtab === "drafts" ? draftsTab(fu) : S.mtab === "sent" ? sentTab() : S.mtab === "template" ? templateTab() : directoryTab();
+  b.scrollTop = top;
+  renderMailFoot(fu);
+}
+function modeNote(){ return S.mode === "demo" ? "Preview: sends are logged here, nothing is delivered." : S.mail.enabled ? `Sends from ${S.mail.from}.` : "Email delivery isn't connected yet, so sends are logged only."; }
+function renderMailFoot(fu){
+  fu = fu || buildFollowups();
+  if(S.mtab !== "drafts"){ $("#mFoot").innerHTML = `<span class="fs">${h(modeNote())}</span>`; return; }
+  const ap = fu.filter(f => S.approvals[f.role] && f.person.email);
+  let html = `<div class="fa"><span class="fs">${ap.length} approved · ${h(modeNote())}</span><button class="btn primary" data-act="send-open" ${ap.length ? "" : "disabled"}>Send ${ap.length || ""} approved</button></div>`;
+  if(S.confirm === "send") html += `<div class="cfm"><h4>Send ${ap.length} email${ap.length === 1 ? "" : "s"}?</h4><ul>${ap.map(f => `<li>${h(f.person.name)} (${h(f.role)}): ${h(mailFor(f).subject)}</li>`).join("")}</ul><div class="fa"><button class="btn primary" data-act="send-go">Confirm send</button><button class="btn ghost" data-act="cancel">Cancel</button></div></div>`;
+  $("#mFoot").innerHTML = html;
+}
+function draftsTab(fu){
+  if(!fu.length) return '<p class="muted">No reminders needed. Every row is on track and confirmed.</p>';
+  let html = `<p class="hint">Drafted from the risk assessment and open checks in the current draft. Review each one, approve it, then send. <button class="lnk" data-act="approve-all">Approve all with an email</button></p>`;
+  fu.forEach(f => {
+    const m = mailFor(f), ap = !!S.approvals[f.role], last = lastSend(f.role), rk = h(f.role);
+    html += `<article class="mc${ap ? " ap" : ""}">
+      <div class="mch"><label class="apv"><input type="checkbox" data-act="approve" data-role="${rk}" ${ap ? "checked" : ""} ${f.person.email ? "" : "disabled"}> Approve</label>
+        <div class="who"><b>${h(f.person.name || "No contact")}</b><span>${rk}</span></div><span class="sev s${f.sev}">${SEV[f.sev]}</span></div>
+      <div class="mm"><span>To</span><span>${f.person.email ? h(`${f.person.name} <${f.person.email}>`) : '<span class="neg">No email on file. Add one in Directory.</span>'}</span></div>
+      <div class="mm"><span>Cc</span><span>${h(S.ops.settings.cc || "—")}</span></div>
+      <div class="mm"><span>Template</span><span><select class="in" data-act="tpl" data-role="${rk}" aria-label="Template">${Object.entries(S.ops.templates).map(([k, t]) => opt(k, t.name, m.kind)).join("")}</select>${last ? ` <span class="muted">Last sent ${h(fmtLong(last.at))}${last.responded ? ", replied" : ", no reply yet"}</span>` : ""}</span></div>`;
+    if(m.edited) html += `<div data-scope="ops" style="margin-top:8px"><label class="f" style="margin-bottom:8px"><span>Subject</span><input class="in" data-f="overrides.${rk}.subject" data-t="text" value="${h(m.subject)}"></label><label class="f"><span>Body</span><textarea class="in mono" rows="14" data-f="overrides.${rk}.body" data-t="text">${h(m.body)}</textarea></label></div>`;
+    else html += `<div class="mm"><span>Subject</span><b>${h(m.subject)}</b></div><div class="mbody${S.expanded[f.role] ? " open" : ""}">${h(m.body)}</div>`;
+    html += `<div class="mact">${m.edited ? "" : `<button class="lnk" data-act="mexp" data-role="${rk}">${S.expanded[f.role] ? "Collapse" : "Show full email"}</button>`}
+      ${m.edited ? `<button class="lnk" data-act="mreset" data-role="${rk}">Back to template</button>` : `<button class="lnk" data-act="medit" data-role="${rk}">Edit this email</button>`}
+      <button class="lnk" data-act="mcopy" data-role="${rk}">Copy text</button></div></article>`;
+  });
+  return html;
+}
+function sentTab(){
+  const ob = S.ops.outbox;
+  if(!ob.length) return '<p class="muted">Nothing sent yet. Approved reminders appear here with their status.</p>';
+  const nd = +S.ops.settings.nudgeDays || 3;
+  return `<p class="hint">Mark a reminder as replied once the owner answers. Unreplied reminders switch to the follow-up template after ${nd} days.</p>` + ob.map(m => {
+    const age = days(m.at, todayISO()), due = !m.responded && age >= nd;
+    return `<div class="hv"><div class="hvh"><span class="st ${m.status}">${m.status === "sent" ? "Sent" : m.status === "failed" ? "Failed" : "Logged (not delivered)"}</span><b>${h(m.toName || m.role)}</b><span class="muted">${h(m.role)} · ${h(fmtTime(m.at))}</span>${due ? '<span class="pill pend">Nudge due</span>' : ""}</div>
+      <div style="margin-top:4px">${h(m.subject)}</div>${m.error ? `<div class="neg">${h(m.error)}</div>` : ""}
+      <div class="mact"><label class="apv"><input type="checkbox" data-act="replied" data-id="${h(m.id)}" ${m.responded ? "checked" : ""}> Replied</label><button class="lnk" data-act="sexp" data-id="${h(m.id)}">${S.expanded["s" + m.id] ? "Hide email" : "Show email"}</button></div>
+      ${S.expanded["s" + m.id] ? `<div class="mbody open">To: ${h(m.to)}${m.cc ? "\nCc: " + h(m.cc) : ""}\n\n${h(m.body)}</div>` : ""}</div>`;
+  }).join("");
+}
+function templateTab(){
+  const o = S.ops, st = o.settings;
+  const ph = ["firstName","name","role","itemsWord","items","replyBy","reviewDate","asOf","sender","severity","lastSent"].map(x => `{{${x}}}`).join(" ");
+  let html = `<div data-scope="ops">`;
+  Object.entries(o.templates).forEach(([k, t]) => {
+    html += `<h5 class="grp-h">${h(t.name)}</h5><label class="f" style="margin-bottom:8px"><span>Subject</span><input class="in" data-f="templates.${k}.subject" data-t="text" value="${h(t.subject)}"></label>
+      <label class="f" style="margin-bottom:8px"><span>Body</span><textarea class="in mono" rows="11" data-f="templates.${k}.body" data-t="text">${h(t.body)}</textarea></label>`;
+  });
+  html += `<p class="hint">Placeholders: ${h(ph)}. <button class="lnk" data-act="tpl-reset">Restore the default wording</button></p>
+    <h5 class="grp-h">Settings</h5>
+    <div class="g2"><label class="f"><span>Sender name</span><input class="in" data-f="settings.senderName" data-t="text" value="${h(st.senderName)}"></label><label class="f"><span>Sender email</span><input class="in" data-f="settings.senderEmail" data-t="text" value="${h(st.senderEmail)}"></label></div>
+    <div class="g2"><label class="f"><span>Cc on every reminder</span><input class="in" data-f="settings.cc" data-t="text" value="${h(st.cc)}"></label><label class="f"><span>Nudge after (days without reply)</span><input class="in" type="number" min="1" data-f="settings.nudgeDays" data-t="num" value="${h(st.nudgeDays)}"></label></div>
+    <div class="g2"><label class="f"><span>Reply by</span><input class="in" type="date" data-f="settings.replyBy" data-t="date" value="${h(st.replyBy)}"></label><label class="f"><span>Leadership review date</span><input class="in" type="date" data-f="settings.reviewDate" data-t="date" value="${h(st.reviewDate)}"></label></div>
+    <label class="f" style="max-width:260px"><span>Who gets rows with no owner</span><select class="in" data-f="settings.fallbackRole" data-t="text">${Object.keys(o.directory).map(r => opt(r, r, st.fallbackRole)).join("")}</select></label></div>`;
+  return html;
+}
+function directoryTab(){
+  const dir = S.ops.directory;
+  return `<p class="hint">Sample contacts for the preview. Replace them with real names and emails before sending. Roles must match the Data owner names in the tracker.</p>
+    <div data-scope="ops" class="tw"><table class="dir"><thead><tr><th>Role</th><th>Name</th><th>Email</th><th></th></tr></thead><tbody>
+    ${Object.entries(dir).map(([role, p]) => `<tr><td>${h(role)}</td><td><input class="in" data-f="directory.${h(role)}.name" data-t="text" value="${h(p.name)}" aria-label="${h(role)} name"></td><td><input class="in" type="email" data-f="directory.${h(role)}.email" data-t="text" value="${h(p.email)}" aria-label="${h(role)} email"></td><td><button class="del" data-act="dir-del" data-role="${h(role)}" aria-label="Remove ${h(role)}">×</button></td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="addrow"><input class="in" id="newRole" placeholder="New role, e.g. Head of Finance"><button class="btn" data-act="dir-add">Add role</button></div>`;
+}
+
+/* ---------- persistence ---------- */
+let saveT = null, opsT = null;
+function setSaved(txt){ ["#rvSave", "#mSave"].forEach(s => { const e = $(s); if(e) e.textContent = txt; }); }
+function saveLocal(){ try{ localStorage.setItem(LSKEY, JSON.stringify({ live:S.live, draft:S.draft, ops:S.ops, history:S.history })); }catch(e){} }
+function saveDraft(){
+  setSaved("Saving…"); clearTimeout(saveT);
+  saveT = setTimeout(async () => {
+    if(S.mode === "server"){ try{ await api("draft", { method:"PUT", body: JSON.stringify({ draft:S.draft }) }); setSaved("Draft saved"); }catch(e){ setSaved("Not saved: " + e.message); } }
+    else { saveLocal(); setSaved("Draft saved in this browser"); }
+  }, 500);
+}
+function saveOps(){
+  clearTimeout(opsT);
+  opsT = setTimeout(async () => {
+    if(S.mode === "server"){ try{ await api("ops", { method:"PUT", body: JSON.stringify({ ops:S.ops }) }); setSaved("Saved"); }catch(e){ setSaved("Not saved: " + e.message); } }
+    else { saveLocal(); setSaved("Saved in this browser"); }
+  }, 400);
+}
+async function api(path, opts = {}){
+  const r = await fetch("/api/" + path, Object.assign({ headers: { "content-type":"application/json" }, credentials:"same-origin" }, opts));
+  let j = null; try{ j = await r.json(); }catch(e){ throw new Error("No dashboard server here"); }
+  if(!r.ok) throw new Error(j && j.error || r.statusText);
+  return j;
+}
+
+/* ---------- actions ---------- */
+function openDrawer(which){
+  S.drawer = which; S.confirm = null;
+  document.body.classList.add("dopen");
+  $("#dReview").classList.toggle("open", which === "review"); $("#dReview").setAttribute("aria-hidden", which !== "review");
+  $("#dMail").classList.toggle("open", which === "mail"); $("#dMail").setAttribute("aria-hidden", which !== "mail");
+  if(which === "review"){ S.view = "draft"; renderReview(); } else renderMail();
+  renderBar(); renderDashboard();
+}
+function closeDrawer(){
+  S.drawer = null; S.confirm = null; S.openRow = null; document.body.classList.remove("dopen");
+  ["#dReview", "#dMail"].forEach(s => { $(s).classList.remove("open"); $(s).setAttribute("aria-hidden", "true"); });
+  S.view = "live"; renderBar(); renderDashboard();
+}
+function afterDraftChange(){ if(S.view === "draft") renderDashboard(); updateReviewChrome(); renderBar(); saveDraft(); }
+function openRowEditor(id){
+  S.openRow = S.openRow === id ? null : id; S.rtab = "rows";
+  if(S.drawer !== "review") openDrawer("review"); else { renderReview(); renderDashboard(); }
+  const el = document.querySelector(`#rvBody .ri[data-open="${CSS.escape(id)}"]`);
+  if(el) el.scrollIntoView({ block:"start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+async function doPublish(){
+  const note = ($("#pubNote") || {}).value || "";
+  const d = clone(S.draft); d.meta.checkedAt = todayISO();
+  const changes = diffList(S.live, d);
+  if(S.mode === "server"){
+    try{ const res = await api("publish", { method:"POST", body: JSON.stringify({ draft:d, note, changes }) }); S.live = res.live; S.draft = clone(res.live); S.history = res.history || S.history; }
+    catch(e){ toast("Not published: " + e.message); return; }
+  } else {
+    const v = (S.live.version || 1) + 1;
+    const live = Object.assign(d, { version:v, publishedAt: new Date().toISOString(), publishedBy: "You (preview)" });
+    S.history.unshift({ version:v, at: live.publishedAt, by: live.publishedBy, note, changes, snapshot: clone(live) });
+    S.live = live; S.draft = clone(live); saveLocal();
+  }
+  S.confirm = null; renderReview(); renderBar(); renderDashboard();
+  toast(`Published v${S.live.version}. The President now sees this version.`);
+}
+async function doSend(){
+  const fu = buildFollowups().filter(f => S.approvals[f.role] && f.person.email);
+  const st = S.ops.settings;
+  const emails = fu.map(f => { const m = mailFor(f); return { role:f.role, to:f.person.email, toName:f.person.name, cc:st.cc, subject:m.subject, body:m.body, kind:m.kind }; });
+  let results = emails.map(() => ({ status:"simulated" }));
+  if(S.mode === "server"){ try{ results = (await api("send", { method:"POST", body: JSON.stringify({ emails, fromName: st.senderName, replyTo: st.senderEmail }) })).results; }catch(e){ toast("Not sent: " + e.message); return; } }
+  const at = new Date().toISOString();
+  emails.forEach((m, i) => { S.ops.outbox.unshift(Object.assign({ id: Date.now().toString(36) + i, at, responded:false }, m, { status: results[i].status, error: results[i].error || "" })); delete S.approvals[m.role]; delete S.ops.overrides[m.role]; });
+  S.confirm = null; saveOps(); renderMail(); renderBar();
+  const sent = results.filter(r => r.status === "sent").length, failed = results.filter(r => r.status === "failed").length;
+  toast(sent ? `${sent} email${sent === 1 ? "" : "s"} sent${failed ? `, ${failed} failed` : ""}.` : failed ? `${failed} failed. See the Sent tab.` : `${emails.length} reminder${emails.length === 1 ? "" : "s"} logged. Nothing was delivered.`);
+}
+let toastT = null;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3600); }
+async function copyText(txt){ try{ await navigator.clipboard.writeText(txt); toast("Copied."); return true; }catch(e){ return false; } }
+
+document.addEventListener("click", async e => {
+  const a = e.target.closest("[data-act],[data-open],[data-set],[data-badge]");
+  const tr = e.target.closest("#tracker tbody tr[data-row]");
+  if(!a && tr && S.drawer === "review" && S.view === "draft"){ openRowEditor(tr.dataset.row); return; }
+  if(!a) return;
+  if(a.dataset.badge){ const n = +a.dataset.badge; if(pinned === n){ pinned = null; clearHl(); } else { pinned = n; hl(n); } return; }
+  if(a.dataset.open){ openRowEditor(a.dataset.open); return; }
+  if(a.dataset.set){
+    const ed = a.closest('[data-scope="row"]'), r = findRow(S.draft, ed.dataset.id);
+    setP(r, a.dataset.set, a.dataset.val);
+    if(a.dataset.val !== "pending"){ r.check.by = S.me.email || (S.mode === "demo" ? "You" : "PMO"); r.check.at = todayISO(); }
+    renderReviewBody(); afterDraftChange(); return;
+  }
+  const act = a.dataset.act;
+  switch(act){
+    case "open-review": S.drawer === "review" ? closeDrawer() : openDrawer("review"); break;
+    case "open-mail": S.drawer === "mail" ? closeDrawer() : openDrawer("mail"); break;
+    case "close": closeDrawer(); break;
+    case "view": S.view = a.dataset.v; renderBar(); renderDashboard(); break;
+    case "rtab": S.rtab = a.dataset.tab; S.confirm = null; renderReview(); break;
+    case "mtab": S.mtab = a.dataset.tab; S.confirm = null; renderMail(); break;
+    case "goto": S.openRow = null; openRowEditor(a.dataset.id); break;
+    case "pub-open": S.confirm = "publish"; updateReviewChrome(); setTimeout(() => { const n = $("#pubNote"); if(n) n.focus(); }, 0); break;
+    case "pub-go": await doPublish(); break;
+    case "discard-open": S.confirm = "discard"; updateReviewChrome(); break;
+    case "discard-go": S.draft = clone(S.live); S.confirm = null; S.openRow = null; renderReview(); afterDraftChange(); toast("Draft reset to the live version."); break;
+    case "cancel": S.confirm = null; if(S.drawer === "review"){ updateReviewChrome(); if(S.rtab !== "rows") renderReviewBody(); } else renderMail(); break;
+    case "cycle-open": S.confirm = "cycle"; renderReviewBody(); break;
+    case "cycle-go": forEachRow(S.draft, r => { r.check = { owner:"pending", data:"pending", note:"", by:"", at:"" }; }); S.draft.meta.checkedAt = null; S.confirm = null; renderReviewBody(); afterDraftChange(); toast("New cycle started. All rows need confirming again."); break;
+    case "src-add": { const r = findRow(S.draft, a.closest('[data-scope="row"]').dataset.id); r.sources.push({ name:"", value:null }); renderReviewBody(); break; }
+    case "src-del": { const r = findRow(S.draft, a.closest('[data-scope="row"]').dataset.id); r.sources.splice(+a.dataset.i, 1); renderReviewBody(); afterDraftChange(); break; }
+    case "restore": S.confirm = "restore:" + a.dataset.v; renderReviewBody(); break;
+    case "restore-go": { const v = S.history.find(x => String(x.version) === a.dataset.v); if(v && v.snapshot){ S.draft = normalize(v.snapshot); S.confirm = null; renderReview(); afterDraftChange(); toast(`v${v.version} copied into the draft.`); } break; }
+    case "export": { const txt = JSON.stringify(S.draft, null, 2); const box = $("#exportBox"); if(!(await copyText(txt))){ box.hidden = false; box.value = txt; box.select(); toast("Select all and copy the text below."); } break; }
+    case "import-go": if(S.pending){ S.draft = normalize(S.pending); S.pending = null; S.confirm = null; renderReview(); afterDraftChange(); toast("Draft replaced from file."); } break;
+    case "reset-demo": try{ localStorage.removeItem(LSKEY); }catch(err){} loadSeed(); S.confirm = null; renderAll(); toast("Preview reset to the original Q3 data."); break;
+    case "approve": if(a.checked) S.approvals[a.dataset.role] = true; else delete S.approvals[a.dataset.role]; a.closest(".mc").classList.toggle("ap", a.checked); renderMailFoot(); break;
+    case "approve-all": buildFollowups().forEach(f => { if(f.person.email) S.approvals[f.role] = true; }); renderMail(); break;
+    case "mexp": S.expanded[a.dataset.role] = !S.expanded[a.dataset.role]; renderMail(); break;
+    case "sexp": S.expanded["s" + a.dataset.id] = !S.expanded["s" + a.dataset.id]; renderMail(); break;
+    case "medit": { const f = buildFollowups().find(x => x.role === a.dataset.role); const m = mailFor(f); S.ops.overrides[f.role] = Object.assign({}, S.ops.overrides[f.role], { tpl:m.kind, subject:m.subject, body:m.body }); saveOps(); renderMail(); break; }
+    case "mreset": { const ov = S.ops.overrides[a.dataset.role] || {}; S.ops.overrides[a.dataset.role] = ov.tpl ? { tpl: ov.tpl } : {}; saveOps(); renderMail(); break; }
+    case "mcopy": { const f = buildFollowups().find(x => x.role === a.dataset.role); const m = mailFor(f); await copyText(`To: ${f.person.email}\nSubject: ${m.subject}\n\n${m.body}`); break; }
+    case "send-open": S.confirm = "send"; renderMailFoot(); break;
+    case "send-go": await doSend(); break;
+    case "replied": { const m = S.ops.outbox.find(x => x.id === a.dataset.id); if(m){ m.responded = a.checked; saveOps(); renderMail(); } break; }
+    case "tpl-reset": S.ops.templates = clone(OPS_DEFAULT.templates); saveOps(); renderMail(); toast("Default wording restored."); break;
+    case "dir-add": { const v = ($("#newRole").value || "").trim(); if(!v || v.includes(".")){ toast("Enter a role name without dots."); break; } if(!S.ops.directory[v]) S.ops.directory[v] = { name:"", email:"" }; saveOps(); renderMail(); break; }
+    case "dir-del": delete S.ops.directory[a.dataset.role]; saveOps(); renderMail(); break;
+  }
+});
+document.addEventListener("input", e => {
+  const el = e.target;
+  if(el.matches('select[data-act="tpl"]')){ S.ops.overrides[el.dataset.role] = { tpl: el.value }; saveOps(); renderMail(); return; }
+  if(!el.matches("[data-f]")) return;
+  const sc = el.closest("[data-scope]"); if(!sc) return;
+  const kind = sc.dataset.scope;
+  const obj = kind === "row" ? findRow(S.draft, sc.dataset.id) : kind === "draft" ? S.draft : kind === "ops" ? S.ops : null;
+  if(!obj) return;
+  const t = el.dataset.t || "text", raw = el.value;
+  let v = t === "bool" ? el.checked : t === "num" ? (raw === "" ? null : +raw) : t === "esc" ? (raw ? +raw : null) : (t === "status" || t === "date") ? (raw || null) : raw;
+  if(t === "num" && v != null && isNaN(v)) return;
+  setP(obj, el.dataset.f, v);
+  if(kind === "ops"){ saveOps(); if(el.dataset.f.startsWith("directory") || el.dataset.f === "settings.fallbackRole") renderBar(); return; }
+  if(kind === "row"){
+    const p = el.dataset.f;
+    if(/^(plan|actual|forecast|actualSub|forecastSub|calc\.|sources\.|better|done)/.test(p) && obj.check.data === "ok"){ obj.check.data = "pending"; syncSegs(sc, obj); toast("Figures changed, so this row needs re-checking."); }
+    if(p === "owner" && obj.check.owner !== "pending"){ obj.check.owner = "pending"; syncSegs(sc, obj); }
+    if(t === "bool" || t === "status" || p === "calc.dealValue" || p === "calc.prob"){ afterDraftChange(); if(t === "bool") renderReviewBody(); return; }
+  }
+  if(kind === "draft" && el.dataset.f === "meta.asOf") renderReviewBody();
+  afterDraftChange();
+});
+document.addEventListener("change", e => {
+  if(e.target.id !== "importFile") return;
+  const file = e.target.files[0]; if(!file) return;
+  const rd = new FileReader();
+  rd.onload = () => { try{ const j = JSON.parse(rd.result); const d = j.draft || j.live || j; if(!d.areas || !d.header) throw new Error("missing areas or header"); S.pending = d; S.confirm = "import"; renderReviewBody(); }catch(err){ toast("That file isn't a dashboard JSON file (" + err.message + ")."); } };
+  rd.readAsText(file);
+});
+function syncSegs(sc, r){ sc.querySelectorAll("[data-set]").forEach(b => b.setAttribute("aria-pressed", getP(r, b.dataset.set) === b.dataset.val)); }
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ if(!$("#tip").hidden) hideTip(); else if(S.drawer) closeDrawer(); } if((e.key === "Enter" || e.key === " ") && e.target.matches(".card")){ e.preventDefault(); const n = +e.target.dataset.card; pinned = pinned === n ? null : n; pinned ? hl(n) : clearHl(); } });
+
+/* ---------- highlight + tooltip ---------- */
+let pinned = null;
+function hl(n){
+  clearHl(true);
+  const t = $("#tracker"); t.classList.add("dim");
+  t.querySelectorAll(`td[data-esc="${n}"]`).forEach(td => td.classList.add("hl"));
+  document.querySelectorAll(`.card[data-card="${n}"]`).forEach(c => c.classList.add("hl"));
+  document.querySelectorAll(`.badge[data-badge="${n}"]`).forEach(b => b.classList.add("on"));
+}
+function clearHl(force){
+  if(pinned && !force){ hl(pinned); return; }
+  $("#tracker").classList.remove("dim");
+  document.querySelectorAll(".hl,.badge.on").forEach(x => x.classList.remove("hl", "on"));
+}
+document.addEventListener("mouseover", e => {
+  const c = e.target.closest(".card[data-card],.badge[data-badge]");
+  if(c) hl(+(c.dataset.card || c.dataset.badge));
+  const tp = e.target.closest("[data-tip]"); if(tp) showTip(tp);
+});
+document.addEventListener("mouseout", e => {
+  const c = e.target.closest(".card[data-card],.badge[data-badge]");
+  if(c && !c.contains(e.relatedTarget)) clearHl();
+  const tp = e.target.closest("[data-tip]"); if(tp && !tp.contains(e.relatedTarget)) hideTip();
+});
+document.addEventListener("focusin", e => {
+  const c = e.target.closest(".card[data-card],.badge[data-badge]"); if(c) hl(+(c.dataset.card || c.dataset.badge));
+  if(e.target.matches("[data-tip]")) showTip(e.target);
+});
+document.addEventListener("focusout", e => { if(e.target.closest(".card[data-card],.badge[data-badge]")) clearHl(); if(e.target.matches("[data-tip]")) hideTip(); });
+function showTip(el){
+  const tip = $("#tip"); tip.textContent = el.dataset.tip; tip.hidden = false;
+  const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight, vw = document.documentElement.clientWidth;
+  let left = r.left + r.width / 2 - tw / 2; left = Math.max(8, Math.min(left, vw - tw - 8));
+  let top = r.top - th - 10, pos = "top";
+  if(top < 8){ top = r.bottom + 10; pos = "bottom"; }
+  tip.style.left = left + "px"; tip.style.top = top + "px"; tip.dataset.pos = pos;
+  tip.style.setProperty("--ax", (r.left + r.width / 2 - left) + "px");
+}
+function hideTip(){ $("#tip").hidden = true; }
+window.addEventListener("scroll", hideTip, true);
+
+/* ---------- boot ---------- */
+function loadSeed(){
+  S.live = seedLive(); S.draft = seedDraft(); S.ops = clone(OPS_DEFAULT);
+  S.history = [{ version:1, at:DATA.publishedAt, by:DATA.publishedBy, note:"Loaded from the Q3 tracker extract.", changes:[], snapshot: clone(S.live) }];
+}
+function mergeOps(o){ const d = clone(OPS_DEFAULT); if(!o) return d; return Object.assign(d, o, { settings: Object.assign(d.settings, o.settings || {}), templates: Object.assign(d.templates, o.templates || {}), overrides: o.overrides || {}, outbox: o.outbox || [] }); }
+function renderAll(){ renderBar(); renderDashboard(); if(S.drawer === "review") renderReview(); if(S.drawer === "mail") renderMail(); }
+async function boot(){
+  loadSeed();
+  try{ const j = JSON.parse(localStorage.getItem(LSKEY) || "null"); if(j && j.live){ S.live = normalize(j.live); S.draft = normalize(j.draft || j.live); S.ops = mergeOps(j.ops); S.history = j.history || S.history; } }catch(e){}
+  renderAll();
+  try{
+    const st = await Promise.race([api("state"), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 5000))]);
+    S.mode = "server"; S.me = st.me || S.me; S.mail = st.mail || S.mail;
+    if(!st.live && S.me.admin){
+      const init = await api("init", { method:"POST", body: JSON.stringify({ live: seedLive(), draft: seedDraft(), ops: OPS_DEFAULT, history: S.history.map(h => Object.assign({}, h, { snapshot: seedLive() })) }) });
+      Object.assign(st, init);
+    }
+    if(!st.live) throw new Error("The dashboard has no published data yet.");
+    S.live = normalize(st.live); S.draft = normalize(st.draft || st.live); S.ops = mergeOps(st.ops); S.history = st.history || [];
+    renderAll();
+  }catch(e){ S.mode = "demo"; S.me = { admin:true, email:"", setup:false }; renderBar(); }
+}
+boot();
+</script>
+</body>
+</html>
