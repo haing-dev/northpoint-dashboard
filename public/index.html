@@ -65,8 +65,8 @@ button.chip:hover{background:#ECEEF0}
 h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:balance}
 .lbl{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text);margin:24px 0 8px}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.card{background:var(--card-bg);padding:16px;display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .15s}
-.card:hover{box-shadow:inset 0 0 0 1px var(--rule-strong)}
+.card{background:var(--card-bg);padding:16px;display:flex;flex-direction:column;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s ease;position:relative}
+.card:hover,.card:focus-visible{transform:translateY(-5px) scale(1.015);box-shadow:0 14px 30px rgba(5,28,44,.20),0 0 0 1px rgba(5,28,44,.25);background:#F7F7F7;z-index:2}
 .card.lit{outline:2px solid var(--deep)}
 .ct{display:flex;align-items:center;gap:10px;font:700 15px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px}
 .cb{flex:none;width:24px;height:24px;border-radius:50%;background:var(--deep);color:#fff;font:700 13px/24px var(--sans);text-align:center}
@@ -181,13 +181,25 @@ tr.stage .sn{padding-left:22px;display:block}
 .sc.blocked{background:var(--bad-bg);color:var(--bad-fg)}.sc.noupdate{background:var(--off-bg);color:var(--off-fg)}.sc.late{background:var(--warn-bg);color:var(--warn-fg)}
 .nl{display:block;font-size:12px;margin:1px 0}
 .ol{display:block;white-space:nowrap;line-height:1.5}
+tr.d2 .m{padding-left:40px;font-weight:400;font-size:12px;color:var(--grey-text)}
+tr.d2 td{font-size:12px;padding-top:4px;padding-bottom:4px}
+tr.d2 td .b{font-weight:400}
+tr.alt .m{font-weight:400}
+tr.unrel td{color:var(--neg)}
+tr.unrel td .sub{color:var(--neg)}
+.mw{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wsel{font:12px var(--sans);padding:2px 4px;border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink)}
+.wsel.wif{border-color:var(--dot-amber);background:var(--chg)}
+.wsel:disabled{color:var(--grey-text);border-style:dashed}
+.ofl{display:flex;gap:4px;margin-top:3px}
+.wifbar{font-size:12px;background:var(--chg);border:1px solid #EAD48A;padding:2px 8px;border-radius:2px}
 td .ol + .ol{margin-top:2px}
 td.srcc{min-width:150px;max-width:200px}
 td.srcc .ol{white-space:normal;font-size:12px}
 .inT{font:700 9px var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--grey-text);border:1px solid var(--rule);border-radius:2px;padding:0 3px;margin-left:6px;vertical-align:1px}
 .flag{font:700 9px var(--sans);text-transform:uppercase;border:1px dashed #C8B66A;background:#fff;color:var(--grey-text);border-radius:2px;padding:1px 4px;cursor:pointer;margin-left:4px}
 .flag.on{background:var(--bad-bg);color:var(--bad-fg);border:1px solid var(--dot-red)}
-table.ops td:nth-child(6){min-width:270px}
+table.ops td:nth-child(6){min-width:240px}
 table.ops td:nth-child(4){white-space:nowrap}
 .nl .tag{margin-right:5px}
 .tag.red{border-color:var(--dot-red);color:var(--bad-fg);background:var(--bad-bg)}
@@ -196,11 +208,11 @@ table.ops td:nth-child(4){white-space:nowrap}
 button.tag{cursor:pointer;font:700 9px/1.4 var(--sans)}
 .blk{color:var(--neg)}
 .nt{color:var(--grey-text)}
-.tlh{position:relative;height:16px;min-width:340px}
+.tlh{position:relative;height:16px;min-width:290px}
 .tlh span{position:absolute;bottom:0;font-size:10px;color:var(--grey-text);transform:translateX(2px);white-space:nowrap;text-transform:none;letter-spacing:0}
 .tlh i{position:absolute;bottom:-6px;height:6px;border-left:1px solid var(--rule-strong)}
 .tlh .td{color:var(--neg);font-weight:700;transform:translateX(-50%);bottom:auto;top:-14px}
-.tl{position:relative;height:20px;min-width:340px}
+.tl{position:relative;height:20px;min-width:290px}
 .tl .g{position:absolute;top:0;bottom:0;border-left:1px solid #EFEFEF}
 .tl .seg{position:absolute;top:5px;height:10px;border-radius:2px;min-width:3px}
 .seg.done{background:var(--dot-green)}.seg.active{background:var(--deep)}.seg.planned{background:#fff;border:1.5px solid var(--rule-strong)}
@@ -259,7 +271,7 @@ textarea.in{resize:vertical;line-height:1.5}
   h1{font-size:24px}
   .fr{grid-template-columns:1fr;gap:4px}
 }
-@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .co{animation:none} .dimmable,.tog .cv{transition:none} }
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .co{animation:none} .dimmable,.tog .cv,.card{transition:none} .card:hover{transform:none} }
 @media print{
   .bar,#tip,#toast,#pop,#vmenu,.modal,#draftbar,.cf .btn,#callouts,.focusbar,.fu{display:none!important}
   body{padding:0} .page{max-width:none;padding:0}
@@ -277,24 +289,24 @@ textarea.in{resize:vertical;line-height:1.5}
     <div class="kicker" id="kicker"></div>
     <h1 id="title"></h1>
   </header>
-  <div class="lbl dimmable">Escalations to the President <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">· click a card to see where it shows in the tables</span></div>
+  <div class="lbl dimmable">Escalations to the President</div>
   <section class="cards" id="cards" aria-label="Escalations to the President"></section>
   <section class="issues dimmable" id="issues" aria-label="Other issues"></section>
   <div class="legend dimmable" aria-label="Legend">
     <span><i class="dot green"></i>On track</span><span><i class="dot amber"></i>Needs attention</span>
     <span><i class="dot red"></i>Off track</span><span><i class="dot nodata"></i>No data</span>
   </div>
-  <div class="tt dimmable" id="sec-com"><span class="n">1</span><h2>Commercial</h2><span class="note">USD, $M</span></div>
+  <div class="tt dimmable" id="sec-com"><span class="n">1</span><h2>Commercial</h2><span class="note">USD, $M</span><span id="wif"></span></div>
   <div class="tw"><table class="tr" id="tCom"></table></div>
   <p class="foot dimmable" id="foot"></p>
   <div class="tt dimmable" id="sec-cost"><span class="n">2</span><h2>Cost</h2><span class="note">Platform cloud run-rate, and NorthPoint cost to serve from the deal model</span></div>
   <div class="tw"><table class="tr" id="tCost"></table></div>
-  <div class="tt sub dimmable"><h3>NorthPoint cost to serve</h3><span class="note" id="cmNote"></span></div>
-  <div class="tw"><table class="tr" id="tModel"></table></div>
   <div class="tt dimmable" id="sec-ops"><span class="n">3</span><h2>Operations</h2><span class="note">Delivery plan by project</span></div>
   <div class="tw"><table class="tr ops" id="tOps"></table></div>
   <div class="tlleg dimmable" id="tlleg"></div>
   <p class="foot dimmable" id="opsNote"></p>
+  <div class="tt dimmable" id="sec-tal"><span class="n">4</span><h2>Talent</h2><span class="note">Engineering capacity</span></div>
+  <div class="tw"><table class="tr" id="tTal"></table></div>
 </main>
 <div id="callouts" aria-hidden="true"></div>
 <div id="focusbar"></div>
@@ -314,7 +326,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 4, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 5, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Q3 2026 LEADERSHIP REVIEW · PRESIDENT'S VIEW",
@@ -324,7 +336,7 @@ const DATA = {
     { id: 1, title: "NORTHPOINT EXECUTION RISK",
       issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
       impact: "NorthPoint failure would jeopardize 40% of pipeline",
-      next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date" },
+      next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date", jump: "np" },
     { id: 2, title: "Q3 BOOKING SHORTAGE",
       issue: "Q3 bookings are 32% ($19M) below plan",
       impact: "Q426-Q127 pipeline must cover for the shortfall, and North Point delivery is key",
@@ -337,8 +349,7 @@ const DATA = {
   commercial: [
     { id: "revenue", name: "Recognized revenue", rows: [
       { id: "rev-fy", metric: "FY-2026 Recognized revenue", plan: 95, field: "forecast",
-        owners: [ { role: "Head of Sales", source: "Spreadsheet (Head of Sales)", value: 95, unreliable: true },
-                  { role: "Finance BP", source: "Finance general ledger", value: null } ], owner: 0,
+        owners: [ { role: "Head of Sales", source: "Spreadsheet (Head of Sales)", value: 95 } ], owner: 0, ownerWarn: true,
         risk: { reporting: "red" }, tips: { reporting: { text: "Head of Sales spreadsheet; no Finance figure" } }, updated: "2026-09-30" }
     ]},
     { id: "bookings", name: "Bookings & pipeline", timeframe: true, rows: [
@@ -352,11 +363,11 @@ const DATA = {
         risk: { concentration: "red", reporting: "amber" },
         tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 1 },
                 reporting: { text: "NorthPoint is also counted in the Payments BU pipeline" } }, updated: "2026-09-30" },
-      { id: "np", period: "n2q", parent: "pipe", child: true, metric: "NorthPoint", field: "forecast", dealValue: 140, weight: 70,
+      { id: "np", period: "n2q", parent: "pipe", child: true, weighted: true, metric: "NorthPoint", field: "forecast", dealValue: 140, weight: 70,
         owners: [ { role: "Head of Sales", source: "CRM" } ], owner: 0,
         risk: { concentration: "red", staffing: "red" },
-        tips: { concentration: { text: "40% of weighted pipeline" }, staffing: { text: "Needs 24 engineers from Jan 2027; 4 available" } }, updated: "2026-09-30" },
-      { id: "other", period: "n2q", parent: "pipe", child: true, metric: "Other deals", field: "forecast", dealValue: null, weight: null,
+        tips: { concentration: { text: "40% of weighted pipeline" }, staffing: { text: "Needs 24 engineers from Jan 2027; 4 available", esc: 1 } }, updated: "2026-09-30" },
+      { id: "other", period: "n2q", parent: "pipe", child: true, weighted: true, metric: "Other deals", field: "forecast", dealValue: null, weight: null,
         owners: [ { role: "Head of Sales", source: "CRM, weighted total", value: 147 } ], owner: 0,
         risk: { reporting: "amber" }, tips: { reporting: { text: "CRM figure, not yet checked" } }, updated: "2026-09-30" }
     ]}
@@ -371,6 +382,35 @@ const DATA = {
         risk: { reporting: "amber" }, tips: { reporting: { text: "Unit cost from the deal model, not yet confirmed by billing" } }, updated: "2026-09-30" },
       { id: "cloud-accts", metric: "Active accounts (implied)", child: true, parent: "cloud", fmt: "accounts", derive: { num: "cloud", den: "cloud-unit" },
         owners: [ { role: "Head of Platform", source: "Run-rate ÷ cost per account" } ], owner: 0, updated: "2026-09-30" }
+    ]},
+    { id: "npcost", name: "NorthPoint cost to serve (deal model, 5-year contract)", offerSelect: true, rows: [
+      { id: "npc", metric: "Total cost to serve", model: { line: "all" }, better: "lower", owners: [ { role: "Deal team", source: "NorthPoint deal model v31" } ] },
+      { id: "npc-cloud", metric: "Cloud hosting", child: true, model: { line: "cloud" }, better: "lower" },
+      { id: "npc-cloud-u", metric: "Cost per account (per month)", child: true, depth: 2, fmt: "unit", model: { line: "cloud", part: "unit", key: "cloudPerAcct" }, better: "lower" },
+      { id: "npc-cloud-v", metric: "Account-months (millions)", child: true, depth: 2, fmt: "count", model: { line: "cloud", part: "vol" } },
+      { id: "npc-env", metric: "Dedicated platform environments", child: true, model: { line: "env" }, better: "lower" },
+      { id: "npc-env-u", metric: "Cost per environment (per year)", child: true, depth: 2, model: { line: "env", part: "unit", key: "envCost" }, better: "lower" },
+      { id: "npc-env-v", metric: "Environment-years (one per 2.5M accounts)", child: true, depth: 2, fmt: "count", model: { line: "env", part: "vol" } },
+      { id: "npc-lic", metric: "Third-party software licences", child: true, model: { line: "lic" }, better: "lower" },
+      { id: "npc-lic-u", metric: "Cost per account (per month)", child: true, depth: 2, fmt: "unit", model: { line: "lic", part: "unit", key: "licPerAcct" }, better: "lower" },
+      { id: "npc-lic-v", metric: "Account-months (millions)", child: true, depth: 2, fmt: "count", model: { line: "lic", part: "vol" } },
+      { id: "npc-sup", metric: "Client support engineers", child: true, model: { line: "sup" }, better: "lower" },
+      { id: "npc-sup-u", metric: "Cost per engineer (per year)", child: true, depth: 2, fmt: "k", model: { line: "sup", part: "unit", key: "supportCost" }, better: "lower" },
+      { id: "npc-sup-v", metric: "Engineer-years (one per 750k accounts, min 4)", child: true, depth: 2, fmt: "count", model: { line: "sup", part: "vol" } },
+      { id: "npc-impl", metric: "Implementation (one-time, 2027)", child: true, model: { line: "impl" }, better: "lower" },
+      { id: "npc-impl-u", metric: "Cost per engineer-month", child: true, depth: 2, fmt: "k", model: { line: "impl", part: "unit", key: "implRate" }, better: "lower" },
+      { id: "npc-impl-v", metric: "Engineer-months", child: true, depth: 2, fmt: "count", model: { line: "impl", part: "vol", key: "implMonths" } },
+      { id: "cm-margin", metric: "Gross margin, 5-year (plan = target)", fmt: "pct", model: { line: "margin", key: "marginTarget" }, better: "higher" }
+    ]}
+  ],
+  talent: [
+    { id: "talent", name: "Engineering talent", rows: [
+      { id: "hires", metric: "Engineering hires (cumulative 2026)", fmt: "count", plan: 25, field: "actual",
+        owners: [ { role: "Head of Talent", source: "HR system", value: 19 } ], owner: 0,
+        risk: { staffing: "amber" }, tips: { staffing: { text: "19 of 25 planned hires made by 30 Sep" } }, updated: "2026-09-30" },
+      { id: "eng-avail", metric: "Engineers available for new implementations, Q1 2027", fmt: "count", plan: 24, field: "actual",
+        owners: [ { role: "Head of Talent", source: "HR system", value: 4 } ], owner: 0,
+        risk: { staffing: "red" }, tips: { staffing: { text: "4 of 24 engineers available", esc: 1 } }, updated: "2026-09-30" }
     ]}
   ],
   costModel: {
@@ -448,7 +488,7 @@ const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MINUS = "−";
 const S = { mode:"demo", me:{ admin:false, email:"", setup:false }, ai:{ enabled:false }, mail:{ enabled:false, from:"" },
   live:null, draft:null, ops:null, history:[], view:"live", tf:"all", offer:"sales", collapsed:{}, issuesOpen:false, issues:{ live:null, draft:null }, aiBusy:false,
-  pubConfirm:false, discardConfirm:false, modal:null, pop:null, focus:null, vmenu:false, restoreAsk:null };
+  pubConfirm:false, discardConfirm:false, modal:null, pop:null, focus:null, vmenu:false, restoreAsk:null, whatIf:{}, noWhatIf:false };
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -486,77 +526,97 @@ function normRow(r){
 function normProj(p){ const o = Object.assign({ owner:"", deadline:null, stages:[], risk:{}, tips:{}, updated:null }, p); o.risk = Object.assign({ reporting:null, staffing:null }, p.risk || {}); return o; }
 function normalize(d){
   d = clone(d);
-  ["commercial","cost"].forEach(k => (d[k] || []).forEach(s => { s.rows = (s.rows || []).map(normRow); }));
+  if(!d.talent) d.talent = clone(DATA.talent);
+  ["commercial","cost","talent"].forEach(k => (d[k] || []).forEach(s => { s.rows = (s.rows || []).map(normRow); }));
   d.operations = (d.operations || []).map(normProj);
   d.meta = Object.assign({ asOf:null, currency:"USD" }, d.meta || {});
   if(!d.costModel) d.costModel = clone(DATA.costModel);
   if(d.opsNote == null) d.opsNote = DATA.opsNote;
   return d;
 }
-function sections(d){ return [...d.commercial, ...d.cost]; }
+function sections(d){ return [...d.commercial, ...d.cost, ...(d.talent || [])]; }
 function allRows(d){ return sections(d).flatMap(s => s.rows); }
 function findRow(d, id){ return allRows(d).find(r => r.id === id) || null; }
 function findProj(d, id){ return d.operations.find(p => p.id === id) || null; }
 function children(d, row){ return allRows(d).filter(r => r.parent === row.id); }
 function ownerOf(r){ return r.owners[r.owner || 0] || null; }
 function ownerRole(r){ const o = ownerOf(r); return o ? o.role : ""; }
+function wOf(d, row){ if(d === S.live && S.view === "live" && !S.noWhatIf && S.whatIf[row.id] != null) return S.whatIf[row.id]; return row.weight; }
 function val(d, row, f){
+  if(row.model) return modelVal(d, row, f);
   if(row.derive){ const a = findRow(d, row.derive.num), b = findRow(d, row.derive.den); if(!a || !b) return null; const x = val(d, a, f), y = val(d, b, f); return blank(x) || blank(y) || !+y ? null : x / y; }
-  if(f === "forecast" && !blank(row.dealValue) && !blank(row.weight)) return r1(+row.dealValue * +row.weight / 100);
+  const w = wOf(d, row);
+  if(f === "forecast" && !blank(row.dealValue) && !blank(w)) return r1(+row.dealValue * +w / 100);
   if(f === row.field && row.owners.length){ const o = ownerOf(row); if(o && "value" in o) return blank(o.value) ? null : +o.value; }
   else if(!blank(row[f])) return +row[f];
   if(row.rollup){ const ch = children(d, row).map(c => val(d, c, f)).filter(x => !blank(x)); if(ch.length) return r1(ch.reduce((a, b) => a + b, 0)); }
   return null;
 }
-function fmtV(row, v){ if(blank(v)) return null; if(row.fmt === "unit") return unit$(v); if(row.fmt === "accounts") return r1(v) + "M"; return money(v); }
+function fmtV(row, v){
+  if(blank(v)) return null;
+  if(row.fmt === "unit") return unit$(v);
+  if(row.fmt === "accounts") return r1(v) + "M";
+  if(row.fmt === "count") return String(Math.round(v * 10) / 10);
+  if(row.fmt === "k") return "$" + Math.round(v * 1000) + "k";
+  if(row.fmt === "pct") return Math.round(v) + "%";
+  return money(v);
+}
 function fmtDiff(row, v){
   if(row.fmt === "unit") return (v > 0 ? "+" : v < 0 ? MINUS : "") + "$" + Math.abs(v).toFixed(3);
   if(row.fmt === "accounts") return (v > 0 ? "+" : v < 0 ? MINUS : "") + r1(Math.abs(v)) + "M";
+  if(row.fmt === "k") return (v > 0 ? "+" : v < 0 ? MINUS : "") + "$" + Math.round(Math.abs(v) * 1000) + "k";
   return smoney(v) + (row.perMonth ? "/mo" : "");
 }
-function variance(d, row){
-  const p = val(d, row, "plan"); let basis = "actual", v = val(d, row, "actual");
-  if(blank(v)){ basis = "forecast"; v = val(d, row, "forecast"); }
+function varOf(d, row, which){
+  const p = val(d, row, "plan"), v = val(d, row, which);
   if(blank(p) || blank(v)) return null;
-  const diff = row.fmt === "usd" ? r1(v - p) : v - p, pct = p ? (v - p) / p * 100 : 0, rp = Math.round(pct);
+  if(row.model && Math.abs(v - p) < 1e-9) return null;
+  const raw = v - p, diff = row.fmt === "usd" ? r1(raw) : raw, pct = p ? raw / p * 100 : 0, rp = Math.round(pct);
   const adverse = row.better === "lower" ? diff > 1e-9 : diff < -1e-9;
-  return { main: rp < 0 ? `(${-rp}%)` : rp > 0 ? `+${rp}%` : "0%", sub: row.varSub === false ? "" : fmtDiff(row, diff), adverse, diff, pct: rp, basis };
+  if(row.fmt === "count"){ const n = Math.round(diff); return { main: n === 0 ? "0" : (n > 0 ? "+" : MINUS) + Math.abs(n), sub: rp === 0 ? "0%" : (rp > 0 ? "+" : MINUS) + Math.abs(rp) + "%", adverse, diff, pct: rp }; }
+  if(row.fmt === "pct"){ const pts = Math.round(raw); return { main: (pts > 0 ? "+" : pts < 0 ? MINUS : "") + Math.abs(pts) + " pts", sub: "", adverse, diff: raw, pct: rp }; }
+  return { main: rp < 0 ? `(${-rp}%)` : rp > 0 ? `+${rp}%` : "0%", sub: row.varSub === false ? "" : fmtDiff(row, diff), adverse, diff, pct: rp };
 }
-function dealOf(d, row){
-  if(!blank(row.dealValue)) return +row.dealValue;
-  if(row.rollup){ const ch = children(d, row); if(ch.length && ch.every(c => !blank(c.dealValue))) return r1(ch.reduce((a, c) => a + +c.dealValue, 0)); }
-  return null;
+function variance(d, row){ return varOf(d, row, "actual") || varOf(d, row, "forecast"); }
+
+/* NorthPoint cost to serve, 5-year contract, from the deal model. Plan uses the model's 2026 estimate;
+   forecast uses today's cloud cost per account from the Platform row above. */
+function npCost(d, f){
+  const m = d.costModel, ceil = x => Math.ceil(x - 1e-9);
+  const am = m.accounts.map(a => +a * 12), tam = am.reduce((a, b) => a + b, 0);
+  const envY = m.accounts.reduce((s, a) => s + Math.max(+m.envMin, ceil(+a / +m.envCapacity)), 0);
+  const supY = m.accounts.reduce((s, a) => s + Math.max(+m.supportMin, ceil(+a / +m.supportCapacity)), 0);
+  let cu = +m.cloudPerAcct;
+  if(f === "forecast"){ const cr = findRow(d, "cloud-unit"), av = cr ? val(d, cr, "actual") : null; cu = !blank(av) ? av : cu * (1 + (+m.cloudPremium || 0) / 100); }
+  const L = { cloud:{ unit:cu, vol:tam }, env:{ unit:+m.envCost, vol:envY }, lic:{ unit:+m.licPerAcct, vol:tam }, sup:{ unit:+m.supportCost, vol:supY }, impl:{ unit:+m.implRate, vol:+m.implMonths } };
+  Object.values(L).forEach(x => { x.total = x.unit * x.vol; });
+  const total = Object.values(L).reduce((s, x) => s + x.total, 0);
+  const off = m.offers[S.offer] || m.offers.sales, rev = off.revenue.reduce((s, r, i) => s + +r * am[i], 0);
+  return { L, total, rev, tam, offer: off, margin: rev ? (1 - total / rev) * 100 : null };
 }
-function weightOf(d, row){
-  if(!blank(row.weight)) return +row.weight;
-  const dv = dealOf(d, row), w = val(d, row, "forecast");
-  return row.rollup && dv && !blank(w) ? Math.round(w / dv * 100) : null;
-}
-function shareOf(d, row){
-  if(row.fmt !== "usd" || row.perMonth) return null;
-  const w = val(d, row, "forecast"); if(blank(w)) return null;
-  if(row.rollup) return { main:"100%", sub:"" };
-  if(!row.parent) return null;
-  const par = findRow(d, row.parent), tot = par ? val(d, par, "forecast") : null, p = par ? val(d, par, "plan") : null;
-  if(!tot) return null;
-  return { main: Math.round(w / tot * 100) + "%", sub:"" };
+function modelVal(d, row, f){
+  if(f === "actual") return null;
+  const c = npCost(d, f), md = row.model;
+  if(md.line === "margin") return f === "plan" ? +d.costModel.marginTarget : c.margin;
+  if(md.line === "all") return c.total;
+  const x = c.L[md.line]; return md.part === "unit" ? x.unit : md.part === "vol" ? x.vol : x.total;
 }
 
 /* What each cell shows; used for rendering and for marking draft changes. */
 function cellData(d, row){
   const t = c => row.tips[c] || {};
-  const o = ownerOf(row), v = variance(d, row), sh = shareOf(d, row);
+  const o = ownerOf(row), vA = varOf(d, row, "actual"), vF = varOf(d, row, "forecast"), vt = row.varTip || {}, vtw = vt.which || "actual";
   return {
-    metric:{ t: row.metric },
+    metric:{ t: row.metric, sub: row.weighted ? `${blank(row.dealValue) ? "no deal value" : money(row.dealValue)} at ${blank(wOf(d, row)) ? "CRM mix" : wOf(d, row) + "%"}` : "" },
     plan:{ t: fmtV(row, val(d, row, "plan")) }, actual:{ t: fmtV(row, val(d, row, "actual")) }, forecast:{ t: fmtV(row, val(d, row, "forecast")) },
-    var: v ? Object.assign({}, v, { tip:(row.varTip || {}).text || "", esc:(row.varTip || {}).esc || null }) : { main:null },
-    deal:{ t: money(dealOf(d, row)) }, weight:{ t: blank(weightOf(d, row)) ? null : weightOf(d, row) + "%" },
-    share:{ t: sh ? sh.main : null, sub: sh ? sh.sub : null },
-    annual:{ t: row.perMonth && v ? smoney(v.diff * 12) : null, adverse: v && v.adverse },
+    varA: vA ? Object.assign({}, vA, vtw === "actual" ? { tip: vt.text || "", esc: vt.esc || null } : { tip:"", esc:null }) : { main:null },
+    varF: vF ? Object.assign({}, vF, vtw === "forecast" ? { tip: vt.text || "", esc: vt.esc || null } : { tip:"", esc:null }) : { main:null },
+    annual:{ t: row.perMonth && vA ? smoney(vA.diff * 12) : null, adverse: vA && vA.adverse },
     concentration:{ st: row.risk.concentration, tip: t("concentration").text || "", esc: t("concentration").esc || null },
     reporting:{ st: row.risk.reporting, tip: t("reporting").text || "", esc: t("reporting").esc || null },
     staffing:{ st: row.risk.staffing, tip: t("staffing").text || "", esc: t("staffing").esc || null },
-    owner:{ t: row.owners.map(x => x.role + (x.unreliable ? " (unreliable)" : "")).join(", ") || "None", sub: row.owners.map(x => x.source + ("value" in x && row.owners.length > 1 ? " " + (blank(x.value) ? "no figure" : fmtV(row, x.value)) : "")).join(", "), warn: row.ownerWarn || !o, shown: row.owner || 0 },
+    owner:{ t: o ? o.role : (row.model || row.derive ? "" : "None"), sub: o ? o.source : "", warn: row.ownerWarn || (!o && !row.model && !row.derive) || (o && o.unreliable) },
+    all:{ t: row.owners.map(x => `${x.role}${"value" in x ? " " + x.value : ""}${x.unreliable ? " unreliable" : ""}`).join("; ") },
     updated:{ t: fmtDate(row.updated), stale: !!row.updated && !!d.meta.asOf && row.updated < d.meta.asOf }
   };
 }
@@ -567,35 +627,14 @@ function cellText(c){
   return [c.t, c.sub].filter(Boolean).join(" ");
 }
 
-/* ---------- NorthPoint cost to serve (deal model) ---------- */
-function costCalc(d){
-  const m = d.costModel, offer = m.offers[S.offer] || m.offers.sales;
-  const ceil = x => Math.ceil(x - 1e-9);
-  const lines = { cloud:[], env:[], lic:[], sup:[], impl:[], total:[], rev:[], margin:[] }, am = [];
-  m.years.forEach((y, i) => {
-    const acc = +m.accounts[i] || 0, a = acc * 12; am.push(a);
-    const cloud = +m.cloudPerAcct * (1 + (+m.cloudPremium || 0) / 100);
-    const env = a ? Math.max(+m.envMin, ceil(acc / +m.envCapacity)) * +m.envCost / a : 0;
-    const lic = +m.licPerAcct;
-    const sup = a ? Math.max(+m.supportMin, ceil(acc / +m.supportCapacity)) * +m.supportCost / a : 0;
-    const impl = i === 0 && a ? +m.implRate * +m.implMonths / a : 0;
-    const total = cloud + env + lic + sup + impl, rev = +offer.revenue[i] || 0;
-    lines.cloud.push(cloud); lines.env.push(env); lines.lic.push(lic); lines.sup.push(sup); lines.impl.push(impl); lines.total.push(total); lines.rev.push(rev); lines.margin.push(rev ? 1 - total / rev : null);
-  });
-  const tam = am.reduce((a, b) => a + b, 0), five = {}, totals = {};
-  Object.keys(lines).forEach(k => { if(k === "margin") return; totals[k] = lines[k].reduce((s, v, i) => s + v * am[i], 0); five[k] = tam ? totals[k] / tam : 0; });
-  five.margin = five.rev ? 1 - five.total / five.rev : null;
-  return { m, offer, lines, five, totals, am };
-}
-
 /* ---------- other issues (rule-based fallback; AI replaces these when connected) ---------- */
 function knownFigures(d){
   const k = new Set(); const addM = v => { if(!blank(v)){ const m = money(Math.abs(+v)); if(m) k.add(m); } };
   allRows(d).forEach(r => {
     if(r.fmt === "usd"){ ["plan","actual","forecast"].forEach(f => addM(val(d, r, f))); r.owners.forEach(o => addM(o.value)); addM(r.dealValue); }
     if(!blank(r.weight)) k.add(+r.weight + "%");
-    const v = variance(d, r); if(v){ k.add(Math.abs(v.pct) + "%"); if(r.fmt === "usd") addM(Math.abs(v.diff)); }
-    const sh = shareOf(d, r); if(sh){ k.add(sh.main); (sh.sub.match(/\d+%/g) || []).forEach(x => k.add(x)); }
+    ["actual","forecast"].forEach(w => { const v = varOf(d, r, w); if(v){ k.add(Math.abs(v.pct) + "%"); if(r.fmt === "usd") addM(Math.abs(v.diff)); } });
+    if(r.rollup){ const tot = val(d, r, "forecast"); if(+tot) children(d, r).forEach(c => { const cv = val(d, c, "forecast"); if(!blank(cv)) k.add(Math.round(cv / tot * 100) + "%"); }); }
   });
   d.operations.forEach(p => { if(p.kpi && p.kpi.plan){ const dd = p.kpi.actual - p.kpi.plan; k.add(Math.abs(Math.round(dd / p.kpi.plan * 100)) + "%"); } });
   return k;
@@ -611,28 +650,33 @@ function covered(d, id, name, col, parent){
   return escalatedCols(d).some(e => e.col === col && (e.id === id || e.id === parent || (nm.length > 4 && (e.name.toLowerCase().includes(nm) || nm.includes(e.name.toLowerCase())))));
 }
 function ruleIssues(d){
-  const out = [], asOf = d.meta.asOf, rb = fmtDow(S.ops.settings.replyBy);
+  const out = [], rb = fmtDow(S.ops.settings.replyBy);
   allRows(d).forEach(r => {
-    const reasons = [], o = ownerOf(r), shown = fmtV(r, val(d, r, r.field)); let sev = "medium", topic = "Data reporting", impact = "", next = "";
+    if(r.model || r.derive) return;
+    const reasons = []; let sev = "medium", topic = r.fmt === "count" ? "Talent" : "Data reporting", impact = "";
+    const shown = fmtV(r, val(d, r, r.field));
     const vals = r.owners.filter(x => "value" in x && !blank(x.value)), empty = r.owners.filter(x => "value" in x && blank(x.value));
     const disagree = vals.length > 1 && uniq(vals.map(x => +x.value)).length > 1;
-    if(disagree) reasons.push(vals.map(x => `${x.role} reports ${fmtV(r, x.value)}`).join(", "));
+    if(disagree) reasons.push(vals.map(x => `${x.role} reports ${fmtV(r, x.value)} (${x.source})`).join(", "));
     empty.forEach(x => reasons.push(`${x.role} has no figure (${x.source})`));
-    COLS.forEach(([c, l]) => { const st = r.risk[c], t = r.tips[c] || {};
+    COLS.forEach(([c]) => { const st = r.risk[c], t = r.tips[c] || {};
       if(!st || st === "green" || t.esc || covered(d, r.id, r.metric, c, r.parent)) return;
       if(t.text && !reasons.some(x => x.includes(t.text))) reasons.push(t.text); if(st === "red") sev = "high"; });
-    if(r.child && r.parent && r.fmt === "usd" && blank(r.dealValue) && !blank(val(d, r, "forecast"))) reasons.push("no deal value or weight behind the weighted figure");
-    const v = variance(d, r);
+    if(r.weighted && blank(r.dealValue) && !blank(val(d, r, "forecast"))) reasons.push("no deal value or weight behind the weighted figure");
+    const v = varOf(d, r, "actual");
     if(r.perMonth && v && v.adverse && Math.abs(v.pct) >= 10){ reasons.unshift(`running ${v.main} over plan`); topic = "Cost"; impact = `At this rate it adds ${smoney(v.diff * 12)} a year over plan.`; sev = Math.abs(v.pct) >= 20 ? "high" : "medium"; }
+    if(r.fmt === "count" && v && v.adverse && !reasons.length) reasons.push(`${fmtV(r, val(d, r, "actual"))} against a plan of ${fmtV(r, val(d, r, "plan"))} (${v.sub})`);
     if(!reasons.length) return;
     if(!impact){
       if(disagree || empty.length) impact = `The ${shown || "figure"} on the President's page may not be the agreed number.`;
-      else if(r.child && r.parent && (findRow(d, r.parent) || {}).rollup){ const sh = shareOf(d, r); impact = sh ? `${sh.main} of the weighted pipeline (${shown}) hasn't been checked.` : `The ${shown} in the pipeline hasn't been checked.`; }
+      else if(r.weighted){ const par = findRow(d, r.parent), tot = par ? val(d, par, "forecast") : null, w = val(d, r, "forecast"); impact = tot && w ? `${Math.round(w / tot * 100)}% of the weighted pipeline (${shown}) hasn't been checked.` : `The ${shown} in the pipeline hasn't been checked.`; }
+      else if(r.fmt === "count") impact = "Fewer engineers than planned for the projects starting in 2027.";
       else impact = `The ${shown || "figure"} shown may be out of date or unverified.`;
     }
     const owners = uniq(r.owners.map(x => x.role));
-    next = topic === "Cost" ? `Ask ${owners.join(" and ")} to explain the gap and how much is price versus volume, by ${rb}.`
-      : `Ask ${owners.join(" and ")} to confirm the figure${disagree || r.owners.length > 1 ? " and agree one owner" : ""} by ${rb}.`;
+    const next = topic === "Cost" ? `Ask ${owners.join(" and ")} to explain the gap and how much is price versus volume, by ${rb}.`
+      : r.fmt === "count" ? `Ask ${owners.join(" and ")} for a hiring plan that closes the gap, by ${rb}.`
+      : `Ask ${owners.join(" and ")} to confirm the figure${disagree ? " and agree one owner" : ""} by ${rb}.`;
     out.push({ title: r.metric, category: topic, severity: sev, issue: cap(reasons.join("; ")) + ".", impact, next, rowIds:[r.id] });
   });
   d.operations.forEach(p => {
@@ -642,11 +686,11 @@ function ruleIssues(d){
         issue: `${t.text || cap(STATUS[st])} for ${p.name}.`, impact: `We can't tell whether ${p.name} has the ${c === "staffing" ? "people" : "reporting"} it needs before ${fmtLong(p.deadline)}.`,
         next: `Ask ${p.owner || "the project owner"} to report ${c} with a date by ${rb}.`, rowIds:[p.id] }); });
   });
-  const c = costCalc(d), tgt = (+d.costModel.marginTarget || 0) / 100;
-  if(c.five.margin != null && c.five.margin < tgt){
+  const c = npCost(d, "forecast"), tgt = +d.costModel.marginTarget || 0;
+  if(c.margin != null && c.margin < tgt){
     out.push({ title:"NorthPoint deal margin below target", category:"Commercial", severity:"high",
-      issue:`Under ${c.offer.name}, NorthPoint's 5-year gross margin is ${Math.round(c.five.margin * 100)}% against the ${Math.round(tgt * 100)}% target.`,
-      impact:`Cost to serve averages ${unit$(c.five.total)} per account per month against ${unit$(c.five.rev)} of revenue; year 1 loses money because of the ${money(+d.costModel.implRate * +d.costModel.implMonths)} implementation.`,
+      issue:`Under ${c.offer.name}, NorthPoint's 5-year gross margin is ${Math.round(c.margin)}% against the ${Math.round(tgt)}% target.`,
+      impact:`Cost to serve of ${money(c.total)} over five years against ${money(c.rev)} of revenue; year 1 loses money because of the ${money(c.L.impl.total)} implementation.`,
       next:`Ask Head of Sales and Finance BP to agree which offer goes to the client before the review on ${fmtDow(S.ops.settings.reviewDate)}.`, rowIds:["cm-margin"] });
   }
   const known = knownFigures(d), texts = [d.header.title, ...d.escalations.flatMap(e => [e.issue, e.impact])];
@@ -662,26 +706,32 @@ const editing = () => S.view === "draft";
 const na = () => '<span class="na">—</span>';
 function changedMap(d, row){
   if(!editing()) return {};
-  const o = findRow(S.live, row.id), a = o ? cellData(S.live, o) : null, b = cellData(d, row), m = {};
+  const o = findRow(S.live, row.id);
+  const lo = o && row._alt ? Object.assign({}, o, { owner: row.owner, risk:{}, tips:{}, varTip:null }) : o;
+  const a = lo ? cellData(S.live, lo) : null, b = cellData(d, row), m = {};
   Object.keys(b).forEach(k => { m[k] = (!a || cellText(a[k]) !== cellText(b[k])) ? " chg" : ""; });
   return m;
 }
 function dotCell(key, label, c, chg){
   const escA = c.esc ? ` data-esc="${c.esc}" data-cotext="${h(c.tip)}"` : "";
   const dot = c.st ? `<span class="dot ${c.st}" ${editing() ? "" : 'tabindex="0"'} role="img" data-tip="${h(c.tip || cap(STATUS[c.st]))}" aria-label="${h(`${label}: ${STATUS[c.st]}. ${c.tip || ""}`.trim())}"></span>` : "";
-  if(editing()) return `<td class="ctr${chg}"${escA}><button type="button" class="dotbtn" data-pop="${h(key)}" aria-label="Change ${label}">${dot || '<span class="plus">+</span>'}</button></td>`;
+  if(editing() && key) return `<td class="ctr${chg}"${escA}><button type="button" class="dotbtn" data-pop="${h(key)}" aria-label="Change ${label}">${dot || '<span class="plus">+</span>'}</button></td>`;
   return `<td class="ctr${chg}"${escA}>${dot}</td>`;
 }
 function numInput(key, v, extra = ""){ return `<input class="ci ${extra}" inputmode="decimal" data-set="${h(key)}" data-t="num" value="${h(blank(v) ? "" : v)}" aria-label="Edit value">`; }
 function valCell(d, r, f, chg){
   const c = cellData(d, r)[f], bold = f !== "plan";
-  if(editing() && !r.derive){
-    if(f === "plan" && (!r.child || r.fmt !== "usd")) return `<td class="num${chg}">${numInput(`row:${r.id}:plan`, r.plan, "plain")}</td>`;
-    if(f === r.field){
-      const o = ownerOf(r);
-      if(f === "forecast" && !blank(r.dealValue) && !blank(r.weight)) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">deal × weight</span></td>`;
-      if(o && "value" in o) return `<td class="num${chg}">${numInput(`row:${r.id}:@value`, o.value)}<span class="sub">${h(o.role)}</span></td>`;
-      if(r.rollup && c.t) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">sum of deals</span></td>`;
+  if(editing()){
+    if(r.model){
+      if(f === "plan" && r.model.key) return `<td class="num${chg}">${numInput(`cm:${r.model.key}`, d.costModel[r.model.key], "plain")}</td>`;
+    } else if(!r.derive){
+      if(f === "plan" && !r._alt && !(r.child && r.fmt === "usd" && r.parent)) return `<td class="num${chg}">${numInput(`row:${r.id}:plan`, r.plan, "plain")}</td>`;
+      if(f === r.field){
+        const o = ownerOf(r);
+        if(f === "forecast" && !blank(r.dealValue) && !blank(r.weight)) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">deal × weight</span></td>`;
+        if(o && "value" in o) return `<td class="num${chg}">${numInput(`row:${r.id}:@value:${r.owner || 0}`, o.value)}</td>`;
+        if(r.rollup && c.t) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">sum of deals</span></td>`;
+      }
     }
   }
   return `<td class="num${chg}">${c.t ? `<span class="${bold ? "b" : ""}">${h(c.t)}</span>${r.derive && f !== "plan" ? '<span class="auto">implied</span>' : ""}` : na()}</td>`;
@@ -689,100 +739,77 @@ function valCell(d, r, f, chg){
 function varCell(c, chg){
   if(!c.main) return `<td class="num${chg}">${na()}</td>`;
   const escA = c.esc ? ` data-esc="${c.esc}" data-cotext="${h(c.tip)}"` : "";
-  const inner = `<span class="b${c.adverse ? " neg" : ""}">${h(c.main)}</span><span class="sub">${h(c.sub)}</span>`;
+  const inner = `<span class="b${c.adverse ? " neg" : ""}">${h(c.main)}</span>${c.sub ? `<span class="sub">${h(c.sub)}</span>` : ""}`;
   return `<td class="num${chg}"${escA}>${c.tip ? `<span class="vt" tabindex="0" data-tip="${h(c.tip)}">${inner}</span>` : inner}</td>`;
 }
-function ownerCells(r, chg){
-  const own = r.owners, multi = own.length > 1, ed = editing(), shown = r.owner || 0;
-  if(!own.length) return `<td class="${chg}"><span class="neg b">None</span></td><td class="srcc${chg}">${na()}</td>`;
-  const fig = o => multi && "value" in o ? ` · ${blank(o.value) ? "no figure" : fmtV(r, o.value)}` : "";
-  const bad = o => o.unreliable || (!multi && r.ownerWarn);
-  let oh;
-  if(ed && multi) oh = own.map((o, i) => `<label class="ol" title="Pick whose figure the table shows"><input type="radio" name="sh-${h(r.id)}" data-set="row:${h(r.id)}:@owner" data-t="int" value="${i}" ${i === shown ? "checked" : ""}> <span class="${bad(o) ? "neg b" : ""}">${h(o.role)}</span> <button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${i}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button></label>`).join("");
-  else oh = own.map((o, i) => `<span class="ol${bad(o) ? " neg b" : ""}">${h(o.role)}${multi && i === shown ? '<span class="inT" title="Figure shown in the table">in table</span>' : ""}</span>`).join("");
-  const sh = own.map(o => `<span class="ol${bad(o) ? " neg" : ""}">${h(o.source || "—")}${h(fig(o))}</span>`).join("");
-  return `<td class="${chg}">${oh}</td><td class="srcc${chg}">${sh}</td>`;
+function ownerCell(r, c, chg){
+  const o = ownerOf(r), multi = r.owners.length > 1;
+  if(!o) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : na()}</td>`;
+  const flag = editing() && multi ? `<span class="ofl"><button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${r.owner || 0}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button>${r._alt ? `<button type="button" class="flag" data-act="mainowner" data-rid="${h(r.id)}" data-i="${r.owner}" title="Use this figure in the main row">Use as main</button>` : ""}</span>` : "";
+  return `<td class="${chg}"><span class="${c.warn ? "neg b" : ""}">${h(o.role)}</span><span class="sub${o.unreliable ? " neg" : ""}">${h(o.source || "")}</span>${flag}</td>`;
 }
 function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
   return `<td class="${chg}">${c.t ? `<span class="${c.stale ? "neg" : ""}">${h(c.t)}</span>` : na()}</td>`;
 }
-
-/* ---------- commercial + cloud tables ---------- */
+function weightSelect(d, r){
+  const w = wOf(d, r), noDeal = blank(r.dealValue), opts = Array.from({ length: 11 }, (_, i) => i * 10);
+  const live = !editing() && S.whatIf[r.id] != null;
+  return `<select class="wsel${live ? " wif" : ""}" data-act="weight" data-rid="${h(r.id)}" aria-label="Weight for ${h(r.metric)}" ${noDeal ? 'disabled title="Needs a deal value to weight"' : ""}>${blank(w) ? '<option value="" selected>CRM mix</option>' : ""}${opts.map(o => `<option value="${o}"${+w === o && !blank(w) ? " selected" : ""}>${o}%</option>`).join("")}${!blank(w) && !opts.includes(+w) ? `<option value="${w}" selected>${w}%</option>` : ""}</select>`;
+}
+const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
-  const d = cur(), showPipe = kind === "com" && S.tf !== "cq";
-  const cols = kind === "com"
-    ? ["metric","plan","actual","forecast","var", ...(showPipe ? ["deal","weight","share"] : []), "concentration","reporting","staffing","owner","updated"]
-    : ["metric","plan","actual","forecast","var","annual","reporting","owner","updated"];
+  const d = cur();
+  const cols = kind === "com" ? ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","updated"]
+    : kind === "cost" ? ["metric","plan","actual","forecast","varA","varF","annual","reporting","owner","updated"]
+    : ["metric","plan","actual","forecast","varA","varF","staffing","owner","updated"];
   const N = cols.length;
-  const head = { metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
-    var:'<th class="r g">Vs plan</th>', deal:'<th class="r g">Deal value</th>', weight:'<th class="r g">Weight</th>', share:'<th class="r g">Share of pipeline</th>',
+  const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
     annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting</th>', staffing:'<th class="c g">Staffing</th>',
-    owner:"<th>Data owner</th><th>Source</th>", updated:"<th>Updated</th>" };
+    owner:"<th>Data owner</th>", updated:"<th>Last updated</th>" }, VAR_HEAD);
   const grp = [];
   cols.forEach(c => {
-    const g = ["deal","weight","share"].includes(c) ? "PIPELINE WEIGHTING" : ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
+    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
-  const N2 = N + 1;
-  let html = `<thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n + (x.g === "" && cols.indexOf("owner") >= 0 && x === grp[grp.length - 1] ? 1 : 0)}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
+  let html = `<thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
   secs.forEach(sec => {
     const collapsed = !!S.collapsed[sec.id];
     let rows = sec.rows;
     if(sec.timeframe && S.tf !== "all") rows = rows.filter(r => r.period === S.tf);
     let summary = "";
-    if(collapsed && rows.length) summary = `<span class="csum">${rows.filter(r => !r.child).map(r => { const c = cellData(d, r), v = c.var; return `${h(r.metric)}: <b>${h(c[r.field].t || "—")}</b>${v.main ? ` <span class="${v.adverse ? "neg" : ""}">${h(v.main)}</span>` : ""} ${r.risk.reporting ? `<i class="dot ${r.risk.reporting}"></i>` : ""}`; }).join(" · ")}</span>`;
+    if(collapsed && rows.length) summary = `<span class="csum">${rows.filter(r => !r.child).map(r => { const c = cellData(d, r), v = c.varA.main ? c.varA : c.varF; return `${h(r.metric)}: <b>${h(c[r.field].t || "—")}</b>${v.main ? ` <span class="${v.adverse ? "neg" : ""}">${h(v.main)}</span>` : ""} ${r.risk.reporting ? `<i class="dot ${r.risk.reporting}"></i>` : ""}`; }).join(" · ")}</span>`;
     const tfSel = sec.timeframe ? `<label class="csum">Period <select class="tf" data-act="tf" aria-label="Booking period">${Object.entries(TF).map(([k, l]) => `<option value="${k}"${S.tf === k ? " selected" : ""}>${h(l)}</option>`).join("")}</select></label>` : "";
-    html += `<tr class="sh dimmable"><th colspan="${N2}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}</div></th></tr>`;
+    const offSel = sec.offerSelect ? `<label class="csum">Margin for <select class="tf" data-act="offer" aria-label="Offer">${Object.entries(d.costModel.offers).map(([k, o]) => `<option value="${k}"${S.offer === k ? " selected" : ""}>${h(o.name)}</option>`).join("")}</select></label>` : "";
+    html += `<tr class="sh dimmable"><th colspan="${N}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}${offSel}</div></th></tr>`;
     if(collapsed) return;
-    rows.forEach(r => {
-      const c = cellData(d, r), ch = changedMap(d, r), C = k => ch[k] || "";
-      let tr = `<tr data-row="${h(r.id)}" class="dimmable${r.child ? " child" : ""}">`;
+    if(sec.pending && !rows.length){ html += `<tr class="dimmable"><td colspan="${N}" class="pend">${h(sec.pending)}</td></tr>`; return; }
+    const expanded = [];
+    rows.forEach(r => { const main = r.owner || 0; expanded.push(r); r.owners.forEach((o, i) => { if(i !== main) expanded.push(Object.assign({}, r, { owner:i, risk:{}, tips:{}, varTip:null, _alt:true })); }); });
+    expanded.forEach(r => {
+      const c = cellData(d, r), ch = changedMap(d, r), C = k => ch[k] || "", o = ownerOf(r);
+      const cls = `dimmable${r.child ? " child" : ""}${r.depth === 2 ? " d2" : ""}${r._alt ? " alt" : ""}${o && o.unreliable ? " unrel" : ""}`;
+      let tr = `<tr data-row="${h(r.id)}" class="${cls}">`;
       cols.forEach(k => {
-        if(k === "metric") tr += `<td class="sticky${C("metric")}"><span class="m" ${editing() ? `contenteditable="true" data-edit="row:${h(r.id)}:metric"` : ""}>${h(r.metric)}</span></td>`;
+        if(k === "metric"){
+          const nm = editing() && !r._alt && !r.model ? `<span class="m" contenteditable="true" data-edit="row:${h(r.id)}:metric">${h(r.metric)}</span>` : `<span class="m">${h(r.metric)}</span>`;
+          let sub = "";
+          if(r.weighted && !r._alt) sub = `<span class="sub">${editing() ? `Deal value $${numInput(`row:${r.id}:dealValue`, r.dealValue, "plain w")}M` : (blank(r.dealValue) ? "Deal value not in the CRM extract" : `Deal value ${h(money(r.dealValue))}`)}</span>`;
+          else if(r.sub) sub = `<span class="sub">${h(r.sub)}</span>`;
+          tr += `<td class="sticky${C("metric")}"><span class="mw">${nm}${r.weighted && !r._alt ? weightSelect(d, r) : ""}</span>${sub}</td>`;
+        }
         else if(k === "plan" || k === "actual" || k === "forecast") tr += valCell(d, r, k, C(k));
-        else if(k === "var") tr += varCell(c.var, C("var"));
-        else if(k === "deal") tr += editing() && r.child ? `<td class="num${C("deal")}">${numInput(`row:${r.id}:dealValue`, r.dealValue, "plain")}</td>` : `<td class="num${C("deal")}">${c.deal.t ? h(c.deal.t) : na()}</td>`;
-        else if(k === "weight") tr += editing() && r.child ? `<td class="num${C("weight")}">${numInput(`row:${r.id}:weight`, r.weight, "plain w")}%</td>` : `<td class="num${C("weight")}">${c.weight.t ? h(c.weight.t) + (r.rollup ? '<span class="sub">blended</span>' : "") : na()}</td>`;
-        else if(k === "share") tr += `<td class="num${C("share")}">${c.share.t ? `<span class="b">${h(c.share.t)}</span><span class="sub">${h(c.share.sub)}</span>` : na()}</td>`;
+        else if(k === "varA" || k === "varF") tr += varCell(c[k], C(k));
         else if(k === "annual") tr += `<td class="num${C("annual")}">${c.annual.t ? `<span class="b${c.annual.adverse ? " neg" : ""}">${h(c.annual.t)}</span><span class="sub">vs plan</span>` : na()}</td>`;
-        else if(COLS.some(x => x[0] === k)) tr += dotCell(`row:${r.id}:${k}`, COLS.find(x => x[0] === k)[1], c[k], C(k));
-        else if(k === "owner") tr += ownerCells(r, C("owner"));
-        else if(k === "updated") tr += r.derive ? `<td>${na()}</td>` : updCell(`row:${r.id}:updated`, r.updated, c.updated, C("updated"));
+        else if(COLS.some(x => x[0] === k)) tr += dotCell(r._alt || r.model ? null : `row:${r.id}:${k}`, COLS.find(x => x[0] === k)[1], c[k], C(k));
+        else if(k === "owner") tr += ownerCell(r, c.owner, C("owner") || C("all"));
+        else if(k === "updated") tr += r.derive || r.model || r._alt ? `<td>${r._alt ? (c.updated.t ? h(c.updated.t) : "") : na()}</td>` : updCell(`row:${r.id}:updated`, r.updated, c.updated, C("updated"));
       });
       html += tr + "</tr>";
     });
   });
   el.innerHTML = html + "</tbody>";
-  el.style.minWidth = kind === "com" ? (showPipe ? "1270px" : "1040px") : "1000px";
-}
-
-/* ---------- cost-to-serve table ---------- */
-function modelTable(el){
-  const d = cur(), c = costCalc(d), m = c.m, ed = editing(), live = S.live.costModel;
-  const I = (k, v, cls = "s", show) => ed ? `<input class="ci ${cls}" inputmode="decimal" data-set="cm:${k}" data-t="num" value="${h(v)}" aria-label="${h(k)}">` : `<b>${h(show != null ? show : v)}</b>`;
-  const ch = k => ed && JSON.stringify(live[k]) !== JSON.stringify(m[k]) ? " chg" : "";
-  const yc = m.years.length;
-  const row = (label, driver, arr, five, total, cls = "", fmt = unit$, id = "") => `<tr class="dimmable ${cls}"${id ? ` data-row="${id}"` : ""}><td class="sticky">${label}</td><td class="drv">${driver}</td>${arr.map(v => `<td class="num">${blank(v) ? na() : h(fmt(v))}</td>`).join("")}<td class="num b">${blank(five) ? na() : h(fmt(five))}</td><td class="num">${blank(total) ? na() : h(total)}</td></tr>`;
-  const tgt = (+m.marginTarget || 0) / 100;
-  const pct = v => v == null ? null : (v < 0 ? MINUS : "") + Math.round(Math.abs(v) * 100) + "%";
-  const offers = `<select class="tf" data-act="offer" aria-label="Offer">${Object.entries(m.offers).map(([k, o]) => `<option value="${k}"${S.offer === k ? " selected" : ""}>${h(o.name)}</option>`).join("")}</select>`;
-  let html = `<thead><tr class="cols dimmable"><th class="sticky">$ per planned account per month</th><th>Driver</th>${m.years.map(y => `<th class="r">${y}</th>`).join("")}<th class="r g">5-year</th><th class="r g">5-year total</th></tr></thead><tbody>
-    <tr class="dimmable"><td class="sticky nt">Active accounts (millions)</td><td class="drv">NorthPoint migration plan</td>${m.accounts.map((a, i) => `<td class="num${ch("accounts")}">${ed ? numInput(`cm:accounts.${i}`, a, "plain w") : h(r1(a) + "M")}</td>`).join("")}<td class="num">${na()}</td><td class="num nt">${h(r1(c.am.reduce((a, b) => a + b, 0)) + "M")} acct-months</td></tr>
-    <tr class="sub2 dimmable"><td colspan="${yc + 4}">Variable cost to serve</td></tr>`;
-  html += row("Cloud hosting", `${ed ? "$" : ""}${I("cloudPerAcct", m.cloudPerAcct, "s", unit$(m.cloudPerAcct))} per account + ${I("cloudPremium", m.cloudPremium, "w")}% 2026 cloud premium`, c.lines.cloud, c.five.cloud, money(c.totals.cloud), ch("cloudPerAcct") + ch("cloudPremium"));
-  html += row("Dedicated platform environments", `$${I("envCost", m.envCost, "w")}M a year each, one per ${I("envCapacity", m.envCapacity, "w")}M accounts (min ${I("envMin", m.envMin, "w")})`, c.lines.env, c.five.env, money(c.totals.env));
-  html += row("Third-party software licences", `${ed ? "$" : ""}${I("licPerAcct", m.licPerAcct, "s", unit$(m.licPerAcct))} per account`, c.lines.lic, c.five.lic, money(c.totals.lic));
-  html += row("Client support engineers", `${ed ? `$${I("supportCost", m.supportCost, "w")}M` : `<b>$${Math.round(m.supportCost * 1000)}k</b>`} a year each, one per ${I("supportCapacity", m.supportCapacity, "w")}M accounts (min ${I("supportMin", m.supportMin, "w")})`, c.lines.sup, c.five.sup, money(c.totals.sup));
-  html += `<tr class="sub2 dimmable"><td colspan="${yc + 4}">Fixed cost to serve (one-time)</td></tr>`;
-  html += row("Implementation", `${I("implMonths", m.implMonths, "w")} engineer-months at ${ed ? `$${I("implRate", m.implRate, "w")}M` : `<b>$${Math.round(m.implRate * 1000)}k</b>`} each, in ${m.years[0]}`, c.lines.impl, c.five.impl, money(c.totals.impl));
-  html += row("Total cost to serve", "", c.lines.total, c.five.total, money(c.totals.total), "tot");
-  html += `<tr class="sub2 dimmable"><td colspan="${yc + 4}"><span style="display:inline-flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0">Revenue and margin for ${offers}</span></td></tr>`;
-  html += row("Platform revenue", "Gross revenue after discounts", c.lines.rev, c.five.rev, money(c.totals.rev));
-  html += `<tr class="dimmable tot" data-row="cm-margin"><td class="sticky">Gross margin</td><td class="drv">Target ${I("marginTarget", m.marginTarget, "w")}%</td>${c.lines.margin.map(v => `<td class="num ${v != null && v < tgt ? "neg" : ""}">${h(pct(v) || "—")}</td>`).join("")}<td class="num b ${c.five.margin != null && c.five.margin < tgt ? "neg" : ""}">${h(pct(c.five.margin) || "—")}</td><td class="num nt">${c.five.margin != null ? h((c.five.margin - tgt >= 0 ? "+" : MINUS) + Math.abs(Math.round((c.five.margin - tgt) * 100)) + " pts vs target") : ""}</td></tr>`;
-  el.innerHTML = html + "</tbody>";
-  el.style.minWidth = "1080px";
-  $("#cmNote").textContent = `From ${m.source}. Cloud hosting uses the same unit cost as the cloud breakdown above.`;
+  el.style.minWidth = kind === "com" ? "1150px" : "1000px";
 }
 
 /* ---------- operations ---------- */
@@ -939,6 +966,8 @@ function diffList(a, b){
   return out;
 }
 const diffCount = () => diffList(S.live, S.draft).length;
+const _diffList = diffList;
+diffList = function(a, b){ S.noWhatIf = true; try{ return _diffList(a, b); } finally { S.noWhatIf = false; } };
 function renderBar(){
   const L = S.live, n = S.me.admin ? diffCount() : 0;
   const chip = `<i class="dot green"></i>Live v${L.version} · published ${h(fmtLong(L.publishedAt))}`;
@@ -980,7 +1009,9 @@ function renderDashboard(){
   finTable($("#tCom"), d.commercial, "com");
   $("#foot").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:footnote">${h(d.footnote)}</span>` : h(d.footnote);
   finTable($("#tCost"), d.cost, "cost");
-  modelTable($("#tModel"));
+  finTable($("#tTal"), d.talent, "tal");
+  const wi = Object.entries(S.whatIf).filter(([id]) => findRow(S.live, id));
+  $("#wif").innerHTML = !editing() && wi.length ? `<span class="wifbar">What-if, not saved: ${wi.map(([id, w]) => `${h(findRow(S.live, id).metric)} at ${w}%`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
   opsTable($("#tOps"));
   $("#opsNote").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:opsNote">${h(d.opsNote || "")}</span>` : h(d.opsNote || "");
   if(keep) setFocus(keep.startsWith("esc") ? "esc" : "iss", +keep.slice(3), false);
@@ -998,12 +1029,13 @@ function setFocus(kind, n, jump){
   clearFocus(true); S.focus = kind + n;
   document.body.classList.add("focusing");
   let ids, label;
-  if(kind === "esc"){ ids = linkedRows(n); document.querySelectorAll(`.card[data-card="${n}"]`).forEach(c => { c.classList.add("lit"); c.setAttribute("aria-pressed", "true"); }); label = `Escalation ${n}`; }
+  let jumpId = null;
+  if(kind === "esc"){ ids = linkedRows(n); const e = cur().escalations.find(x => x.id === n); if(e && e.jump){ ids.add(e.jump); jumpId = e.jump; } document.querySelectorAll(`.card[data-card="${n}"]`).forEach(c => { c.classList.add("lit"); c.setAttribute("aria-pressed", "true"); }); label = `Escalation ${n}`; }
   else { const it = currentIssues().items[n]; ids = new Set(it ? it.rowIds || [] : []); $("#issues").classList.add("lit"); const li = document.querySelector(`li[data-issue="${n}"]`); if(li) li.classList.add("lit"); label = it ? it.title : "Issue"; }
   const rows = [];
   ids.forEach(id => document.querySelectorAll(`tr[data-row="${CSS.escape(id)}"]`).forEach(tr => { tr.classList.add("lit"); rows.push(tr); }));
   $("#focusbar").innerHTML = `<div class="focusbar"><span>Showing <b>${h(label)}</b> in the tables${rows.length ? "" : " (no linked rows)"}</span><button class="btn xs" data-act="unfocus">Done</button></div>`;
-  if(jump && rows.length){ const tr = rows.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]; tr.scrollIntoView({ block:"center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }
+  if(jump && rows.length){ const tr = (jumpId && document.querySelector(`tr[data-row="${CSS.escape(jumpId)}"]`)) || rows.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]; tr.scrollIntoView({ block:"center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }
   if(kind === "esc"){ placeCallouts(n); setTimeout(() => { if(S.focus === "esc" + n) placeCallouts(n); }, 600); }
 }
 function clearFocus(silent){
@@ -1051,7 +1083,7 @@ function target(key){
   if(kind === "d") return { obj:S.draft, path:parts[1] };
   if(kind === "cm") return { obj:S.draft.costModel, path:parts[1] };
   if(kind === "row"){ const r = findRow(S.draft, parts[1]), p = parts.slice(2).join(":"); if(!r) return null;
-    if(p === "@value") return { obj: ownerOf(r), path:"value" };
+    if(p.startsWith("@value")){ const i = p.includes(":") ? +p.split(":")[1] : (r.owner || 0); return { obj: r.owners[i], path:"value" }; }
     if(p === "@owner") return { obj:r, path:"owner" };
     return { obj:r, path:p }; }
   if(kind === "proj") return { obj: findProj(S.draft, parts[1]), path: parts.slice(2).join(":") };
@@ -1073,6 +1105,11 @@ document.addEventListener("change", e => {
   const el = e.target;
   if(el.matches('select[data-act="tf"]')){ S.tf = el.value; savePrefs(); renderDashboard(); return; }
   if(el.matches('select[data-act="offer"]')){ S.offer = el.value; savePrefs(); renderDashboard(); return; }
+  if(el.matches('select[data-act="weight"]')){
+    const v = el.value === "" ? null : +el.value, id = el.dataset.rid;
+    if(editing()){ const r = findRow(S.draft, id); if(r){ r.weight = v; dirty(true); } }
+    else { const r = findRow(S.live, id); if(r && v === r.weight) delete S.whatIf[id]; else S.whatIf[id] = v; renderDashboard(); }
+    return; }
   if(el.closest("#modal")) return onModalChange(el);
   if(el.closest("#pop")) return onPopChange(el);
   if(!el.dataset.set) return;
@@ -1243,6 +1280,8 @@ document.addEventListener("click", async e => {
     case "restore-go": await restoreVersion(+a.dataset.v); break;
     case "unfocus": clearFocus(); break;
     case "flag": { const r = findRow(S.draft, a.dataset.rid), o = r && r.owners[+a.dataset.i]; if(o){ o.unreliable = !o.unreliable; dirty(true); } break; }
+    case "mainowner": { const r = findRow(S.draft, a.dataset.rid); if(r){ r.owner = +a.dataset.i; dirty(true); } break; }
+    case "wif-reset": S.whatIf = {}; renderDashboard(); break;
     case "sec": { const k = a.dataset.sec; S.collapsed[k] = !S.collapsed[k]; savePrefs(); renderDashboard(); break; }
     case "issues": S.issuesOpen = !S.issuesOpen; savePrefs(); if(S.focus && S.focus.startsWith("iss")) clearFocus(); renderIssues(); break;
     case "ai-refresh": maybeAI(S.view === "draft" ? "draft" : "live", true); break;
