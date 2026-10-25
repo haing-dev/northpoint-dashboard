@@ -7,7 +7,7 @@
 <title>NorthPoint President's Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: slide-style page. Header → escalations → other issues → Commercial table → Cost table → Operations plan. */
+/* Layout: slide-style page. Header → escalations → other issues → Commercial → Cost → Operations. */
 :root{
   --ink:#000000; --deep:#051C2C; --grey-text:#595959; --na:#A6A6A6; --card-bg:#F2F2F2;
   --rule:#D9D9D9; --rule-strong:#7F7F7F; --neg:#C00000;
@@ -19,6 +19,7 @@
 }
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
+html{scroll-behavior:smooth}
 body{margin:0;font-family:var(--sans);font-size:14px;line-height:1.4;color:var(--ink);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 [hidden]{display:none!important}
@@ -29,7 +30,9 @@ button,input,select,textarea{font-family:inherit}
 .bar,.page{max-width:1280px;margin-left:auto;margin-right:auto;padding-left:8px;padding-right:8px}
 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-block:10px;border-bottom:1px solid var(--rule);font-size:12px;color:var(--grey-text)}
 .brand{font-weight:700;color:var(--ink);letter-spacing:.02em}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:10px;background:var(--soft);white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:10px;background:var(--soft);white-space:nowrap;border:0;font:inherit;color:inherit}
+button.chip{cursor:pointer}
+button.chip:hover{background:#ECEEF0}
 .chip.warn{background:var(--warn-bg);color:var(--warn-fg)}
 .chip .dot{width:8px;height:8px;cursor:default}
 .sp{flex:1}
@@ -41,9 +44,17 @@ button,input,select,textarea{font-family:inherit}
 .btn.primary{background:var(--deep);color:#fff}
 .btn.primary:hover{background:#0B2F48}
 .btn.sm{padding:6px 10px;font-size:11px}
+.btn.xs{padding:4px 8px;font-size:10px}
 .btn.ghost{border-color:transparent;text-decoration:underline;padding-inline:6px;background:transparent}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .lnk{color:var(--deep);font-weight:700;cursor:pointer;text-decoration:underline;background:none;border:0;padding:0;font-size:12px}
+#vmenu{position:fixed;z-index:86;background:#fff;border:1px solid var(--rule-strong);box-shadow:0 8px 24px rgba(5,28,44,.18);width:300px;font-size:12px;max-height:60vh;overflow:auto}
+#vmenu .vh{padding:8px 12px;font:700 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--grey-text);border-bottom:1px solid var(--rule)}
+#vmenu .vi{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--rule)}
+#vmenu .vi:last-child{border-bottom:0}
+#vmenu .vi b{min-width:26px}
+#vmenu .vi .muted{flex:1}
+#vmenu .vc{padding:8px 12px;background:var(--soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* ---------- page ---------- */
 .page{padding-block:20px 40px}
@@ -51,11 +62,11 @@ button,input,select,textarea{font-family:inherit}
 .draftbar .save{color:var(--grey-text)}
 .draftbar ul{flex-basis:100%;margin:4px 0 0;padding-left:18px;max-height:140px;overflow:auto}
 .kicker{font-size:12px;letter-spacing:.08em;color:var(--grey-text);text-transform:uppercase}
-h1{font:700 30px/1.2 var(--serif);margin:6px 0 8px;max-width:1040px;text-wrap:balance}
-.meta{font-size:12px;color:var(--grey-text)}
+h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:balance}
 .lbl{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text);margin:24px 0 8px}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.card{background:var(--card-bg);padding:16px;display:flex;flex-direction:column}
+.card{background:var(--card-bg);padding:16px;display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .15s}
+.card:hover{box-shadow:inset 0 0 0 1px var(--rule-strong)}
 .card.lit{outline:2px solid var(--deep)}
 .ct{display:flex;align-items:center;gap:10px;font:700 15px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px}
 .cb{flex:none;width:24px;height:24px;border-radius:50%;background:var(--deep);color:#fff;font:700 13px/24px var(--sans);text-align:center}
@@ -64,6 +75,7 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 8px;max-width:1040px;text-wrap:ba
 .kv .b{font-weight:700}
 .cf{margin-top:auto;padding-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .muted{color:var(--grey-text);font-size:11px}
+.hint{color:var(--grey-text);font-size:11px;margin-left:auto}
 [contenteditable="true"]{outline:1px dashed #B9A85A;outline-offset:2px;border-radius:1px;cursor:text}
 [contenteditable="true"]:focus{outline:2px solid var(--focus);background:#fff}
 
@@ -74,23 +86,26 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 8px;max-width:1040px;text-wrap:ba
 .ih .cnt{background:var(--deep);color:#fff;border-radius:9px;padding:1px 7px;font:700 11px var(--sans)}
 .ih .src{color:var(--grey-text);font-size:12px}
 .ih .chev{margin-left:auto;color:var(--grey-text)}
-.il{list-style:none;margin:0;padding:0 14px 6px;border-top:1px solid var(--rule)}
-.il li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--rule)}
-.il li:last-child{border-bottom:0}
+.il{list-style:none;margin:0;padding:0 14px;border-top:1px solid var(--rule);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
+.il li{display:grid;grid-template-columns:14px minmax(0,1fr);gap:4px 10px;align-items:start;padding:12px 0;border-bottom:1px solid var(--rule);cursor:pointer}
+.il li.lit{background:var(--lit)}
 .il .dot{margin-top:4px;cursor:default}
 .il .t{font-weight:700;font-size:13px}
-.il .d{font-size:13px;color:#222;margin-top:2px}
-.il .m{font-size:11px;color:var(--grey-text);margin-top:3px}
-.il .tag{font:700 10px var(--sans);text-transform:uppercase;letter-spacing:.05em;color:var(--grey-text);margin-right:6px}
-.ifoot{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--rule);font-size:11px;color:var(--grey-text);flex-wrap:wrap}
+.il .kv{grid-template-columns:78px minmax(0,1fr);margin-top:6px;font-size:13px;gap:8px}
+.il .kv>span:first-child{font-size:10px}
+.il .act{grid-column:2;margin-top:8px}
+.tag{display:inline-block;font:700 9px/1.4 var(--sans);text-transform:uppercase;letter-spacing:.05em;color:var(--grey-text);border:1px solid var(--rule-strong);padding:0 4px;border-radius:2px;margin-right:6px;vertical-align:1px;white-space:nowrap}
+.ifoot{padding:8px 14px;border-top:1px solid var(--rule);font-size:11px;color:var(--grey-text);display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
 
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--grey-text);margin:28px 0 0;align-items:center}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend .dot{cursor:default}
-.tt{display:flex;align-items:baseline;gap:12px;margin:26px 0 6px;flex-wrap:wrap}
+.tt{display:flex;align-items:baseline;gap:12px;margin:30px 0 6px;flex-wrap:wrap;scroll-margin-top:70px}
 .tt .n{font:400 30px/1 var(--serif)}
 .tt h2{font:700 15px var(--sans);text-transform:uppercase;letter-spacing:.06em;margin:0}
+.tt h3{font:700 13px var(--sans);margin:0}
 .tt .note{font-size:12px;color:var(--grey-text)}
+.tt.sub{margin-top:22px}
 
 /* ---------- tables ---------- */
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -102,6 +117,7 @@ table.tr{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 .tr tr.grp th span{display:block;border-bottom:1px solid var(--rule-strong);padding-bottom:3px;text-align:center;font-weight:700;color:var(--ink)}
 .tr tr.cols th{border-bottom:2px solid var(--deep);padding-bottom:6px}
 .tr td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:middle;position:relative;background:#fff}
+.tr tr{scroll-margin-top:90px}
 .tr td.num{text-align:right;white-space:nowrap}
 .tr td.ctr{text-align:center;white-space:nowrap}
 .tr .sticky{position:sticky;left:0;z-index:1}
@@ -109,6 +125,8 @@ table.tr{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric
 body.edit .tr td.sticky{min-width:250px}
 .tr th.sticky{z-index:2}
 .tr tr.sh th{background:#fff;padding:12px 8px 6px;border-bottom:1.5px solid var(--rule-strong);text-transform:none;letter-spacing:0;color:var(--ink);font-size:13px;vertical-align:middle}
+.tr tr.sub2 td{font-size:11px;color:var(--grey-text);text-transform:uppercase;letter-spacing:.05em;font-weight:700;padding-top:10px;padding-bottom:4px;border-bottom:1px solid var(--rule)}
+.tr tr.tot td{border-top:1.5px solid var(--rule-strong);font-weight:700}
 .shi{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .tog{border:0;background:none;padding:0;font:700 13px var(--sans);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-align:left}
 .tog .cv{display:inline-block;width:14px;color:var(--grey-text);transition:transform .15s}
@@ -121,6 +139,7 @@ tr.child .m{font-weight:400;padding-left:20px;display:inline-block}
 .na{color:var(--na)}
 .b{font-weight:700}
 .neg{color:var(--neg)}
+.drv{font-size:12px;color:var(--grey-text);white-space:normal;min-width:240px}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;cursor:help}
 .dot.green{background:var(--dot-green)}.dot.amber{background:var(--dot-amber)}.dot.red{background:var(--dot-red)}
 .dot.nodata{background:transparent;border:1.5px dotted var(--dot-nodata)}
@@ -133,10 +152,12 @@ td.chg{background:var(--chg)!important}
 .ci.plain{font-weight:400}
 .ci.date{width:122px;text-align:left;font-weight:400}
 .ci.w{width:44px}
+.ci.s{width:54px;font-weight:400}
 .ci:focus{outline:2px solid var(--focus);background:#fff}
 .osel{font:inherit;font-size:13px;border:0;border-bottom:1px dashed #B9A85A;background:transparent;padding:2px 0;max-width:210px;color:inherit}
 .auto{font-size:10px;color:var(--grey-text);text-transform:uppercase;letter-spacing:.04em;display:block}
 .pend{font-size:12px;color:var(--grey-text);padding:8px 0}
+.foot{font-size:11px;color:var(--grey-text);margin:8px 0 0}
 
 /* focus mode */
 .dimmable{transition:opacity .15s}
@@ -149,22 +170,30 @@ body.focusing tr.lit td:first-child{box-shadow:inset 3px 0 0 var(--deep)}
 .co.below::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--deep)}
 .co .cn{flex:none;width:20px;height:20px;border-radius:50%;background:#fff;color:var(--deep);font:700 11px/20px var(--sans);text-align:center}
 @keyframes pop{from{opacity:0;transform:translateY(4px) scale(.96)}to{opacity:1;transform:none}}
+.focusbar{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;background:#fff;border:1px solid var(--deep);box-shadow:0 6px 18px rgba(0,0,0,.15);padding:6px 8px 6px 12px;font-size:12px;display:flex;gap:10px;align-items:center}
 
 /* operations */
 tr.proj td{border-top:1.5px solid var(--rule-strong);padding-top:10px;padding-bottom:10px}
 tr.stage td{font-size:12px;padding-top:5px;padding-bottom:5px;border-bottom-color:#ECECEC}
 tr.stage .sn{padding-left:22px;display:block}
-.tag{font:700 9px var(--sans);text-transform:uppercase;letter-spacing:.05em;color:var(--grey-text);border:1px solid var(--rule);padding:1px 4px;border-radius:2px;margin-left:6px;vertical-align:middle;white-space:nowrap}
 .sc{display:inline-block;font:700 10px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;padding:4px 7px;border-radius:10px;white-space:nowrap}
 .sc.done{background:var(--ok-bg);color:var(--ok-fg)}.sc.active{background:var(--act-bg);color:var(--act-fg)}.sc.planned{background:#fff;color:var(--grey-text);border:1px solid var(--rule)}
 .sc.blocked{background:var(--bad-bg);color:var(--bad-fg)}.sc.noupdate{background:var(--off-bg);color:var(--off-fg)}.sc.late{background:var(--warn-bg);color:var(--warn-fg)}
+.nl{display:block;font-size:12px;margin:1px 0}
+table.ops td:nth-child(6){min-width:270px}
+table.ops td:nth-child(4){white-space:nowrap}
+.nl .tag{margin-right:5px}
+.tag.red{border-color:var(--dot-red);color:var(--bad-fg);background:var(--bad-bg)}
+.tag.amber{border-color:var(--dot-amber);color:var(--warn-fg);background:var(--warn-bg)}
+.tag.nodata{border-style:dotted}
+button.tag{cursor:pointer;font:700 9px/1.4 var(--sans)}
 .blk{color:var(--neg)}
 .nt{color:var(--grey-text)}
-.tlh{position:relative;height:16px;min-width:380px}
+.tlh{position:relative;height:16px;min-width:340px}
 .tlh span{position:absolute;bottom:0;font-size:10px;color:var(--grey-text);transform:translateX(2px);white-space:nowrap;text-transform:none;letter-spacing:0}
 .tlh i{position:absolute;bottom:-6px;height:6px;border-left:1px solid var(--rule-strong)}
 .tlh .td{color:var(--neg);font-weight:700;transform:translateX(-50%);bottom:auto;top:-14px}
-.tl{position:relative;height:20px;min-width:380px}
+.tl{position:relative;height:20px;min-width:340px}
 .tl .g{position:absolute;top:0;bottom:0;border-left:1px solid #EFEFEF}
 .tl .seg{position:absolute;top:5px;height:10px;border-radius:2px;min-width:3px}
 .seg.done{background:var(--dot-green)}.seg.active{background:var(--deep)}.seg.planned{background:#fff;border:1.5px solid var(--rule-strong)}
@@ -178,7 +207,6 @@ tr.stage .sn{padding-left:22px;display:block}
 .tlleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--grey-text);margin-top:8px;align-items:center}
 .lsw{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .ssel{font:11px var(--sans);padding:2px 4px;border:1px dashed #B9A85A;background:#fff;border-radius:2px}
-.foot{font-size:11px;color:var(--grey-text);margin-top:14px}
 
 /* tooltip, popover, toast */
 #tip{position:fixed;z-index:80;background:var(--deep);color:#fff;font:700 12px/1.35 var(--sans);padding:6px 8px;border-radius:2px;max-width:240px;pointer-events:none;left:0;top:0}
@@ -195,47 +223,38 @@ tr.stage .sn{padding-left:22px;display:block}
 #toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--deep);color:#fff;font:700 13px var(--sans);padding:10px 14px;border-radius:2px;z-index:95;max-width:calc(100vw - 32px);box-shadow:0 6px 18px rgba(0,0,0,.2)}
 
 /* follow-up modal */
-.modal{position:fixed;inset:0;z-index:90;background:rgba(5,28,44,.45);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px 24px;overflow-y:auto}
-.mbox{background:#fff;width:min(720px,100%);box-shadow:0 18px 50px rgba(0,0,0,.3);display:flex;flex-direction:column}
-.mh{padding:16px 20px 10px;border-bottom:1px solid var(--rule);display:flex;gap:12px;align-items:flex-start}
-.mh h3{font:700 19px/1.25 var(--serif);margin:2px 0 0}
-.mh .dk{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text)}
-.mb{padding:14px 20px;display:grid;gap:12px}
-.ml{font:700 11px var(--sans);color:var(--grey-text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;display:flex;align-items:center;gap:10px}
-.rcs{display:flex;flex-wrap:wrap;gap:6px}
-.rc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-strong);border-radius:14px;padding:4px 10px 4px 6px;font-size:12px;cursor:pointer;background:#fff}
-.rc input{accent-color:var(--deep);margin:0}
-.rc small{color:var(--grey-text)}
-.rc.on{border-color:var(--deep);background:var(--lit)}
-.rc .x{border:0;background:none;cursor:pointer;color:var(--grey-text);font-size:14px;padding:0 0 0 2px}
+.modal{position:fixed;inset:0;z-index:90;background:rgba(5,28,44,.45);display:flex;align-items:flex-start;justify-content:center;padding:max(32px,env(safe-area-inset-top,0px)) 16px 24px;overflow-y:auto}
+.mbox{background:#fff;width:min(640px,100%);box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.mh{padding:16px 20px 12px;border-bottom:1px solid var(--rule);display:flex;gap:12px;align-items:flex-start}
+.mh h3{font:700 18px/1.25 var(--serif);margin:0}
+.mb{padding:14px 20px;display:grid;gap:10px}
+.fr{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center}
+.fr>span{font:700 11px var(--sans);color:var(--grey-text);text-transform:uppercase;letter-spacing:.05em}
 .in{width:100%;font:13px var(--sans);padding:7px 9px;border:1px solid #B5B5B5;border-radius:2px;background:#fff;color:var(--ink);min-width:0}
 .in:focus{outline:2px solid var(--focus);outline-offset:-1px;border-color:var(--focus)}
 textarea.in{resize:vertical;line-height:1.5}
-.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.aist{font-size:12px;color:var(--grey-text);display:flex;align-items:center;gap:8px}
-.aist .sp1{width:10px;height:10px;border-radius:50%;border:2px solid var(--deep);border-right-color:transparent;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.redraft{display:flex;gap:8px}
-.mf{padding:12px 20px;border-top:1px solid var(--rule);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.mf .fs{font-size:12px;color:var(--grey-text);flex:1;min-width:200px}
-.cedit{width:100%;border-collapse:collapse;font-size:12px}
-.cedit td{padding:3px 4px;border-bottom:1px solid var(--rule)}
-.cedit td:first-child{font-weight:700;width:28%}
-.prev{font-size:12px;color:var(--grey-text);border-top:1px solid var(--rule);padding-top:8px}
-.prev div{margin-top:3px}
+.dd{position:relative}
+.ddb{width:100%;text-align:left;font:13px var(--sans);padding:7px 28px 7px 9px;border:1px solid #B5B5B5;border-radius:2px;background:#fff;cursor:pointer;position:relative;color:var(--ink)}
+.ddb::after{content:"▾";position:absolute;right:10px;top:7px;color:var(--grey-text)}
+.ddb .ph{color:#8a8a8a}
+.ddm{position:absolute;left:0;right:0;top:calc(100% + 2px);background:#fff;border:1px solid var(--rule-strong);box-shadow:0 8px 20px rgba(0,0,0,.12);z-index:5;padding:4px 0}
+.ddm label{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:13px}
+.ddm label:hover{background:var(--soft)}
+.ddm small{color:var(--grey-text);margin-left:auto}
+.ddm .ce{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:6px;padding:6px 10px}
+.ddm .lnk{margin:6px 10px}
+.mf{padding:12px 20px;border-top:1px solid var(--rule);display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
 
-@media (max-width:1100px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:1100px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} .il{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:700px){
   .bar,.page{padding-left:0;padding-right:0}
   .cards{grid-template-columns:minmax(0,1fr)}
   h1{font-size:24px}
-  .g2{grid-template-columns:1fr}
-  .il li{grid-template-columns:14px minmax(0,1fr)}
-  .il li .btn{grid-column:2;justify-self:start}
+  .fr{grid-template-columns:1fr;gap:4px}
 }
-@media (prefers-reduced-motion:reduce){ .co,.aist .sp1{animation:none} .dimmable,.tog .cv{transition:none} }
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} .co{animation:none} .dimmable,.tog .cv{transition:none} }
 @media print{
-  .bar,#tip,#toast,#pop,.modal,#draftbar,.cf .btn,#callouts{display:none!important}
+  .bar,#tip,#toast,#pop,#vmenu,.modal,#draftbar,.cf .btn,#callouts,.focusbar,.fu{display:none!important}
   body{padding:0} .page{max-width:none;padding:0}
   @page{size:landscape;margin:10mm}
   .tw{overflow:visible} table.tr{font-size:10px;min-width:0!important}
@@ -250,40 +269,45 @@ textarea.in{resize:vertical;line-height:1.5}
   <header class="dimmable" id="hdr">
     <div class="kicker" id="kicker"></div>
     <h1 id="title"></h1>
-    <div class="meta" id="meta"></div>
   </header>
-  <div class="lbl dimmable">Escalations to the President</div>
+  <div class="lbl dimmable">Escalations to the President <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">· click a card to see where it shows in the tables</span></div>
   <section class="cards" id="cards" aria-label="Escalations to the President"></section>
   <section class="issues dimmable" id="issues" aria-label="Other issues"></section>
   <div class="legend dimmable" aria-label="Legend">
     <span><i class="dot green"></i>On track</span><span><i class="dot amber"></i>Needs attention</span>
     <span><i class="dot red"></i>Off track</span><span><i class="dot nodata"></i>No data</span>
   </div>
-  <div class="tt dimmable"><span class="n">1</span><h2>Commercial</h2><span class="note">USD, $M</span></div>
+  <div class="tt dimmable" id="sec-com"><span class="n">1</span><h2>Commercial</h2><span class="note">USD, $M</span></div>
   <div class="tw"><table class="tr" id="tCom"></table></div>
-  <div class="tt dimmable"><span class="n">2</span><h2>Cost</h2><span class="note" id="costNote"></span></div>
+  <p class="foot dimmable" id="foot"></p>
+  <div class="tt dimmable" id="sec-cost"><span class="n">2</span><h2>Cost</h2><span class="note">Platform cloud run-rate, and NorthPoint cost to serve from the deal model</span></div>
   <div class="tw"><table class="tr" id="tCost"></table></div>
-  <div class="tt dimmable"><span class="n">3</span><h2>Operations</h2><span class="note">Delivery plan by project</span></div>
+  <div class="tt sub dimmable"><h3>NorthPoint cost to serve</h3><span class="note" id="cmNote"></span></div>
+  <div class="tw"><table class="tr" id="tModel"></table></div>
+  <div class="tt dimmable" id="sec-ops"><span class="n">3</span><h2>Operations</h2><span class="note">Delivery plan by project</span></div>
   <div class="tw"><table class="tr ops" id="tOps"></table></div>
   <div class="tlleg dimmable" id="tlleg"></div>
-  <p class="foot dimmable" id="foot"></p>
+  <p class="foot dimmable" id="opsNote"></p>
 </main>
 <div id="callouts" aria-hidden="true"></div>
+<div id="focusbar"></div>
 <div id="tip" role="tooltip" hidden></div>
 <div id="pop" hidden></div>
+<div id="vmenu" hidden></div>
 <div class="modal" id="modal" hidden></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
 <script>
 /* =====================================================================
-   DATA: every figure on the page comes from here. Amounts in $M,
-   dates YYYY-MM-DD, weights in %. Variances and shares are calculated.
+   DATA: every figure on the page comes from here. Amounts in $M unless a
+   row says otherwise, dates YYYY-MM-DD, weights in %. Variances, shares and
+   the cost-to-serve table are calculated.
    status: "green" | "amber" | "red" | "nodata" | null (not assessed)
    esc: the escalation card a note belongs to (1, 2, 3) or null
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 3, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Q3 2026 LEADERSHIP REVIEW · PRESIDENT'S VIEW",
@@ -293,18 +317,15 @@ const DATA = {
     { id: 1, title: "NORTHPOINT EXECUTION RISK",
       issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
       impact: "NorthPoint failure would jeopardize 40% of pipeline",
-      next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date",
-      recipients: ["Head of Delivery", "Head of Talent"] },
+      next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date" },
     { id: 2, title: "Q3 BOOKING SHORTAGE",
       issue: "Q3 bookings are 32% ($19M) below plan",
       impact: "Q426-Q127 pipeline must cover for the shortfall, and North Point delivery is key",
-      next: "Ask Head of Sales for a recovery plan by the next review",
-      recipients: ["Head of Sales"] },
+      next: "Ask Head of Sales for a recovery plan by the next review" },
     { id: 3, title: "DELIVERY REPORTING",
       issue: "Bank A and Release 4.2 status not updated",
       impact: "We can't confirm Bank A's 1 Nov go-live or that Release 4.2 shipped",
-      next: "Ask Head of Delivery and Head of Product to report every project with an owner and date",
-      recipients: ["Head of Delivery", "Head of Product"] }
+      next: "Ask Head of Delivery and Head of Product to report every project with an owner and date" }
   ],
   commercial: [
     { id: "revenue", name: "Recognized revenue", rows: [
@@ -334,13 +355,33 @@ const DATA = {
     ]}
   ],
   cost: [
-    { id: "cloud", name: "Cloud", rows: [
+    { id: "cloud", name: "Cloud (Platform, monthly run-rate)", rows: [
       { id: "cloud", metric: "Cloud run-rate (per month)", perMonth: true, plan: 1.1, field: "actual", better: "lower",
         owners: [ { role: "Head of Platform", source: "Cloud billing", value: 1.4 } ], owner: 0,
-        risk: { reporting: "green" }, tips: { reporting: { text: "From cloud billing, 30 Sep" } }, updated: "2026-09-30" }
-    ]},
-    { id: "opex", name: "Operating cost, Q3-2026", pending: "People, Contractors, Software & licences, Sales & marketing and G&A appear here once the financial model is loaded.", rows: [] }
+        risk: { reporting: "green" }, tips: { reporting: { text: "From cloud billing, 30 Sep" } }, updated: "2026-09-30" },
+      { id: "cloud-unit", metric: "Cost per active account (per month)", child: true, parent: "cloud", fmt: "unit", plan: 0.04, field: "actual", better: "lower",
+        owners: [ { role: "Head of Platform", source: "Deal model: 2026 estimate + 20% cloud premium", value: 0.048 } ], owner: 0,
+        risk: { reporting: "amber" }, tips: { reporting: { text: "Unit cost from the deal model, not yet confirmed by billing" } }, updated: "2026-09-30" },
+      { id: "cloud-accts", metric: "Active accounts (implied)", child: true, parent: "cloud", fmt: "accounts", derive: { num: "cloud", den: "cloud-unit" },
+        owners: [ { role: "Head of Platform", source: "Run-rate ÷ cost per account" } ], owner: 0, updated: "2026-09-30" }
+    ]}
   ],
+  costModel: {
+    source: "NorthPoint deal model v31, P&L tab",
+    years: [2027, 2028, 2029, 2030, 2031],
+    accounts: [1.0, 3.0, 6.0, 6.3, 6.6],
+    cloudPerAcct: 0.04, cloudPremium: 20,
+    envCost: 1.5, envCapacity: 2.5, envMin: 1,
+    licPerAcct: 0.02,
+    supportCost: 0.18, supportCapacity: 0.75, supportMin: 4,
+    implRate: 0.02, implMonths: 280,
+    marginTarget: 70,
+    offers: {
+      sales:     { name: "Sales' proposal",   revenue: [0.273333, 0.351111, 0.370556, 0.371481, 0.372323] },
+      dream:     { name: "Dream counter",     revenue: [1.23064, 0.563338, 0.557291, 0.557127, 0.556452] },
+      realistic: { name: "Realistic counter", revenue: [0.59637, 0.508436, 0.483532, 0.468493, 0.452117] }
+    }
+  },
   operations: [
     { id: "banka", section: "Client delivery", name: "Bank A Go-Live", owner: "", deadline: "2026-11-01",
       forecast: "2026-11-01", forecastNote: "Green, reported", updated: null, sample: true,
@@ -349,8 +390,8 @@ const DATA = {
       stages: [
         { name: "Requirements sign-off", start: "2026-06-15", end: "2026-07-15", status: "done", note: "Signed off 14 Jul" },
         { name: "Build & integration", start: "2026-07-16", end: "2026-09-15", status: "late", note: "Finished 20 Sep, 5 days late" },
-        { name: "System testing", start: "2026-09-16", end: "2026-10-09", status: "noupdate", blocker: "No test report since 30 Sep" },
-        { name: "Bank A user acceptance", start: "2026-10-12", end: "2026-10-28", status: "noupdate", blocker: "Start not confirmed; no owner to confirm it" },
+        { name: "System testing", start: "2026-09-16", end: "2026-10-09", status: "noupdate", tag: "Reporting", blocker: "No test report since 30 Sep" },
+        { name: "Bank A user acceptance", start: "2026-10-12", end: "2026-10-28", status: "noupdate", tag: "Ownership", blocker: "Start not confirmed; no owner to confirm it" },
         { name: "Go-live", start: "2026-11-01", end: "2026-11-01", status: "planned", milestone: true }
       ]},
     { id: "npexec", section: "Client delivery", name: "NorthPoint Execution", owner: "Head of Delivery", deadline: "2027-01-04",
@@ -358,8 +399,8 @@ const DATA = {
       risk: { reporting: "green", staffing: "red" },
       tips: { reporting: { text: "Delivery plan, updated 25 Sep" }, staffing: { text: "4 of 24 engineers available", esc: 1 } },
       stages: [
-        { name: "Staffing plan & funding decision", start: "2026-09-15", end: "2026-10-15", status: "blocked", blocker: "Funding for 20 engineers not approved" },
-        { name: "Hiring & contractor sourcing", start: "2026-10-16", end: "2026-12-11", status: "blocked", blocker: "Waiting on the funding decision" },
+        { name: "Staffing plan & funding decision", start: "2026-09-15", end: "2026-10-15", status: "blocked", tag: "Funding", blocker: "Funding for 20 engineers not approved" },
+        { name: "Hiring & contractor sourcing", start: "2026-10-16", end: "2026-12-11", status: "blocked", tag: "Staffing", blocker: "Waiting on the funding decision" },
         { name: "Onboarding & environments", start: "2026-12-01", end: "2026-12-23", status: "planned" },
         { name: "Delivery start, 24 engineers", start: "2027-01-04", end: "2027-01-04", status: "planned", milestone: true }
       ]},
@@ -368,40 +409,39 @@ const DATA = {
       risk: { reporting: "amber" }, tips: { reporting: { text: "Last update 12 Aug", esc: 3 } },
       stages: [
         { name: "Development", start: "2026-07-01", end: "2026-08-21", status: "active", note: "In progress at last update, 12 Aug" },
-        { name: "QA & regression", start: "2026-08-24", end: "2026-09-10", status: "noupdate", blocker: "No status since 12 Aug" },
-        { name: "Release", start: "2026-09-15", end: "2026-09-15", status: "noupdate", milestone: true, blocker: "Not confirmed as shipped" }
+        { name: "QA & regression", start: "2026-08-24", end: "2026-09-10", status: "noupdate", tag: "Reporting", blocker: "No status since 12 Aug" },
+        { name: "Release", start: "2026-09-15", end: "2026-09-15", status: "noupdate", milestone: true, tag: "Reporting", blocker: "Not confirmed as shipped" }
       ]}
   ],
-  footnote: "Note: NorthPoint's $140M in the CRM is taken as deal value, so at 70% it adds $98M to the weighted pipeline. Source: Q3 tracker extract, 30 Sep 2026. Operations steps are a sample plan until project owners send theirs."
+  footnote: "Note: NorthPoint's $140M in the CRM is taken as deal value, so at 70% it adds $98M to the weighted pipeline. Source: Q3 tracker extract, 30 Sep 2026.",
+  opsNote: "Operations steps are a sample plan until project owners send theirs."
 };
 
-/* People, follow-up settings and sent log. Contacts are samples. */
+/* Follow-up contacts and settings. Emails are placeholders until you edit them in the To list. */
 const OPS_DEFAULT = {
+  dirV: 2,
   directory: {
-    "Head of Sales":    { name: "Daniel Reyes", email: "daniel.reyes@northpoint.example" },
-    "Finance BP":       { name: "Priya Shah",   email: "priya.shah@northpoint.example" },
-    "Head of Platform": { name: "Marcus Lee",   email: "marcus.lee@northpoint.example" },
-    "Head of Delivery": { name: "Elena Novak",  email: "elena.novak@northpoint.example" },
-    "Head of Product":  { name: "Tom Becker",   email: "tom.becker@northpoint.example" },
-    "Head of Talent":   { name: "Aisha Okafor", email: "aisha.okafor@northpoint.example" }
+    "Balazs Nagy":    { name: "Balazs Nagy",    email: "balazs.nagy@northpoint.example" },
+    "Piotr Diazdosz": { name: "Piotr Diazdosz", email: "piotr.diazdosz@northpoint.example" }
   },
-  settings: { senderName: "Programme Management Office", senderEmail: "pmo@northpoint.example", cc: "pmo@northpoint.example", replyBy: "2026-10-28", reviewDate: "2026-10-30" },
+  settings: { senderName: "Programme Management Office", senderEmail: "pmo@northpoint.example", cc: "", replyBy: "2026-10-28", reviewDate: "2026-10-30" },
   outbox: []
 };
 
 /* ===================================================================== */
-const LSKEY = "northpoint-dash-v2", PREFKEY = "northpoint-prefs";
+const LSKEY = "northpoint-dash-v3", PREFKEY = "northpoint-prefs";
 const COLS = [["concentration","Concentration"],["reporting","Reporting"],["staffing","Staffing"]];
 const STATUS = { green:"on track", amber:"needs attention", red:"off track", nodata:"no data" };
 const STAGE = { done:"Done", active:"In progress", planned:"Planned", late:"Late", blocked:"Blocked", noupdate:"No update" };
+const TAGS = ["Reporting","Staffing","Funding","Ownership","Dependency"];
 const TF = { all:"Both periods", cq:"Q3 2026 · current quarter", n2q:"Q4 2026–Q1 2027 · next 2 quarters" };
 const SEVDOT = { high:"red", medium:"amber", low:"nodata" };
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MINUS = "−";
 const S = { mode:"demo", me:{ admin:false, email:"", setup:false }, ai:{ enabled:false }, mail:{ enabled:false, from:"" },
-  live:null, draft:null, ops:null, view:"live", tf:"all", collapsed:{}, issuesOpen:false, issues:{ live:null, draft:null }, aiBusy:false,
-  pubConfirm:false, discardConfirm:false, modal:null, pop:null, focus:null };
+  live:null, draft:null, ops:null, history:[], view:"live", tf:"all", offer:"sales", collapsed:{}, issuesOpen:false, issues:{ live:null, draft:null }, aiBusy:false,
+  pubConfirm:false, discardConfirm:false, modal:null, pop:null, focus:null, vmenu:false, restoreAsk:null };
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -415,21 +455,23 @@ function pd(iso){ if(!iso) return null; const [y,m,d] = String(iso).slice(0,10).
 function fmtDate(iso){ const p = pd(iso); return p ? `${p.d} ${MON[p.m-1]}` : null; }
 function fmtLong(iso){ const p = pd(iso); return p ? `${p.d} ${MON[p.m-1]} ${p.y}` : ""; }
 function fmtDow(iso){ const p = pd(iso); if(!p) return ""; return `${DOW[new Date(Date.UTC(p.y,p.m-1,p.d)).getUTCDay()]} ${p.d} ${MON[p.m-1]}`; }
+function fmtTime(iso){ const d = new Date(iso); if(isNaN(d) || String(iso).length <= 10) return fmtLong(iso); return `${fmtLong(iso)}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
 function days(a, b){ const A = pd(a), B = pd(b); return Math.round((Date.UTC(B.y,B.m-1,B.d) - Date.UTC(A.y,A.m-1,A.d)) / 864e5); }
 function todayISO(){ const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; }
 function ago(iso){ if(!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 6e4); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m/60)} h ago` : fmtLong(iso); }
 function money(v){ if(blank(v)) return null; v = +v; if(Math.abs(v) < 0.05) return "$0"; return (v < 0 ? MINUS : "") + "$" + r1(Math.abs(v)) + "M"; }
 function smoney(v){ if(Math.abs(v) < 0.05) return "$0"; return (v > 0 ? "+" : MINUS) + "$" + r1(Math.abs(v)) + "M"; }
+function unit$(v){ return blank(v) ? null : (v < 0 ? MINUS : "") + "$" + Math.abs(+v).toFixed(3); }
 function getP(o, p){ return p.split(".").reduce((a, k) => a == null ? undefined : a[k], o); }
 function setP(o, p, v){ const ks = p.split("."); let a = o; for(let i = 0; i < ks.length - 1; i++){ if(a[ks[i]] == null || typeof a[ks[i]] !== "object") a[ks[i]] = {}; a = a[ks[i]]; } a[ks[ks.length-1]] = v; }
 const uniq = a => [...new Set(a)];
-function loadPrefs(){ try{ const p = JSON.parse(localStorage.getItem(PREFKEY) || "{}"); if(TF[p.tf]) S.tf = p.tf; S.collapsed = p.collapsed || {}; S.issuesOpen = !!p.issuesOpen; }catch(e){} }
-function savePrefs(){ try{ localStorage.setItem(PREFKEY, JSON.stringify({ tf:S.tf, collapsed:S.collapsed, issuesOpen:S.issuesOpen })); }catch(e){} }
+function loadPrefs(){ try{ const p = JSON.parse(localStorage.getItem(PREFKEY) || "{}"); if(TF[p.tf]) S.tf = p.tf; if(p.offer) S.offer = p.offer; S.collapsed = p.collapsed || {}; S.issuesOpen = !!p.issuesOpen; }catch(e){} }
+function savePrefs(){ try{ localStorage.setItem(PREFKEY, JSON.stringify({ tf:S.tf, offer:S.offer, collapsed:S.collapsed, issuesOpen:S.issuesOpen })); }catch(e){} }
 
 /* ---------- data model ---------- */
 function normRow(r){
-  const o = Object.assign({ child:false, parent:null, period:null, field:"actual", better:"higher", plan:null, actual:null, forecast:null,
-    dealValue:null, weight:null, owners:[], owner:0, ownerWarn:false, updated:null, rollup:false, perMonth:false, varTip:null }, r);
+  const o = Object.assign({ child:false, parent:null, period:null, field:"actual", better:"higher", fmt:"usd", plan:null, actual:null, forecast:null,
+    dealValue:null, weight:null, owners:[], owner:0, ownerWarn:false, updated:null, rollup:false, perMonth:false, varTip:null, derive:null }, r);
   o.risk = Object.assign({ concentration:null, reporting:null, staffing:null }, r.risk || {});
   o.tips = r.tips || {};
   return o;
@@ -440,7 +482,8 @@ function normalize(d){
   ["commercial","cost"].forEach(k => (d[k] || []).forEach(s => { s.rows = (s.rows || []).map(normRow); }));
   d.operations = (d.operations || []).map(normProj);
   d.meta = Object.assign({ asOf:null, currency:"USD" }, d.meta || {});
-  d.escalations.forEach(e => { e.recipients = e.recipients || []; });
+  if(!d.costModel) d.costModel = clone(DATA.costModel);
+  if(d.opsNote == null) d.opsNote = DATA.opsNote;
   return d;
 }
 function sections(d){ return [...d.commercial, ...d.cost]; }
@@ -451,19 +494,26 @@ function children(d, row){ return allRows(d).filter(r => r.parent === row.id); }
 function ownerOf(r){ return r.owners[r.owner || 0] || null; }
 function ownerRole(r){ const o = ownerOf(r); return o ? o.role : ""; }
 function val(d, row, f){
+  if(row.derive){ const a = findRow(d, row.derive.num), b = findRow(d, row.derive.den); if(!a || !b) return null; const x = val(d, a, f), y = val(d, b, f); return blank(x) || blank(y) || !+y ? null : x / y; }
   if(f === "forecast" && !blank(row.dealValue) && !blank(row.weight)) return r1(+row.dealValue * +row.weight / 100);
   if(f === row.field && row.owners.length){ const o = ownerOf(row); if(o && "value" in o) return blank(o.value) ? null : +o.value; }
   else if(!blank(row[f])) return +row[f];
   if(row.rollup){ const ch = children(d, row).map(c => val(d, c, f)).filter(x => !blank(x)); if(ch.length) return r1(ch.reduce((a, b) => a + b, 0)); }
   return null;
 }
+function fmtV(row, v){ if(blank(v)) return null; if(row.fmt === "unit") return unit$(v); if(row.fmt === "accounts") return r1(v) + "M"; return money(v); }
+function fmtDiff(row, v){
+  if(row.fmt === "unit") return (v > 0 ? "+" : v < 0 ? MINUS : "") + "$" + Math.abs(v).toFixed(3);
+  if(row.fmt === "accounts") return (v > 0 ? "+" : v < 0 ? MINUS : "") + r1(Math.abs(v)) + "M";
+  return smoney(v) + (row.perMonth ? "/mo" : "");
+}
 function variance(d, row){
   const p = val(d, row, "plan"); let basis = "actual", v = val(d, row, "actual");
   if(blank(v)){ basis = "forecast"; v = val(d, row, "forecast"); }
   if(blank(p) || blank(v)) return null;
-  const diff = r1(v - p), pct = p ? (v - p) / p * 100 : 0, rp = Math.round(pct);
-  const adverse = row.better === "lower" ? diff > 0 : diff < 0;
-  return { main: rp < 0 ? `(${-rp}%)` : rp > 0 ? `+${rp}%` : "0%", sub: smoney(diff) + (row.perMonth ? "/mo" : ""), adverse, diff, pct: rp, basis };
+  const diff = row.fmt === "usd" ? r1(v - p) : v - p, pct = p ? (v - p) / p * 100 : 0, rp = Math.round(pct);
+  const adverse = row.better === "lower" ? diff > 1e-9 : diff < -1e-9;
+  return { main: rp < 0 ? `(${-rp}%)` : rp > 0 ? `+${rp}%` : "0%", sub: fmtDiff(row, diff), adverse, diff, pct: rp, basis };
 }
 function dealOf(d, row){
   if(!blank(row.dealValue)) return +row.dealValue;
@@ -476,6 +526,7 @@ function weightOf(d, row){
   return row.rollup && dv && !blank(w) ? Math.round(w / dv * 100) : null;
 }
 function shareOf(d, row){
+  if(row.fmt !== "usd" || row.perMonth) return null;
   const w = val(d, row, "forecast"); if(blank(w)) return null;
   if(row.rollup){ const p = val(d, row, "plan"); return { main:"100%", sub: p ? `covers ${Math.round(w / p * 100)}% of plan` : "" }; }
   if(!row.parent) return null;
@@ -490,7 +541,7 @@ function cellData(d, row){
   const o = ownerOf(row), v = variance(d, row), sh = shareOf(d, row);
   return {
     metric:{ t: row.metric },
-    plan:{ t: money(val(d, row, "plan")) }, actual:{ t: money(val(d, row, "actual")) }, forecast:{ t: money(val(d, row, "forecast")) },
+    plan:{ t: fmtV(row, val(d, row, "plan")) }, actual:{ t: fmtV(row, val(d, row, "actual")) }, forecast:{ t: fmtV(row, val(d, row, "forecast")) },
     var: v ? Object.assign({}, v, { tip:(row.varTip || {}).text || "", esc:(row.varTip || {}).esc || null }) : { main:null },
     deal:{ t: money(dealOf(d, row)) }, weight:{ t: blank(weightOf(d, row)) ? null : weightOf(d, row) + "%" },
     share:{ t: sh ? sh.main : null, sub: sh ? sh.sub : null },
@@ -508,67 +559,97 @@ function cellText(c){
   if("main" in c) return (c.main || "") + (c.sub ? " " + c.sub : "") + (c.tip ? " · " + c.tip : "");
   return [c.t, c.sub].filter(Boolean).join(" ");
 }
-function projStatus(p){
-  const st = p.stages.map(s => s.status), last = p.stages[p.stages.length - 1];
-  if(last && last.status === "done") return { k:"done", label:"Delivered" };
-  if(st.includes("blocked")) return { k:"blocked", label:"Blocked" };
-  if(st.includes("noupdate")) return { k:"noupdate", label:"Unconfirmed" };
-  if(st.includes("late")) return { k:"late", label:"Behind plan" };
-  return { k:"active", label:"On plan" };
-}
-function countdown(p){
-  if(!p.deadline) return null;
-  const st = projStatus(p); if(st.k === "done") return { t:"Delivered", bad:false };
-  const n = days(todayISO(), p.deadline);
-  if(n > 0) return { t:`in ${n} day${n === 1 ? "" : "s"}`, bad: n <= 14 && st.k !== "active" };
-  if(n === 0) return { t:"today", bad:true };
-  return { t:`${-n} days overdue`, bad:true };
+
+/* ---------- NorthPoint cost to serve (deal model) ---------- */
+function costCalc(d){
+  const m = d.costModel, offer = m.offers[S.offer] || m.offers.sales;
+  const ceil = x => Math.ceil(x - 1e-9);
+  const lines = { cloud:[], env:[], lic:[], sup:[], impl:[], total:[], rev:[], margin:[] }, am = [];
+  m.years.forEach((y, i) => {
+    const acc = +m.accounts[i] || 0, a = acc * 12; am.push(a);
+    const cloud = +m.cloudPerAcct * (1 + (+m.cloudPremium || 0) / 100);
+    const env = a ? Math.max(+m.envMin, ceil(acc / +m.envCapacity)) * +m.envCost / a : 0;
+    const lic = +m.licPerAcct;
+    const sup = a ? Math.max(+m.supportMin, ceil(acc / +m.supportCapacity)) * +m.supportCost / a : 0;
+    const impl = i === 0 && a ? +m.implRate * +m.implMonths / a : 0;
+    const total = cloud + env + lic + sup + impl, rev = +offer.revenue[i] || 0;
+    lines.cloud.push(cloud); lines.env.push(env); lines.lic.push(lic); lines.sup.push(sup); lines.impl.push(impl); lines.total.push(total); lines.rev.push(rev); lines.margin.push(rev ? 1 - total / rev : null);
+  });
+  const tam = am.reduce((a, b) => a + b, 0), five = {}, totals = {};
+  Object.keys(lines).forEach(k => { if(k === "margin") return; totals[k] = lines[k].reduce((s, v, i) => s + v * am[i], 0); five[k] = tam ? totals[k] / tam : 0; });
+  five.margin = five.rev ? 1 - five.total / five.rev : null;
+  return { m, offer, lines, five, totals, am };
 }
 
-/* ---------- checks (used when AI isn't connected) ---------- */
+/* ---------- other issues (rule-based fallback; AI replaces these when connected) ---------- */
 function knownFigures(d){
   const k = new Set(); const addM = v => { if(!blank(v)){ const m = money(Math.abs(+v)); if(m) k.add(m); } };
   allRows(d).forEach(r => {
-    ["plan","actual","forecast"].forEach(f => addM(val(d, r, f)));
-    r.owners.forEach(o => addM(o.value)); addM(r.dealValue); if(!blank(r.weight)) k.add(+r.weight + "%");
-    const v = variance(d, r); if(v){ k.add(Math.abs(v.pct) + "%"); addM(Math.abs(v.diff)); }
+    if(r.fmt === "usd"){ ["plan","actual","forecast"].forEach(f => addM(val(d, r, f))); r.owners.forEach(o => addM(o.value)); addM(r.dealValue); }
+    if(!blank(r.weight)) k.add(+r.weight + "%");
+    const v = variance(d, r); if(v){ k.add(Math.abs(v.pct) + "%"); if(r.fmt === "usd") addM(Math.abs(v.diff)); }
     const sh = shareOf(d, r); if(sh){ k.add(sh.main); (sh.sub.match(/\d+%/g) || []).forEach(x => k.add(x)); }
   });
   d.operations.forEach(p => { if(p.kpi && p.kpi.plan){ const dd = p.kpi.actual - p.kpi.plan; k.add(Math.abs(Math.round(dd / p.kpi.plan * 100)) + "%"); } });
   return k;
 }
+function escalatedCols(d){
+  const out = [];
+  allRows(d).forEach(r => { Object.entries(r.tips).forEach(([c, t]) => { if(t && t.esc) out.push({ id:r.id, name:r.metric, col:c, parent:r.parent }); }); if(r.varTip && r.varTip.esc) out.push({ id:r.id, name:r.metric, col:"var", parent:r.parent }); });
+  d.operations.forEach(p => Object.entries(p.tips).forEach(([c, t]) => { if(t && t.esc) out.push({ id:p.id, name:p.name, col:c, proj:true }); }));
+  return out;
+}
+function covered(d, id, name, col, parent){
+  const nm = String(name).toLowerCase();
+  return escalatedCols(d).some(e => e.col === col && (e.id === id || e.id === parent || (nm.length > 4 && (e.name.toLowerCase().includes(nm) || nm.includes(e.name.toLowerCase())))));
+}
 function ruleIssues(d){
-  const out = [], asOf = d.meta.asOf, now = todayISO();
+  const out = [], asOf = d.meta.asOf, rb = fmtDow(S.ops.settings.replyBy);
   allRows(d).forEach(r => {
-    const msg = [], o = ownerOf(r);
-    r.owners.forEach(x => { if("value" in x && blank(x.value)) msg.push(`No figure from ${x.role} (${x.source})`); });
-    const vals = r.owners.filter(x => "value" in x && !blank(x.value));
-    if(vals.length > 1 && uniq(vals.map(x => +x.value)).length > 1) msg.push(vals.map(x => `${x.role} reports ${money(x.value)}`).join(", ") + `; the page shows ${o ? o.role : "nobody"}'s figure`);
-    if(r.owners.length > 1 && r.ownerWarn) msg.push("Two people report this number; name one owner");
-    if(r.updated && asOf && days(r.updated, asOf) > 14) msg.push(`Last updated ${fmtDate(r.updated)}`);
-    if(r.child && blank(r.dealValue) && !blank(val(d, r, "forecast"))) msg.push("No deal value or weight, so the weighted figure can't be checked");
-    if(msg.length) out.push({ title: r.metric, detail: msg.join(". ") + ".", severity: msg.length > 1 ? "high" : "medium", category: "Data reporting", rowIds:[r.id], owners: uniq(r.owners.map(x => x.role)) });
+    const reasons = [], o = ownerOf(r), shown = fmtV(r, val(d, r, r.field)); let sev = "medium", topic = "Data reporting", impact = "", next = "";
+    const vals = r.owners.filter(x => "value" in x && !blank(x.value)), empty = r.owners.filter(x => "value" in x && blank(x.value));
+    const disagree = vals.length > 1 && uniq(vals.map(x => +x.value)).length > 1;
+    if(disagree) reasons.push(vals.map(x => `${x.role} reports ${fmtV(r, x.value)}`).join(", "));
+    empty.forEach(x => reasons.push(`${x.role} has no figure (${x.source})`));
+    COLS.forEach(([c, l]) => { const st = r.risk[c], t = r.tips[c] || {};
+      if(!st || st === "green" || t.esc || covered(d, r.id, r.metric, c, r.parent)) return;
+      if(t.text && !reasons.some(x => x.includes(t.text))) reasons.push(t.text); if(st === "red") sev = "high"; });
+    if(r.child && r.parent && r.fmt === "usd" && blank(r.dealValue) && !blank(val(d, r, "forecast"))) reasons.push("no deal value or weight behind the weighted figure");
+    const v = variance(d, r);
+    if(r.perMonth && v && v.adverse && Math.abs(v.pct) >= 10){ reasons.unshift(`running ${v.main} over plan`); topic = "Cost"; impact = `At this rate it adds ${smoney(v.diff * 12)} a year over plan.`; sev = Math.abs(v.pct) >= 20 ? "high" : "medium"; }
+    if(!reasons.length) return;
+    if(!impact){
+      if(disagree || empty.length) impact = `The ${shown || "figure"} on the President's page may not be the agreed number.`;
+      else if(r.child && r.parent && (findRow(d, r.parent) || {}).rollup){ const sh = shareOf(d, r); impact = sh ? `${sh.main} of the weighted pipeline (${shown}) hasn't been checked.` : `The ${shown} in the pipeline hasn't been checked.`; }
+      else impact = `The ${shown || "figure"} shown may be out of date or unverified.`;
+    }
+    const owners = uniq(r.owners.map(x => x.role));
+    next = topic === "Cost" ? `Ask ${owners.join(" and ")} to explain the gap and how much is price versus volume, by ${rb}.`
+      : `Ask ${owners.join(" and ")} to confirm the figure${disagree || r.owners.length > 1 ? " and agree one owner" : ""} by ${rb}.`;
+    out.push({ title: r.metric, category: topic, severity: sev, issue: cap(reasons.join("; ")) + ".", impact, next, rowIds:[r.id] });
   });
   d.operations.forEach(p => {
-    const msg = [];
-    if(!p.owner) msg.push("No owner");
-    if(!p.updated) msg.push("No update date");
-    else if(asOf && days(p.updated, asOf) > 14) msg.push(`Last update ${fmtDate(p.updated)}`);
-    const bl = p.stages.filter(s => s.status === "blocked" || s.status === "noupdate");
-    if(bl.length) msg.push(`${bl.length} step${bl.length === 1 ? "" : "s"} blocked or without update (${bl.map(s => s.name).join(", ")})`);
-    const late = p.deadline && p.deadline < now && projStatus(p).k !== "done";
-    if(late) msg.push(`Deadline ${fmtDate(p.deadline)} has passed without confirmation`);
-    if(msg.length) out.push({ title: p.name, detail: msg.join(". ") + ".", severity: !p.owner || late ? "high" : "medium", category: "Delivery", rowIds:[p.id], owners: p.owner ? [p.owner] : ["Head of Delivery"] });
+    ["reporting","staffing"].forEach(c => { const st = p.risk[c], t = p.tips[c] || {};
+      if(!st || st === "green" || t.esc) return;
+      out.push({ title:`${p.name}: ${c}`, category: cap(c), severity: st === "red" ? "high" : st === "amber" ? "medium" : "low",
+        issue: `${t.text || cap(STATUS[st])} for ${p.name}.`, impact: `We can't tell whether ${p.name} has the ${c === "staffing" ? "people" : "reporting"} it needs before ${fmtLong(p.deadline)}.`,
+        next: `Ask ${p.owner || "the project owner"} to report ${c} with a date by ${rb}.`, rowIds:[p.id] }); });
   });
-  const known = knownFigures(d);
-  const texts = [d.header.title, ...d.escalations.flatMap(e => [e.issue, e.impact])];
+  const c = costCalc(d), tgt = (+d.costModel.marginTarget || 0) / 100;
+  if(c.five.margin != null && c.five.margin < tgt){
+    out.push({ title:"NorthPoint deal margin below target", category:"Commercial", severity:"high",
+      issue:`Under ${c.offer.name}, NorthPoint's 5-year gross margin is ${Math.round(c.five.margin * 100)}% against the ${Math.round(tgt * 100)}% target.`,
+      impact:`Cost to serve averages ${unit$(c.five.total)} per account per month against ${unit$(c.five.rev)} of revenue; year 1 loses money because of the ${money(+d.costModel.implRate * +d.costModel.implMonths)} implementation.`,
+      next:`Ask Head of Sales and Finance BP to agree which offer goes to the client before the review on ${fmtDow(S.ops.settings.reviewDate)}.`, rowIds:["cm-margin"] });
+  }
+  const known = knownFigures(d), texts = [d.header.title, ...d.escalations.flatMap(e => [e.issue, e.impact])];
   const bad = uniq(texts.flatMap(t => (String(t).match(/\$\d+(?:\.\d+)?M|\d+(?:\.\d+)?%/g) || []).filter(x => !known.has(x))));
-  if(bad.length) out.unshift({ title:"Headline doesn't match the figures", detail:`The title or cards mention ${bad.join(", ")}, which no figure in the tables supports.`, severity:"high", category:"Data reporting", rowIds:[], owners:[] });
+  if(bad.length) out.unshift({ title:"Headline doesn't match the figures", category:"Data reporting", severity:"high", issue:`The title or cards mention ${bad.join(", ")}, which no figure in the tables supports.`, impact:"The President may act on numbers that have since changed.", next:"Update the headline and cards, or check the figures that changed.", rowIds:[] });
   const rank = { high:0, medium:1, low:2 };
   return out.sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
 
-/* ---------- rendering ---------- */
+/* ---------- rendering helpers ---------- */
 function cur(){ return S.view === "draft" ? S.draft : S.live; }
 const editing = () => S.view === "draft";
 const na = () => '<span class="na">—</span>';
@@ -587,8 +668,8 @@ function dotCell(key, label, c, chg){
 function numInput(key, v, extra = ""){ return `<input class="ci ${extra}" inputmode="decimal" data-set="${h(key)}" data-t="num" value="${h(blank(v) ? "" : v)}" aria-label="Edit value">`; }
 function valCell(d, r, f, chg){
   const c = cellData(d, r)[f], bold = f !== "plan";
-  if(editing()){
-    if(f === "plan" && !r.child) return `<td class="num${chg}">${numInput(`row:${r.id}:plan`, r.plan, "plain")}</td>`;
+  if(editing() && !r.derive){
+    if(f === "plan" && (!r.child || r.fmt !== "usd")) return `<td class="num${chg}">${numInput(`row:${r.id}:plan`, r.plan, "plain")}</td>`;
     if(f === r.field){
       const o = ownerOf(r);
       if(f === "forecast" && !blank(r.dealValue) && !blank(r.weight)) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">deal × weight</span></td>`;
@@ -596,7 +677,7 @@ function valCell(d, r, f, chg){
       if(r.rollup && c.t) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">sum of deals</span></td>`;
     }
   }
-  return `<td class="num${chg}">${c.t ? `<span class="${bold ? "b" : ""}">${h(c.t)}</span>` : na()}</td>`;
+  return `<td class="num${chg}">${c.t ? `<span class="${bold ? "b" : ""}">${h(c.t)}</span>${r.derive && f !== "plan" ? '<span class="auto">implied</span>' : ""}` : na()}</td>`;
 }
 function varCell(c, chg){
   if(!c.main) return `<td class="num${chg}">${na()}</td>`;
@@ -605,8 +686,8 @@ function varCell(c, chg){
   return `<td class="num${chg}"${escA}>${c.tip ? `<span class="vt" tabindex="0" data-tip="${h(c.tip)}">${inner}</span>` : inner}</td>`;
 }
 function ownerCell(r, c, chg){
-  if(editing() && r.owners.length){
-    const opts = r.owners.map((o, i) => `<option value="${i}"${i === (r.owner || 0) ? " selected" : ""}>${h(o.role)}${"value" in o ? ` · ${blank(o.value) ? "no figure" : money(o.value)}` : ""}</option>`).join("");
+  if(editing() && r.owners.length > 1){
+    const opts = r.owners.map((o, i) => `<option value="${i}"${i === (r.owner || 0) ? " selected" : ""}>${h(o.role)}${"value" in o ? ` · ${blank(o.value) ? "no figure" : fmtV(r, o.value)}` : ""}</option>`).join("");
     return `<td class="${chg}"><select class="osel${c.warn ? " neg" : ""}" data-set="row:${h(r.id)}:@owner" data-t="int" aria-label="Data owner">${opts}</select><span class="sub">${h(c.sub)}</span></td>`;
   }
   return `<td class="${chg}"><span class="${c.warn ? "neg b" : ""}">${h(c.t)}</span>${c.sub ? `<span class="sub">${h(c.sub)}</span>` : ""}</td>`;
@@ -615,6 +696,8 @@ function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
   return `<td class="${chg}">${c.t ? `<span class="${c.stale ? "neg" : ""}">${h(c.t)}</span>` : na()}</td>`;
 }
+
+/* ---------- commercial + cloud tables ---------- */
 function finTable(el, secs, kind){
   const d = cur(), showPipe = kind === "com" && S.tf !== "cq";
   const cols = kind === "com"
@@ -640,7 +723,6 @@ function finTable(el, secs, kind){
     const tfSel = sec.timeframe ? `<label class="csum">Period <select class="tf" data-act="tf" aria-label="Booking period">${Object.entries(TF).map(([k, l]) => `<option value="${k}"${S.tf === k ? " selected" : ""}>${h(l)}</option>`).join("")}</select></label>` : "";
     html += `<tr class="sh dimmable"><th colspan="${N}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}</div></th></tr>`;
     if(collapsed) return;
-    if(sec.pending && !rows.length){ html += `<tr class="dimmable"><td colspan="${N}" class="pend">${h(sec.pending)}</td></tr>`; return; }
     rows.forEach(r => {
       const c = cellData(d, r), ch = changedMap(d, r), C = k => ch[k] || "";
       let tr = `<tr data-row="${h(r.id)}" class="dimmable${r.child ? " child" : ""}">`;
@@ -654,20 +736,48 @@ function finTable(el, secs, kind){
         else if(k === "annual") tr += `<td class="num${C("annual")}">${c.annual.t ? `<span class="b${c.annual.adverse ? " neg" : ""}">${h(c.annual.t)}</span><span class="sub">vs plan</span>` : na()}</td>`;
         else if(COLS.some(x => x[0] === k)) tr += dotCell(`row:${r.id}:${k}`, COLS.find(x => x[0] === k)[1], c[k], C(k));
         else if(k === "owner") tr += ownerCell(r, c.owner, C("owner"));
-        else if(k === "updated") tr += updCell(`row:${r.id}:updated`, r.updated, c.updated, C("updated"));
+        else if(k === "updated") tr += r.derive ? `<td>${na()}</td>` : updCell(`row:${r.id}:updated`, r.updated, c.updated, C("updated"));
       });
       html += tr + "</tr>";
     });
   });
   el.innerHTML = html + "</tbody>";
-  el.style.minWidth = kind === "com" ? (showPipe ? "1240px" : "1000px") : "900px";
+  el.style.minWidth = kind === "com" ? (showPipe ? "1240px" : "1000px") : "960px";
+}
+
+/* ---------- cost-to-serve table ---------- */
+function modelTable(el){
+  const d = cur(), c = costCalc(d), m = c.m, ed = editing(), live = S.live.costModel;
+  const I = (k, v, cls = "s", show) => ed ? `<input class="ci ${cls}" inputmode="decimal" data-set="cm:${k}" data-t="num" value="${h(v)}" aria-label="${h(k)}">` : `<b>${h(show != null ? show : v)}</b>`;
+  const ch = k => ed && JSON.stringify(live[k]) !== JSON.stringify(m[k]) ? " chg" : "";
+  const yc = m.years.length;
+  const row = (label, driver, arr, five, total, cls = "", fmt = unit$, id = "") => `<tr class="dimmable ${cls}"${id ? ` data-row="${id}"` : ""}><td class="sticky">${label}</td><td class="drv">${driver}</td>${arr.map(v => `<td class="num">${blank(v) ? na() : h(fmt(v))}</td>`).join("")}<td class="num b">${blank(five) ? na() : h(fmt(five))}</td><td class="num">${blank(total) ? na() : h(total)}</td></tr>`;
+  const tgt = (+m.marginTarget || 0) / 100;
+  const pct = v => v == null ? null : (v < 0 ? MINUS : "") + Math.round(Math.abs(v) * 100) + "%";
+  const offers = `<select class="tf" data-act="offer" aria-label="Offer">${Object.entries(m.offers).map(([k, o]) => `<option value="${k}"${S.offer === k ? " selected" : ""}>${h(o.name)}</option>`).join("")}</select>`;
+  let html = `<thead><tr class="cols dimmable"><th class="sticky">$ per planned account per month</th><th>Driver</th>${m.years.map(y => `<th class="r">${y}</th>`).join("")}<th class="r g">5-year</th><th class="r g">5-year total</th></tr></thead><tbody>
+    <tr class="dimmable"><td class="sticky nt">Active accounts (millions)</td><td class="drv">NorthPoint migration plan</td>${m.accounts.map((a, i) => `<td class="num${ch("accounts")}">${ed ? numInput(`cm:accounts.${i}`, a, "plain w") : h(r1(a) + "M")}</td>`).join("")}<td class="num">${na()}</td><td class="num nt">${h(r1(c.am.reduce((a, b) => a + b, 0)) + "M")} acct-months</td></tr>
+    <tr class="sub2 dimmable"><td colspan="${yc + 4}">Variable cost to serve</td></tr>`;
+  html += row("Cloud hosting", `${ed ? "$" : ""}${I("cloudPerAcct", m.cloudPerAcct, "s", unit$(m.cloudPerAcct))} per account + ${I("cloudPremium", m.cloudPremium, "w")}% 2026 cloud premium`, c.lines.cloud, c.five.cloud, money(c.totals.cloud), ch("cloudPerAcct") + ch("cloudPremium"));
+  html += row("Dedicated platform environments", `$${I("envCost", m.envCost, "w")}M a year each, one per ${I("envCapacity", m.envCapacity, "w")}M accounts (min ${I("envMin", m.envMin, "w")})`, c.lines.env, c.five.env, money(c.totals.env));
+  html += row("Third-party software licences", `${ed ? "$" : ""}${I("licPerAcct", m.licPerAcct, "s", unit$(m.licPerAcct))} per account`, c.lines.lic, c.five.lic, money(c.totals.lic));
+  html += row("Client support engineers", `${ed ? `$${I("supportCost", m.supportCost, "w")}M` : `<b>$${Math.round(m.supportCost * 1000)}k</b>`} a year each, one per ${I("supportCapacity", m.supportCapacity, "w")}M accounts (min ${I("supportMin", m.supportMin, "w")})`, c.lines.sup, c.five.sup, money(c.totals.sup));
+  html += `<tr class="sub2 dimmable"><td colspan="${yc + 4}">Fixed cost to serve (one-time)</td></tr>`;
+  html += row("Implementation", `${I("implMonths", m.implMonths, "w")} engineer-months at ${ed ? `$${I("implRate", m.implRate, "w")}M` : `<b>$${Math.round(m.implRate * 1000)}k</b>`} each, in ${m.years[0]}`, c.lines.impl, c.five.impl, money(c.totals.impl));
+  html += row("Total cost to serve", "", c.lines.total, c.five.total, money(c.totals.total), "tot");
+  html += `<tr class="sub2 dimmable"><td colspan="${yc + 4}"><span style="display:inline-flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0">Revenue and margin for ${offers}</span></td></tr>`;
+  html += row("Platform revenue", "Gross revenue after discounts", c.lines.rev, c.five.rev, money(c.totals.rev));
+  html += `<tr class="dimmable tot" data-row="cm-margin"><td class="sticky">Gross margin</td><td class="drv">Target ${I("marginTarget", m.marginTarget, "w")}%</td>${c.lines.margin.map(v => `<td class="num ${v != null && v < tgt ? "neg" : ""}">${h(pct(v) || "—")}</td>`).join("")}<td class="num b ${c.five.margin != null && c.five.margin < tgt ? "neg" : ""}">${h(pct(c.five.margin) || "—")}</td><td class="num nt">${c.five.margin != null ? h((c.five.margin - tgt >= 0 ? "+" : MINUS) + Math.abs(Math.round((c.five.margin - tgt) * 100)) + " pts vs target") : ""}</td></tr>`;
+  el.innerHTML = html + "</tbody>";
+  el.style.minWidth = "1080px";
+  $("#cmNote").textContent = `From ${m.source}. Cloud hosting uses the same unit cost as the cloud breakdown above.`;
 }
 
 /* ---------- operations ---------- */
 function axis(d){
   let a = null, b = null;
   d.operations.forEach(p => { p.stages.forEach(s => { if(s.start && (!a || s.start < a)) a = s.start; const e = s.end || s.start; if(e && (!b || e > b)) b = e; }); if(p.deadline && (!b || p.deadline > b)) b = p.deadline; });
-  const t = todayISO(); if(!a || t < a) a = a && a < t ? a : t; if(!b || t > b) b = t;
+  const t = todayISO(); if(!a) a = t; if(t < a) a = t; if(!b || t > b) b = t;
   const A = pd(a), B = pd(b);
   const start = `${A.y}-${String(A.m).padStart(2,"0")}-01`;
   const em = B.m === 12 ? { y:B.y + 1, m:1 } : { y:B.y, m:B.m + 1 };
@@ -689,17 +799,43 @@ function bars(ax, stages, deadline, compact){
   if(now >= ax.start && now <= ax.end) html += `<i class="now" style="left:${ax.pct(now)}%"></i>`;
   return `<div class="tl">${html}</div>`;
 }
+function projStatus(p){
+  const st = p.stages.map(s => s.status), last = p.stages[p.stages.length - 1];
+  if(last && last.status === "done") return { k:"done", label:"Delivered" };
+  if(st.includes("blocked")) return { k:"blocked", label:"Blocked" };
+  if(st.includes("noupdate")) return { k:"noupdate", label:"Unconfirmed" };
+  if(st.includes("late")) return { k:"late", label:"Behind plan" };
+  return { k:"active", label:"On plan" };
+}
+function countdown(p){
+  if(!p.deadline) return null;
+  const st = projStatus(p); if(st.k === "done") return { t:"Delivered", bad:false };
+  const n = days(todayISO(), p.deadline);
+  if(n > 0) return { t:`in ${n} day${n === 1 ? "" : "s"}`, bad: n <= 14 && st.k !== "active" };
+  if(n === 0) return { t:"today", bad:true };
+  return { t:`${-n} days overdue`, bad:true };
+}
+function projNotes(p, ed){
+  const items = [];
+  ["reporting","staffing"].forEach(c => { const st = p.risk[c], t = p.tips[c] || {};
+    if(!st || st === "green"){ if(ed) items.push(`<span class="nl"><button class="tag" data-pop="proj:${h(p.id)}:${c}">${cap(c)}: on track</button></span>`); return; }
+    const tag = ed ? `<button class="tag ${st}" data-pop="proj:${h(p.id)}:${c}">${cap(c)}</button>` : `<span class="tag ${st}">${cap(c)}</span>`;
+    items.push(`<span class="nl">${tag}${h(t.text || cap(STATUS[st]))}</span>`); });
+  const seen = new Set(["Reporting","Staffing"].filter(x => p.risk[x.toLowerCase()] && p.risk[x.toLowerCase()] !== "green"));
+  p.stages.forEach(s => { if(s.blocker && s.tag && !seen.has(s.tag)){ seen.add(s.tag); items.push(`<span class="nl"><span class="tag red">${h(s.tag)}</span>${h(s.blocker)}</span>`); } });
+  return items.join("") || na();
+}
 function opsTable(el){
   const d = cur(), ax = axis(d), ed = editing(), now = todayISO();
-  const roles = Object.keys(S.ops.directory);
-  let html = `<thead><tr class="grp dimmable"><th colspan="2"></th><th colspan="2"><span>RISK ASSESSMENT</span></th><th colspan="3"></th></tr>
-    <tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner / dates</th><th class="c g">Reporting</th><th class="c g">Staffing</th><th>Deadline / status</th><th>Blocker / note</th>
+  const roles = uniq(["Head of Delivery","Head of Product","Head of Sales","Head of Platform","Head of Talent","Finance BP", ...d.operations.map(p => p.owner).filter(Boolean)]);
+  let html = `<thead><tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner</th><th>Last updated</th><th>Deadline</th><th>Status</th><th>Notes</th><th class="fu">Follow up</th>
     <th><div class="tlh">${ax.months.map(m => `<i style="left:${ax.pct(m)}%"></i><span style="left:${ax.pct(m)}%">${MON[pd(m).m - 1]}${pd(m).m === 1 ? " " + String(pd(m).y).slice(2) : ""}</span>`).join("")}${now >= ax.start && now <= ax.end ? `<span class="td" style="left:${ax.pct(now)}%">Today</span>` : ""}</div></th></tr></thead><tbody>`;
   let lastSec = null;
   d.operations.forEach(p => {
-    if(p.section !== lastSec){ lastSec = p.section; html += `<tr class="sh dimmable"><th colspan="7">${h(p.section || "")}</th></tr>`; }
+    if(p.section !== lastSec){ lastSec = p.section; html += `<tr class="sh dimmable"><th colspan="8">${h(p.section || "")}</th></tr>`; }
     const lp = findProj(S.live, p.id), chg = (...ks) => ed && ks.some(k => !lp || JSON.stringify(lp[k]) !== JSON.stringify(p[k])) ? " chg" : "";
     const open = !S.collapsed["p:" + p.id], st = projStatus(p), cd = countdown(p);
+    const escTip = Object.values(p.tips).find(t => t && t.esc);
     let subline = "";
     if(p.kpi){ const dd = p.kpi.actual - p.kpi.plan, pc = p.kpi.plan ? Math.round(dd / p.kpi.plan * 100) : 0;
       subline = ed ? `${h(p.kpi.label)}: ${numInput(`proj:${p.id}:kpi.actual`, p.kpi.actual, "w")} of ${numInput(`proj:${p.id}:kpi.plan`, p.kpi.plan, "w plain")}`
@@ -707,15 +843,17 @@ function opsTable(el){
     else if(p.forecast) subline = `Forecast ${h(fmtDate(p.forecast))}${p.forecastNote ? " · " + h(p.forecastNote) : ""}`;
     const ownerHtml = ed ? `<select class="osel${p.owner ? "" : " neg"}" data-set="proj:${h(p.id)}:owner" data-t="text" aria-label="Owner"><option value="">None</option>${roles.map(r => `<option${r === p.owner ? " selected" : ""}>${h(r)}</option>`).join("")}</select>`
       : `<span class="${p.owner ? "" : "neg b"}">${h(p.owner || "None")}</span>`;
-    const upd = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:updated" data-t="date" value="${h(p.updated || "")}" aria-label="Last update">` : `<span class="sub${p.updated && p.updated < d.meta.asOf ? " neg" : ""}">${p.updated ? "Updated " + h(fmtDate(p.updated)) : "No update date"}</span>`;
+    const upd = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:updated" data-t="date" value="${h(p.updated || "")}" aria-label="Last update">`
+      : (p.updated ? `<span class="${p.updated < d.meta.asOf ? "neg" : ""}">${h(fmtDate(p.updated))}</span>` : na());
     const dl = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:deadline" data-t="date" value="${h(p.deadline || "")}" aria-label="Deadline">` : `<span class="b">${h(fmtDate(p.deadline) || "—")}</span>`;
-    const blockers = p.stages.filter(s => s.blocker);
     html += `<tr class="proj dimmable" data-row="${h(p.id)}">
-      <td class="sticky${chg("name","kpi")}"><button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}"><span class="cv">▾</span><span ${ed ? `contenteditable="true" data-edit="proj:${h(p.id)}:name"` : ""}>${h(p.name)}</span></button>${p.sample ? '<span class="tag" title="Mock steps until the project owner sends the real plan">Sample steps</span>' : ""}<span class="sub" style="padding-left:22px">${subline}</span></td>
-      <td class="${chg("owner","updated").trim() ? "chg" : ""}">${ownerHtml}${upd}</td>
-      ${["reporting","staffing"].map(k => { const t = p.tips[k] || {}; return dotCell(`proj:${p.id}:${k}`, cap(k), { st:p.risk[k], tip:t.text || "", esc:t.esc || null }, chg("risk","tips")); }).join("")}
+      <td class="sticky${chg("name","kpi")}"><button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}"><span class="cv">▾</span><span ${ed ? `contenteditable="true" data-edit="proj:${h(p.id)}:name"` : ""}>${h(p.name)}</span></button>${p.sample ? '<span class="tag" style="margin-left:6px" title="Mock steps until the project owner sends the real plan">Sample steps</span>' : ""}<span class="sub" style="padding-left:22px">${subline}</span></td>
+      <td class="${chg("owner").trim()}">${ownerHtml}</td>
+      <td class="${chg("updated").trim()}">${upd}</td>
       <td class="${chg("deadline").trim()}">${dl}<span class="sub${cd && cd.bad ? " neg b" : ""}">${cd ? h(cd.t) : ""}</span></td>
-      <td><span class="sc ${st.k}">${h(st.label)}</span>${blockers.length ? `<span class="sub blk">${h(blockers[0].blocker)}${blockers.length > 1 ? ` (+${blockers.length - 1} more)` : ""}</span>` : ""}</td>
+      <td><span class="sc ${st.k}">${h(st.label)}</span></td>
+      <td class="${chg("risk","tips").trim()}"${escTip ? ` data-esc="${escTip.esc}" data-cotext="${h(escTip.text)}"` : ""}>${projNotes(p, ed)}</td>
+      <td class="fu"><button class="btn xs" data-act="follow" data-ref="proj:${h(p.id)}">Follow up</button></td>
       <td>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
     if(!open) return;
     p.stages.forEach((s, i) => {
@@ -723,15 +861,17 @@ function opsTable(el){
       const dates = ed ? `<input type="date" class="ci date" data-set="${k}:start" data-t="date" value="${h(s.start || "")}" aria-label="Start">${s.milestone ? "" : ` <input type="date" class="ci date" data-set="${k}:end" data-t="date" value="${h(s.end || "")}" aria-label="End">`}`
         : `${h(fmtDate(s.start) || "")}${s.end && s.end !== s.start ? " – " + h(fmtDate(s.end)) : ""}`;
       const stt = ed ? `<select class="ssel" data-set="${k}:status" data-t="text" aria-label="Step status">${Object.entries(STAGE).map(([v, l]) => `<option value="${v}"${v === s.status ? " selected" : ""}>${l}</option>`).join("")}</select>` : `<span class="sc ${s.status}">${STAGE[s.status] || h(s.status)}</span>`;
-      const bl = ed ? `<span class="blk" contenteditable="true" data-edit="${k}:blocker" aria-label="Blocker">${h(s.blocker || "")}</span>${s.note ? `<span class="sub nt">${h(s.note)}</span>` : ""}`
-        : ((s.blocker ? `<span class="blk">${h(s.blocker)}</span>` : "") + (s.note ? `<span class="${s.blocker ? "sub " : ""}nt">${h(s.note)}</span>` : "") || na());
+      let notes;
+      if(ed) notes = `<select class="ssel" data-set="${k}:tag" data-t="text" aria-label="Issue type"><option value="">No tag</option>${TAGS.map(t => `<option${t === s.tag ? " selected" : ""}>${t}</option>`).join("")}</select> <span class="blk" contenteditable="true" data-edit="${k}:blocker" aria-label="Blocker">${h(s.blocker || "")}</span>${s.note ? `<span class="sub nt">${h(s.note)}</span>` : ""}`;
+      else notes = (s.blocker ? `<span class="nl">${s.tag ? `<span class="tag red">${h(s.tag)}</span>` : ""}<span class="blk">${h(s.blocker)}</span></span>` : "") + (s.note ? `<span class="${s.blocker ? "sub " : ""}nt">${h(s.note)}</span>` : "") || na();
       html += `<tr class="stage dimmable" data-row="${h(p.id)}">
         <td class="sticky${sc}"><span class="sn" ${ed ? `contenteditable="true" data-edit="${k}:name"` : ""}>${h(s.name)}</span></td>
-        <td class="nt${sc}">${dates}</td><td colspan="2" class="ctr${sc}">${stt}</td><td class="${sc.trim()}">${s.milestone ? '<span class="nt">Milestone</span>' : ""}</td><td class="${sc.trim()}">${bl}</td><td>${bars(ax, [s], null, false)}</td></tr>`;
+        <td></td><td></td><td class="nt${sc}">${dates}</td><td class="${sc.trim()}">${stt}</td><td class="${sc.trim()}">${notes}</td>
+        <td class="fu">${s.blocker ? `<button class="btn xs" data-act="follow" data-ref="blk:${h(p.id)}:${i}">Follow up</button>` : ""}</td><td>${bars(ax, [s], null, false)}</td></tr>`;
     });
   });
   el.innerHTML = html + "</tbody>";
-  el.style.minWidth = "1180px";
+  el.style.minWidth = "1240px";
   $("#tlleg").innerHTML = Object.entries(STAGE).map(([k, l]) => `<span><i class="lsw seg ${k}"></i>${l}</span>`).join("") +
     `<span><i class="lsw" style="width:0;height:12px;border-left:2px solid var(--deep);border-radius:0"></i>Deadline</span><span><i class="lsw" style="width:0;height:12px;border-left:1.5px dashed var(--neg);border-radius:0"></i>Today</span>`;
 }
@@ -742,8 +882,8 @@ function renderCards(d){
   const ed = editing();
   const E = (path, txt, cls = "") => ed ? `<span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>` : `<span class="${cls}">${h(txt)}</span>`;
   $("#cards").innerHTML = d.escalations.map((e, i) => {
-    const lf = lastFollow("esc" + e.id);
-    return `<article class="card dimmable" tabindex="0" data-card="${e.id}" aria-label="Escalation ${e.id}: ${h(titleCase(e.title))}">
+    const lf = lastFollow("esc" + e.id), lit = S.focus === "esc" + e.id;
+    return `<article class="card dimmable${lit ? " lit" : ""}" tabindex="0" role="button" aria-pressed="${lit}" data-card="${e.id}" aria-label="Escalation ${e.id}: ${h(titleCase(e.title))}. Show in the tables">
       <div class="ct"><span class="cb">${e.id}</span>${E(`escalations.${i}.title`, e.title)}</div>
       <div class="kv"><span>Issue</span>${E(`escalations.${i}.issue`, e.issue, "b")}</div>
       <div class="kv"><span>Impact</span>${E(`escalations.${i}.impact`, e.impact)}</div>
@@ -761,21 +901,25 @@ function renderIssues(){
   const src = I.src === "ai" ? `Suggested by AI · updated ${ago(I.at)}${S.aiBusy ? " · refreshing…" : ""}` : (S.aiBusy ? "Asking AI…" : "Automatic checks");
   let html = `<button class="ih" data-act="issues" aria-expanded="${S.issuesOpen}"><b>Other issues</b><span class="cnt">${n}</span><span class="src">${h(src)}</span><span class="chev">${S.issuesOpen ? "▲" : "▼"}</span></button>`;
   if(S.issuesOpen){
-    html += `<ol class="il">${I.items.map((it, i) => `<li data-issue="${i}" tabindex="0"><i class="dot ${SEVDOT[it.severity] || "amber"}" role="img" aria-label="${h(it.severity)} priority"></i>
-      <div><div class="t">${it.category ? `<span class="tag">${h(it.category)}</span>` : ""}${h(it.title)}</div><div class="d">${h(it.detail)}</div>${(it.owners || []).length ? `<div class="m">Owners: ${h(it.owners.join(", "))}</div>` : ""}</div>
-      <button class="btn sm" data-act="follow" data-ref="iss${i}">Follow up</button></li>`).join("") || '<li><span></span><div class="d">Nothing else stands out.</div></li>'}</ol>
-      <div class="ifoot"><span>${I.src === "ai" ? "Written by AI from the figures below; it refreshes when the data changes. Check before acting." : S.mode === "server" ? "Rule-based checks. Add an AI key (see the setup guide) to get AI suggestions that update with the data." : "Rule-based checks in this preview. On the live site these come from AI."}</span>${I.src === "ai" ? '<button class="lnk" data-act="ai-refresh">Refresh now</button>' : ""}</div>`;
+    html += `<ol class="il">${I.items.map((it, i) => `<li data-issue="${i}" tabindex="0" role="button" class="${S.focus === "iss" + i ? "lit" : ""}"><i class="dot ${SEVDOT[it.severity] || "amber"}" role="img" aria-label="${h(it.severity)} priority"></i>
+      <div><div class="t">${it.category ? `<span class="tag">${h(it.category)}</span>` : ""}${h(it.title)}</div>
+        <div class="kv"><span>Issue</span><span>${h(it.issue || it.detail || "")}</span></div>
+        <div class="kv"><span>Impact</span><span>${h(it.impact || "—")}</span></div>
+        <div class="kv"><span>Next step</span><span>${h(it.next || "—")}</span></div></div>
+      <div class="act"><button class="btn xs" data-act="follow" data-ref="iss${i}">Follow up</button></div></li>`).join("") || '<li><span></span><div>Nothing else stands out beyond the escalations.</div></li>'}</ol>
+      <div class="ifoot"><span>${I.src === "ai" ? "Written by AI from the figures below, leaving out what the escalations already cover. It refreshes when the data changes; check before acting." : S.mode === "server" ? "Rule-based checks, leaving out what the escalations already cover. Add an AI key to get AI suggestions that update with the data." : "Rule-based checks in this preview."}</span>${I.src === "ai" ? '<button class="lnk" data-act="ai-refresh">Refresh now</button>' : ""}</div>`;
   }
   $("#issues").innerHTML = html;
 }
 
-/* ---------- top bar + draft bar ---------- */
+/* ---------- top bar, versions, draft bar ---------- */
 function diffList(a, b){
   const out = [], T = (l, x, y) => { if(JSON.stringify(x ?? "") !== JSON.stringify(y ?? "")) out.push(l); };
   T("Title", a.header.title, b.header.title); T("Kicker", a.header.kicker, b.header.kicker); T("Footnote", a.footnote, b.footnote);
   b.escalations.forEach((e, i) => ["title","issue","impact","next"].forEach(k => T(`Card ${e.id} ${k === "next" ? "next step" : k}`, (a.escalations[i] || {})[k], e[k])));
   allRows(b).forEach(r => { const o = findRow(a, r.id); if(!o){ out.push(r.metric); return; } const ca = cellData(a, o), cb = cellData(b, r);
     Object.keys(cb).forEach(k => { if(cellText(ca[k]) !== cellText(cb[k])) out.push(`${r.metric}: ${k === "var" ? "vs plan" : k === "deal" ? "deal value" : k === "annual" ? "a year at this rate" : k}`); }); });
+  Object.keys(b.costModel).forEach(k => T(`Cost to serve: ${k}`, (a.costModel || {})[k], b.costModel[k]));
   b.operations.forEach(p => { const o = findProj(a, p.id); if(!o){ out.push(p.name); return; }
     ["name","owner","deadline","updated","risk","tips","kpi","forecast"].forEach(k => T(`${p.name}: ${k}`, o[k], p[k]));
     p.stages.forEach((s, i) => T(`${p.name}: ${s.name}`, o.stages[i], s)); });
@@ -784,18 +928,28 @@ function diffList(a, b){
 const diffCount = () => diffList(S.live, S.draft).length;
 function renderBar(){
   const L = S.live, n = S.me.admin ? diffCount() : 0;
-  let html = `<span class="brand">NorthPoint · Q3 tracker</span><span class="chip"><i class="dot green"></i>Live v${L.version} · published ${h(fmtLong(L.publishedAt))}</span>`;
+  const chip = `<i class="dot green"></i>Live v${L.version} · published ${h(fmtLong(L.publishedAt))}`;
+  let html = `<span class="brand">NorthPoint · Q3 tracker</span>${S.me.admin ? `<button class="chip" data-act="versions" aria-expanded="${S.vmenu}" title="Earlier versions">${chip} ▾</button>` : `<span class="chip">${chip}</span>`}`;
   if(S.mode === "demo") html += `<span class="chip">Preview: changes stay in this browser</span>`;
-  else if(S.me.setup) html += `<span class="chip warn">Open link: anyone with it can edit</span>`;
+  else if(S.me.setup) html += `<span class="chip warn">Access: anyone with the link</span>`;
   html += `<span class="sp"></span>`;
   if(S.me.admin) html += `<div class="segv" role="group" aria-label="Version shown"><button data-act="view" data-v="live" aria-pressed="${S.view === "live"}">Live</button><button data-act="view" data-v="draft" aria-pressed="${S.view === "draft"}">Draft${n ? ` · ${n}` : ""}</button></div>`;
   $("#bar").innerHTML = html;
+  if(S.vmenu) renderVMenu();
+}
+function renderVMenu(){
+  const el = $("#vmenu"); if(!S.vmenu){ el.hidden = true; return; }
+  const list = S.history.length ? S.history : [{ version:S.live.version, at:S.live.publishedAt, by:S.live.publishedBy }];
+  el.innerHTML = `<div class="vh">Versions</div>${list.map(v => `<div class="vi"><b>v${v.version}</b><span class="muted">${h(fmtTime(v.at))}${v.note ? " · " + h(v.note) : ""}</span>${v.version === S.live.version ? '<span class="sc done">Live</span>' : `<button class="btn xs" data-act="restore" data-v="${v.version}">Restore</button>`}</div>
+    ${S.restoreAsk === v.version ? `<div class="vc"><span>Make v${v.version} live again? It becomes v${S.live.version + 1}.</span><button class="btn xs primary" data-act="restore-go" data-v="${v.version}">Restore</button><button class="lnk" data-act="restore-no">Cancel</button></div>` : ""}`).join("")}`;
+  el.hidden = false;
+  const b = document.querySelector('[data-act="versions"]'); if(b){ const r = b.getBoundingClientRect(); el.style.left = Math.max(8, Math.min(r.left, document.documentElement.clientWidth - el.offsetWidth - 8)) + "px"; el.style.top = (r.bottom + 6) + "px"; }
 }
 function renderDraftbar(){
   const el = $("#draftbar");
   if(!editing()){ el.innerHTML = ""; return; }
   const ch = diffList(S.live, S.draft);
-  let html = `<div class="draftbar"><b>Editing the draft.</b><span>Click a figure, owner, date or dot to change it. Titles and card text are editable too.</span><span class="sp"></span><span class="save" id="saveSt"></span>
+  let html = `<div class="draftbar"><b>Editing the draft.</b><span>Click a figure, owner, date, dot or tag to change it. Titles and card text are editable too.</span><span class="sp"></span><span class="save" id="saveSt"></span>
     <span><b id="chgN">${ch.length}</b> change${ch.length === 1 ? "" : "s"} vs live</span>`;
   if(S.discardConfirm) html += `<button class="btn sm primary" data-act="discard-go">Discard all changes</button><button class="btn sm ghost" data-act="cancel">Cancel</button>`;
   else if(S.pubConfirm) html += `<button class="btn sm primary" data-act="pub-go">Confirm: publish to the President</button><button class="btn sm ghost" data-act="cancel">Cancel</button>`;
@@ -804,49 +958,54 @@ function renderDraftbar(){
   el.innerHTML = html + "</div>";
 }
 function renderDashboard(){
-  const d = cur();
-  hideTip(); clearFocus();
+  const d = cur(), keep = S.focus;
+  hideTip(); clearFocus(true);
   $("#kicker").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:header.kicker">${h(d.header.kicker)}</span>` : h(d.header.kicker);
   $("#title").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:header.title">${h(d.header.title)}</span>` : h(d.header.title);
-  $("#meta").textContent = `As of ${fmtLong(d.meta.asOf)} · ${d.meta.currency}`;
   document.body.classList.toggle("edit", editing());
   renderDraftbar(); renderCards(d); renderIssues();
   finTable($("#tCom"), d.commercial, "com");
-  finTable($("#tCost"), d.cost, "cost");
-  $("#costNote").textContent = findRow(d, "cloud") ? "Cloud as a monthly run-rate, with what the gap adds up to over a year" : "";
-  opsTable($("#tOps"));
   $("#foot").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:footnote">${h(d.footnote)}</span>` : h(d.footnote);
+  finTable($("#tCost"), d.cost, "cost");
+  modelTable($("#tModel"));
+  opsTable($("#tOps"));
+  $("#opsNote").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:opsNote">${h(d.opsNote || "")}</span>` : h(d.opsNote || "");
+  if(keep) setFocus(keep.startsWith("esc") ? "esc" : "iss", +keep.slice(3), false);
 }
 function renderAll(){ renderBar(); renderDashboard(); if(S.modal) renderModal(); }
 
-/* ---------- focus mode (hover a card or an issue) ---------- */
+/* ---------- focus mode (click a card or an issue) ---------- */
 function linkedRows(n){
   const d = cur(), ids = new Set();
   allRows(d).forEach(r => { if(Object.values(r.tips).some(t => t && t.esc === n) || (r.varTip && r.varTip.esc === n)) ids.add(r.id); });
   d.operations.forEach(p => { if(Object.values(p.tips).some(t => t && t.esc === n)) ids.add(p.id); });
   return ids;
 }
-function setFocus(kind, n, srcEl){
-  const key = kind + n; if(S.focus === key) return;
-  clearFocus(); S.focus = key;
+function setFocus(kind, n, jump){
+  clearFocus(true); S.focus = kind + n;
   document.body.classList.add("focusing");
-  let ids;
-  if(kind === "esc"){ ids = linkedRows(n); document.querySelectorAll(`.card[data-card="${n}"]`).forEach(c => c.classList.add("lit")); }
-  else { const it = currentIssues().items[n]; ids = new Set(it ? it.rowIds || [] : []); if(srcEl) srcEl.closest("#issues").classList.add("lit"); }
-  ids.forEach(id => document.querySelectorAll(`tr[data-row="${CSS.escape(id)}"]`).forEach(tr => tr.classList.add("lit")));
-  if(kind === "esc") placeCallouts(n);
+  let ids, label;
+  if(kind === "esc"){ ids = linkedRows(n); document.querySelectorAll(`.card[data-card="${n}"]`).forEach(c => { c.classList.add("lit"); c.setAttribute("aria-pressed", "true"); }); label = `Escalation ${n}`; }
+  else { const it = currentIssues().items[n]; ids = new Set(it ? it.rowIds || [] : []); $("#issues").classList.add("lit"); const li = document.querySelector(`li[data-issue="${n}"]`); if(li) li.classList.add("lit"); label = it ? it.title : "Issue"; }
+  const rows = [];
+  ids.forEach(id => document.querySelectorAll(`tr[data-row="${CSS.escape(id)}"]`).forEach(tr => { tr.classList.add("lit"); rows.push(tr); }));
+  $("#focusbar").innerHTML = `<div class="focusbar"><span>Showing <b>${h(label)}</b> in the tables${rows.length ? "" : " (no linked rows)"}</span><button class="btn xs" data-act="unfocus">Done</button></div>`;
+  if(jump && rows.length){ const tr = rows.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]; tr.scrollIntoView({ block:"center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }
+  if(kind === "esc"){ placeCallouts(n); setTimeout(() => { if(S.focus === "esc" + n) placeCallouts(n); }, 600); }
 }
-function clearFocus(){
-  if(!S.focus) return; S.focus = null;
+function clearFocus(silent){
+  if(!S.focus) return;
+  if(!silent) S.focus = null; else S.focus = null;
   document.body.classList.remove("focusing");
   document.querySelectorAll(".lit").forEach(x => x.classList.remove("lit"));
-  $("#callouts").innerHTML = "";
+  document.querySelectorAll(".card[aria-pressed]").forEach(c => c.setAttribute("aria-pressed", "false"));
+  $("#callouts").innerHTML = ""; $("#focusbar").innerHTML = "";
 }
 function placeCallouts(n){
   const layer = $("#callouts"); layer.innerHTML = "";
   const vw = document.documentElement.clientWidth, vh = window.innerHeight;
   document.querySelectorAll(`td[data-esc="${n}"]`).forEach(td => {
-    const tgt = td.querySelector(".dot,.vt,.dotbtn") || td, r = tgt.getBoundingClientRect();
+    const tgt = td.querySelector(".dot,.vt,.dotbtn,.tag") || td, r = tgt.getBoundingClientRect();
     if(r.bottom < 0 || r.top > vh || r.width === 0) return;
     const co = document.createElement("div"); co.className = "co";
     co.innerHTML = `<span class="cn">${n}</span><span>${h(td.dataset.cotext || "")}</span>`;
@@ -858,26 +1017,11 @@ function placeCallouts(n){
     co.style.left = left + "px"; co.style.top = top + "px"; co.style.setProperty("--ax", (r.left + r.width / 2 - left) + "px");
   });
 }
-document.addEventListener("mouseover", e => {
-  const c = e.target.closest(".card[data-card]"); if(c){ setFocus("esc", +c.dataset.card); }
-  else { const li = e.target.closest("li[data-issue]"); if(li) setFocus("iss", +li.dataset.issue, li); }
-  const tp = e.target.closest("[data-tip]"); if(tp) showTip(tp);
-});
-document.addEventListener("mouseout", e => {
-  const c = e.target.closest(".card[data-card],li[data-issue]"); if(c && !c.contains(e.relatedTarget)) clearFocus();
-  const tp = e.target.closest("[data-tip]"); if(tp && !tp.contains(e.relatedTarget)) hideTip();
-});
-document.addEventListener("focusin", e => {
-  const c = e.target.closest(".card[data-card]"); if(c && !e.target.isContentEditable) setFocus("esc", +c.dataset.card);
-  const li = e.target.closest("li[data-issue]"); if(li) setFocus("iss", +li.dataset.issue, li);
-  if(e.target.matches("[data-tip]")) showTip(e.target);
-});
-document.addEventListener("focusout", e => {
-  if(e.target.closest(".card[data-card],li[data-issue]") && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".card[data-card],li[data-issue]"))) clearFocus();
-  if(e.target.matches("[data-tip]")) hideTip();
-  if(e.target.isContentEditable && e.target.dataset.edit) renderBar();
-});
-window.addEventListener("scroll", () => { hideTip(); if(S.focus && S.focus.startsWith("esc")) placeCallouts(+S.focus.slice(3)); if(S.pop) positionPop(); }, true);
+document.addEventListener("mouseover", e => { const tp = e.target.closest("[data-tip]"); if(tp) showTip(tp); });
+document.addEventListener("mouseout", e => { const tp = e.target.closest("[data-tip]"); if(tp && !tp.contains(e.relatedTarget)) hideTip(); });
+document.addEventListener("focusin", e => { if(e.target.matches("[data-tip]")) showTip(e.target); });
+document.addEventListener("focusout", e => { if(e.target.matches("[data-tip]")) hideTip(); if(e.target.isContentEditable && e.target.dataset.edit) renderBar(); });
+window.addEventListener("scroll", () => { hideTip(); if(S.focus && S.focus.startsWith("esc")) placeCallouts(+S.focus.slice(3)); if(S.pop) positionPop(); if(S.vmenu) renderVMenu(); }, true);
 window.addEventListener("resize", () => { if(S.focus && S.focus.startsWith("esc")) placeCallouts(+S.focus.slice(3)); });
 function showTip(el){
   const tip = $("#tip"); tip.textContent = el.dataset.tip; tip.hidden = false;
@@ -892,6 +1036,7 @@ function hideTip(){ $("#tip").hidden = true; }
 function target(key){
   const parts = key.split(":"), kind = parts[0];
   if(kind === "d") return { obj:S.draft, path:parts[1] };
+  if(kind === "cm") return { obj:S.draft.costModel, path:parts[1] };
   if(kind === "row"){ const r = findRow(S.draft, parts[1]), p = parts.slice(2).join(":"); if(!r) return null;
     if(p === "@value") return { obj: ownerOf(r), path:"value" };
     if(p === "@owner") return { obj:r, path:"owner" };
@@ -900,7 +1045,11 @@ function target(key){
   if(kind === "stage"){ const p = findProj(S.draft, parts[1]); return { obj: p && p.stages[+parts[2]], path: parts[3] }; }
   return null;
 }
-function setVal(key, v){ const t = target(key); if(t && t.obj) setP(t.obj, t.path, v); }
+function setVal(key, v){
+  const t = target(key); if(!t || !t.obj) return;
+  if(key.startsWith("cm:accounts.")){ t.obj.accounts[+key.split(".")[1]] = v; return; }
+  setP(t.obj, t.path, v);
+}
 document.addEventListener("input", e => {
   const el = e.target;
   if(el.isContentEditable && el.dataset.edit){ setVal(el.dataset.edit, el.innerText.replace(/\s+/g, " ").trim()); dirty(false); return; }
@@ -910,6 +1059,7 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => {
   const el = e.target;
   if(el.matches('select[data-act="tf"]')){ S.tf = el.value; savePrefs(); renderDashboard(); return; }
+  if(el.matches('select[data-act="offer"]')){ S.offer = el.value; savePrefs(); renderDashboard(); return; }
   if(el.closest("#modal")) return onModalChange(el);
   if(el.closest("#pop")) return onPopChange(el);
   if(!el.dataset.set) return;
@@ -922,7 +1072,8 @@ document.addEventListener("change", e => {
 document.addEventListener("keydown", e => {
   if(e.key === "Enter" && e.target.matches(".ci")) e.target.blur();
   if(e.key === "Enter" && e.target.isContentEditable && e.target.dataset.edit){ e.preventDefault(); e.target.blur(); }
-  if(e.key === "Escape"){ if(!$("#pop").hidden) closePop(); else if(S.modal) closeModal(); else hideTip(); }
+  if((e.key === "Enter" || e.key === " ") && e.target.matches(".card[data-card],li[data-issue]")){ e.preventDefault(); e.target.click(); }
+  if(e.key === "Escape"){ if(!$("#pop").hidden) closePop(); else if(S.modal) closeModal(); else if(S.vmenu){ S.vmenu = false; renderVMenu(); } else if(S.focus) clearFocus(); else hideTip(); }
 });
 
 /* risk popover (draft only) */
@@ -932,8 +1083,8 @@ function openPop(key, btn){
   const t = target(key), r = t.obj, col = t.path, st = r.risk[col], tip = r.tips[col] || {};
   $("#pop").innerHTML = `<div class="opts">${[["green","On track"],["amber","Needs attention"],["red","Off track"],["nodata","No data"],["","Not assessed"]].map(([v, l]) =>
       `<button class="opt" data-popst="${v}" aria-pressed="${(st || "") === v}">${v ? `<i class="dot ${v}"></i>` : '<i class="dot" style="border:1px solid var(--rule)"></i>'}${l}</button>`).join("")}</div>
-    <label for="popNote">Hover note</label><textarea id="popNote" rows="2">${h(tip.text || "")}</textarea>
-    <label for="popEsc">Call-out on an escalation card</label><select id="popEsc"><option value="">None</option>${S.draft.escalations.map(e => `<option value="${e.id}"${tip.esc === e.id ? " selected" : ""}>${e.id}. ${h(titleCase(e.title))}</option>`).join("")}</select>`;
+    <label for="popNote">Note</label><textarea id="popNote" rows="2">${h(tip.text || "")}</textarea>
+    <label for="popEsc">Linked escalation card</label><select id="popEsc"><option value="">None</option>${S.draft.escalations.map(e => `<option value="${e.id}"${tip.esc === e.id ? " selected" : ""}>${e.id}. ${h(titleCase(e.title))}</option>`).join("")}</select>`;
   $("#pop").hidden = false; positionPop(btn);
 }
 function positionPop(btn){
@@ -948,13 +1099,13 @@ function onPopInput(el){ if(el.id === "popNote"){ const { r, col } = popTarget()
 function onPopChange(el){ if(el.id === "popEsc"){ const { r, col } = popTarget(); r.tips[col] = Object.assign({}, r.tips[col], { esc: el.value ? +el.value : null }); dirty(false); } }
 function closePop(){ if($("#pop").hidden) return; $("#pop").hidden = true; S.pop = null; renderDashboard(); renderBar(); }
 
-/* ---------- follow-up modal ---------- */
+/* ---------- follow-up popup ---------- */
 function factsFor(d, ids){
   const out = [];
   ids.forEach(id => {
     const r = findRow(d, id);
-    if(r){ const parts = ["plan","actual","forecast"].map(f => { const v = val(d, r, f); return blank(v) ? null : `${f} ${money(v)}`; }).filter(Boolean), v = variance(d, r);
-      out.push(`${r.metric}: ${parts.join(", ")}${v ? `, ${v.main} vs plan` : ""}${r.varTip && r.varTip.text ? ` (${r.varTip.text})` : ""}`); return; }
+    if(r){ const parts = ["plan","actual","forecast"].map(f => { const v = val(d, r, f); return blank(v) ? null : `${f} ${fmtV(r, v)}`; }).filter(Boolean), v = variance(d, r);
+      out.push(`${r.metric}: ${parts.join(", ")}${v ? `, ${v.main} vs plan` : ""}`); return; }
     const p = findProj(d, id);
     if(p){ const cd = countdown(p), bl = p.stages.filter(s => s.blocker).map(s => s.blocker);
       out.push(`${p.name}: deadline ${fmtLong(p.deadline)}${cd ? ` (${cd.t})` : ""}${p.kpi ? `, ${p.kpi.label.toLowerCase()} ${p.kpi.actual} of ${p.kpi.plan}` : ""}${bl.length ? `; blockers: ${bl.join("; ")}` : ""}${p.owner ? "" : "; no owner"}`); }
@@ -965,82 +1116,82 @@ function refContext(ref){
   const d = cur();
   if(ref.startsWith("esc")){
     const e = d.escalations.find(x => "esc" + x.id === ref); if(!e) return null;
-    return { ref, label:`Escalation ${e.id}: ${titleCase(e.title)}`, issue:e.issue, impact:e.impact, next:e.next, recipients:e.recipients.slice(), facts: factsFor(d, linkedRows(e.id)) };
+    return { ref, label:`Escalation ${e.id}: ${titleCase(e.title)}`, issue:e.issue, impact:e.impact, next:e.next, facts: factsFor(d, linkedRows(e.id)) };
   }
-  const it = currentIssues().items[+ref.slice(3)]; if(!it) return null;
-  const owners = (it.owners || []).filter(r => S.ops.directory[r]);
-  const fromRows = uniq((it.rowIds || []).map(id => { const r = findRow(d, id); return r ? ownerRole(r) : (findProj(d, id) || {}).owner; }).filter(Boolean));
-  return { ref:"iss:" + it.title, label: it.title, issue: it.detail, impact:"", next:"", recipients: owners.length ? owners : fromRows, facts: factsFor(d, new Set(it.rowIds || [])) };
+  if(ref.startsWith("iss")){
+    const it = currentIssues().items[+ref.slice(3)]; if(!it) return null;
+    return { ref:"iss:" + it.title, label: it.title, issue: it.issue || it.detail || "", impact: it.impact || "", next: it.next || "", facts: factsFor(d, new Set(it.rowIds || [])) };
+  }
+  if(ref.startsWith("proj:") || ref.startsWith("blk:")){
+    const [, pid, si] = ref.split(":"), p = findProj(d, pid); if(!p) return null;
+    const s = si != null ? p.stages[+si] : null, cd = countdown(p);
+    const notes = ["reporting","staffing"].filter(c => p.risk[c] && p.risk[c] !== "green").map(c => `${cap(c)}: ${(p.tips[c] || {}).text || STATUS[p.risk[c]]}`);
+    return { ref, label: s ? `${p.name}: ${s.name}` : p.name,
+      issue: s ? `${s.tag ? s.tag + " blocker: " : ""}${s.blocker} (${s.name}, due ${fmtLong(s.end || s.start)}).` : `${p.name} is ${projStatus(p).label.toLowerCase()}${notes.length ? ". " + notes.join(". ") : ""}.`,
+      impact: p.deadline ? `The ${fmtLong(p.deadline)} deadline${cd ? ` (${cd.t})` : ""} is at risk.` : "",
+      next: s ? `Clear the blocker or give a new date for ${s.name}.` : "Send an updated plan with an owner and a date for each step.", facts: factsFor(d, [p.id]) };
+  }
+  return null;
 }
-function templateDraft(ctx, roles){
-  const st = S.ops.settings, names = roles.map(r => (S.ops.directory[r] || {}).name).filter(Boolean).map(n => n.split(" ")[0]);
+function templateDraft(ctx, keys){
+  const st = S.ops.settings, names = keys.map(k => (S.ops.directory[k] || {}).name).filter(Boolean).map(n => n.split(" ")[0]);
   const greet = !names.length ? "all" : names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
-  const body = `Hi ${greet},\n\nAhead of the leadership review on ${fmtDow(st.reviewDate)}, the President's dashboard flags this:\n\n${ctx.issue}${ctx.impact ? `\n\nWhy it matters: ${ctx.impact}` : ""}${ctx.facts.length ? `\n\nWhere the numbers stand:\n${ctx.facts.map(f => "- " + f).join("\n")}` : ""}\n\n${ctx.next ? `What we need: ${ctx.next}.` : "Could you confirm the correct figures and who owns them?"} Please reply by ${fmtDow(st.replyBy)}.\n\nThanks,\n${st.senderName}`;
+  const body = `Hi ${greet},\n\nAhead of the leadership review on ${fmtDow(st.reviewDate)}, the President's dashboard flags this:\n\n${ctx.issue}${ctx.impact ? `\n\nWhy it matters: ${ctx.impact}` : ""}${ctx.facts.length ? `\n\nWhere the numbers stand:\n${ctx.facts.map(f => "- " + f).join("\n")}` : ""}\n\n${ctx.next ? `What we need: ${ctx.next.replace(/\.$/, "")}.` : "Could you confirm the correct figures and who owns them?"} Please reply by ${fmtDow(st.replyBy)}.\n\nThanks,\n${st.senderName}`;
   return { subject: `Follow-up: ${ctx.label} (reply by ${fmtDow(st.replyBy)})`, body };
 }
 function openModal(ref){
   const ctx = refContext(ref); if(!ctx) return;
-  clearFocus();
-  const roles = ctx.recipients.filter(r => S.ops.directory[r]), t = templateDraft(ctx, roles);
-  S.modal = { ctx, roles: new Set(roles), extra: [], subject: t.subject, body: t.body, edited: false, src: "template", busy: false, confirm: false, contacts: false, instr: "" };
+  const t = templateDraft(ctx, []);
+  S.modal = { ctx, sel: new Set(), subject: t.subject, body: t.body, edited: false, src: "template", busy: false, confirm: false, toOpen: false, contacts: false };
   renderModal();
   if(S.ai.enabled) aiDraft();
 }
 function closeModal(){ S.modal = null; $("#modal").hidden = true; $("#modal").innerHTML = ""; }
-function recips(){ const m = S.modal; return [...[...m.roles].map(r => ({ role:r, name:(S.ops.directory[r] || {}).name, email:(S.ops.directory[r] || {}).email })).filter(x => x.email), ...m.extra.map(e => ({ role:"", name:"", email:e }))]; }
+function recips(){ return [...S.modal.sel].map(k => S.ops.directory[k]).filter(p => p && p.email); }
 function renderModal(){
   const m = S.modal, el = $("#modal"); if(!m){ el.hidden = true; return; }
   const dir = S.ops.directory, st = S.ops.settings, rc = recips();
-  const aiLine = m.busy ? '<span class="sp1"></span>AI is writing a draft…' : m.src === "ai" ? "Drafted by AI from the dashboard. Review before sending." : S.ai.enabled ? "Template draft." : `Template draft. ${S.mode === "server" ? "Add an AI key to get AI-written drafts." : "On the live site, AI writes this draft."}`;
-  const prev = S.ops.outbox.filter(x => x.ref === m.ctx.ref).slice(0, 3);
-  const keep = document.activeElement && document.activeElement.id;
+  const keep = document.activeElement && document.activeElement.id, selS = document.activeElement && document.activeElement.selectionStart;
   el.innerHTML = `<div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mT">
-    <div class="mh"><div><div class="dk">Follow up</div><h3 id="mT">${h(m.ctx.label)}</h3></div><span class="sp"></span><button class="lnk" data-act="mclose">Close</button></div>
+    <div class="mh"><h3 id="mT">Follow up: ${h(m.ctx.label)}</h3><span class="sp"></span><button class="lnk" data-act="mclose">Close</button></div>
     <div class="mb">
-      <div><div class="ml">To <button class="lnk" data-act="mcontacts">${m.contacts ? "Done editing contacts" : "Edit contacts"}</button></div>
-        ${m.contacts ? `<table class="cedit">${Object.entries(dir).map(([r, p]) => `<tr><td>${h(r)}</td><td><input class="in" data-c="${h(r)}" data-cf="name" value="${h(p.name)}" aria-label="${h(r)} name"></td><td><input class="in" type="email" data-c="${h(r)}" data-cf="email" value="${h(p.email)}" aria-label="${h(r)} email"></td></tr>`).join("")}</table>
-          <div class="redraft" style="margin-top:6px"><input class="in" id="newRole" placeholder="New role, e.g. Head of Finance"><button class="btn sm" data-act="maddrole">Add role</button></div>` : ""}
-        <div class="rcs" style="margin-top:6px">${Object.entries(dir).map(([r, p]) => `<label class="rc${m.roles.has(r) ? " on" : ""}"><input type="checkbox" data-rc="${h(r)}" ${m.roles.has(r) ? "checked" : ""} ${p.email ? "" : "disabled"}>${h(p.name || r)} <small>${h(r)}</small></label>`).join("")}
-          ${m.extra.map((x, i) => `<span class="rc on">${h(x)}<button class="x" data-act="mrmx" data-i="${i}" aria-label="Remove ${h(x)}">×</button></span>`).join("")}</div>
-        <div class="redraft" style="margin-top:8px"><input class="in" id="mExtra" type="email" placeholder="Add another email address"><button class="btn sm" data-act="maddx">Add</button></div></div>
-      <div class="g2"><label><div class="ml">From</div><input class="in" id="mFrom" value="${h(st.senderName)}"></label><label><div class="ml">Reply by</div><input class="in" id="mReply" type="date" value="${h(st.replyBy)}"></label></div>
-      <div class="aist">${aiLine}</div>
-      <label><div class="ml">Subject</div><input class="in" id="mSubject" value="${h(m.subject)}"></label>
-      <label><div class="ml">Message</div><textarea class="in" id="mBody" rows="15">${h(m.body)}</textarea></label>
-      <div class="redraft"><input class="in" id="mInstr" value="${h(m.instr)}" placeholder="${S.ai.enabled ? "Ask AI to change it, e.g. shorter, firmer, add a call invite" : "AI isn't connected; this rebuilds the template"}"><button class="btn sm" data-act="mredraft" ${m.busy ? "disabled" : ""}>${S.ai.enabled ? "Redraft with AI" : "Rebuild draft"}</button></div>
-      ${prev.length ? `<div class="prev"><b>Earlier follow-ups</b>${prev.map(x => `<div>${h(fmtLong(x.at))}: ${h(x.subject)} · ${h(x.status === "sent" ? "sent" : x.status === "failed" ? "failed" : "logged, not delivered")}</div>`).join("")}</div>` : ""}
+      <div class="fr"><span>To</span><div class="dd"><button class="ddb" id="mTo" data-act="mto" aria-expanded="${m.toOpen}">${rc.length ? h(rc.map(p => p.name).join(", ")) : '<span class="ph">Select recipients</span>'}</button>
+        ${m.toOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-rc="${h(k)}" ${m.sel.has(k) ? "checked" : ""}>${h(p.name)}<small>${h(p.email)}</small></label>`).join("")}
+          ${m.contacts ? Object.entries(dir).map(([k, p]) => `<div class="ce"><input class="in" data-c="${h(k)}" data-cf="name" value="${h(p.name)}" aria-label="Name"><input class="in" type="email" data-c="${h(k)}" data-cf="email" value="${h(p.email)}" aria-label="Email"></div>`).join("") : ""}
+          <button class="lnk" data-act="mcontacts">${m.contacts ? "Done" : "Edit emails"}</button></div>` : ""}</div></div>
+      <div class="fr"><span>CC</span><input class="in" id="mCc" value="${h(st.cc || "")}" placeholder="Optional"></div>
+      <div class="fr"><span>Reply by</span><input class="in" id="mReply" type="date" value="${h(st.replyBy)}" style="max-width:200px"></div>
+      <div class="fr"><span>Subject</span><input class="in" id="mSubject" value="${h(m.subject)}"></div>
+      <textarea class="in" id="mBody" rows="15" aria-label="Message" ${m.busy ? 'aria-busy="true"' : ""}>${h(m.body)}</textarea>
     </div>
-    <div class="mf"><span class="fs">${rc.length ? `${rc.length} recipient${rc.length === 1 ? "" : "s"} · cc ${h(st.cc || "none")}` : "Pick at least one recipient."} · ${h(S.mode === "demo" ? "Preview: sending is logged, nothing is delivered." : S.mail.enabled ? "Sends from " + S.mail.from : "Email delivery isn't connected, so sends are logged only.")}</span>
-      ${m.confirm ? `<button class="btn primary" data-act="msend-go">Confirm send to ${rc.length}</button><button class="btn ghost" data-act="mcancel">Cancel</button>` : `<button class="btn ghost" data-act="mclose">Cancel</button><button class="btn primary" data-act="msend" ${rc.length && !m.busy ? "" : "disabled"}>Send</button>`}</div></div>`;
+    <div class="mf">${m.confirm ? `<span class="muted" style="margin-right:auto">Send to ${h(rc.map(p => p.name).join(", "))}?</span><button class="btn ghost" data-act="mcancel">Cancel</button><button class="btn primary" data-act="msend-go">Confirm send</button>`
+      : `<button class="btn ghost" data-act="mclose">Cancel</button><button class="btn primary" data-act="msend" ${rc.length ? "" : "disabled"}>Send</button>`}</div></div>`;
   el.hidden = false;
-  if(keep){ const k = document.getElementById(keep); if(k) k.focus(); }
+  if(keep){ const k = document.getElementById(keep); if(k){ k.focus(); try{ if(selS != null && k.setSelectionRange) k.setSelectionRange(selS, selS); }catch(e){} } }
 }
 function onModalInput(el){
   const m = S.modal; if(!m) return;
   if(el.id === "mSubject"){ m.subject = el.value; m.edited = true; }
   else if(el.id === "mBody"){ m.body = el.value; m.edited = true; }
-  else if(el.id === "mInstr") m.instr = el.value;
+  else if(el.id === "mCc"){ S.ops.settings.cc = el.value; saveOps(); }
   else if(el.dataset.c){ S.ops.directory[el.dataset.c][el.dataset.cf] = el.value.trim(); saveOps(); }
 }
-function retemplate(){ const m = S.modal; if(!m.edited && m.src === "template"){ const t = templateDraft(m.ctx, [...m.roles]); m.subject = t.subject; m.body = t.body; } }
+function retemplate(){ const m = S.modal; if(!m.edited && m.src === "template"){ const t = templateDraft(m.ctx, [...m.sel]); m.subject = t.subject; m.body = t.body; } }
 function onModalChange(el){
   const m = S.modal; if(!m) return;
-  if(el.dataset.rc){ el.checked ? m.roles.add(el.dataset.rc) : m.roles.delete(el.dataset.rc); retemplate(); renderModal(); }
-  else if(el.id === "mFrom"){ S.ops.settings.senderName = el.value; saveOps(); retemplate(); renderModal(); }
+  if(el.dataset.rc){ el.checked ? m.sel.add(el.dataset.rc) : m.sel.delete(el.dataset.rc); retemplate(); renderModal(); }
   else if(el.id === "mReply"){ S.ops.settings.replyBy = el.value; saveOps(); retemplate(); renderModal(); }
   else if(el.dataset.c) renderModal();
 }
 async function aiDraft(){
-  const m = S.modal; if(!m) return;
-  if(!S.ai.enabled){ const t = templateDraft(m.ctx, [...m.roles]); m.subject = t.subject; m.body = t.body; m.edited = false; m.src = "template"; renderModal(); return; }
-  m.busy = true; renderModal();
+  const m = S.modal; if(!m || !S.ai.enabled) return;
+  m.busy = true;
   try{
     const st = S.ops.settings;
-    const res = await api("ai/email", { method:"POST", body: JSON.stringify({ context: m.ctx, recipients: recips().map(r => ({ name:r.name, role:r.role })), sender: st.senderName,
-      replyBy: fmtDow(st.replyBy), reviewDate: fmtDow(st.reviewDate), instruction: m.instr, current: (m.edited || m.src === "ai") ? { subject:m.subject, body:m.body } : null }) });
+    const res = await api("ai/email", { method:"POST", body: JSON.stringify({ context: m.ctx, recipients: recips().map(r => ({ name:r.name })), sender: st.senderName, replyBy: fmtDow(st.replyBy), reviewDate: fmtDow(st.reviewDate) }) });
     if(S.modal !== m) return;
-    m.subject = res.subject; m.body = res.body; m.src = "ai"; m.edited = false; m.instr = "";
-  }catch(err){ toast("AI draft failed: " + err.message + ". Kept the current draft."); }
+    if(!m.edited){ m.subject = res.subject; m.body = res.body; m.src = "ai"; }
+  }catch(err){ /* keep the template draft */ }
   if(S.modal === m){ m.busy = false; renderModal(); }
 }
 async function sendModal(){
@@ -1048,24 +1199,38 @@ async function sendModal(){
   const email = { to: rc.map(r => r.email), cc: st.cc, subject: m.subject, body: m.body };
   let res = { status:"simulated" };
   if(S.mode === "server"){ try{ res = (await api("send", { method:"POST", body: JSON.stringify({ emails:[email], fromName: st.senderName, replyTo: st.senderEmail }) })).results[0]; }catch(e){ toast("Not sent: " + e.message); return; } }
-  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => r.name ? `${r.name} <${r.email}>` : r.email), subject: m.subject, body: m.body, status: res.status, error: res.error || "" });
+  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "" });
   saveOps(); closeModal(); renderDashboard();
-  toast(res.status === "sent" ? `Sent to ${rc.length} ${rc.length === 1 ? "person" : "people"}.` : res.status === "failed" ? "Sending failed: " + (res.error || "unknown error") : "Logged. Nothing was delivered because email isn't connected yet.");
+  toast(res.status === "sent" ? `Sent to ${rc.map(r => r.name).join(" and ")}.` : res.status === "failed" ? "Sending failed: " + (res.error || "unknown error") : "Logged. Nothing was delivered because email isn't connected yet.");
 }
 
 /* ---------- clicks ---------- */
 document.addEventListener("click", async e => {
   const pb = e.target.closest("[data-pop]");
-  if(!$("#pop").hidden && !e.target.closest("#pop") && !pb){ closePop(); }
+  if(!$("#pop").hidden && !e.target.closest("#pop") && !pb) closePop();
   if(pb){ const key = pb.dataset.pop; if(S.pop === key){ closePop(); return; } if(S.pop){ $("#pop").hidden = true; S.pop = null; } openPop(key, pb); return; }
   const ps = e.target.closest("[data-popst]"); if(ps){ const { r, col } = popTarget(); r.risk[col] = ps.dataset.popst || null; dirty(false); document.querySelectorAll("#pop [data-popst]").forEach(b => b.setAttribute("aria-pressed", b === ps)); return; }
+  if(S.vmenu && !e.target.closest("#vmenu") && !e.target.closest('[data-act="versions"]')){ S.vmenu = false; S.restoreAsk = null; renderVMenu(); }
   if(e.target.id === "modal"){ closeModal(); return; }
-  const a = e.target.closest("[data-act]"); if(!a) return;
+  if(S.modal && S.modal.toOpen && !e.target.closest(".dd")){ S.modal.toOpen = false; renderModal(); }
+  const a = e.target.closest("[data-act]");
+  if(!a){
+    if(e.target.isContentEditable || e.target.closest("input,select,textarea,a")) return;
+    const card = e.target.closest(".card[data-card]"); if(card){ const k = "esc" + card.dataset.card; if(S.focus === k) clearFocus(); else setFocus("esc", +card.dataset.card, true); return; }
+    const li = e.target.closest("li[data-issue]"); if(li){ const k = "iss" + li.dataset.issue; if(S.focus === k) clearFocus(); else setFocus("iss", +li.dataset.issue, true); return; }
+    if(S.focus && !e.target.closest("#focusbar")) clearFocus();
+    return;
+  }
   const m = S.modal;
   switch(a.dataset.act){
-    case "view": S.view = a.dataset.v; S.pubConfirm = S.discardConfirm = false; renderBar(); renderDashboard(); if(S.view === "draft") maybeAI("draft"); break;
+    case "view": S.view = a.dataset.v; S.pubConfirm = S.discardConfirm = false; S.focus = null; renderBar(); renderDashboard(); if(S.view === "draft") maybeAI("draft"); break;
+    case "versions": S.vmenu = !S.vmenu; S.restoreAsk = null; renderBar(); if(!S.vmenu) renderVMenu(); break;
+    case "restore": S.restoreAsk = +a.dataset.v; renderVMenu(); break;
+    case "restore-no": S.restoreAsk = null; renderVMenu(); break;
+    case "restore-go": await restoreVersion(+a.dataset.v); break;
+    case "unfocus": clearFocus(); break;
     case "sec": { const k = a.dataset.sec; S.collapsed[k] = !S.collapsed[k]; savePrefs(); renderDashboard(); break; }
-    case "issues": S.issuesOpen = !S.issuesOpen; savePrefs(); renderIssues(); break;
+    case "issues": S.issuesOpen = !S.issuesOpen; savePrefs(); if(S.focus && S.focus.startsWith("iss")) clearFocus(); renderIssues(); break;
     case "ai-refresh": maybeAI(S.view === "draft" ? "draft" : "live", true); break;
     case "follow": openModal(a.dataset.ref); break;
     case "pub": S.pubConfirm = true; renderDraftbar(); break;
@@ -1074,22 +1239,19 @@ document.addEventListener("click", async e => {
     case "pub-go": await publish(); break;
     case "discard-go": S.draft = clone(S.live); S.discardConfirm = false; renderAll(); saveDraft(); toast("Draft reset to what the President sees."); break;
     case "mclose": closeModal(); break;
+    case "mto": m.toOpen = !m.toOpen; renderModal(); break;
     case "mcontacts": m.contacts = !m.contacts; renderModal(); break;
-    case "maddrole": { const v = ($("#newRole").value || "").trim(); if(v && !v.includes(".") && !S.ops.directory[v]){ S.ops.directory[v] = { name:"", email:"" }; saveOps(); } renderModal(); break; }
-    case "maddx": { const v = ($("#mExtra").value || "").trim(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ toast("Enter a full email address."); break; } if(!m.extra.includes(v)) m.extra.push(v); renderModal(); break; }
-    case "mrmx": m.extra.splice(+a.dataset.i, 1); renderModal(); break;
-    case "mredraft": await aiDraft(); break;
-    case "msend": m.confirm = true; renderModal(); break;
+    case "msend": m.confirm = true; m.toOpen = false; renderModal(); break;
     case "mcancel": m.confirm = false; renderModal(); break;
     case "msend-go": await sendModal(); break;
   }
 });
 
-/* ---------- persistence + AI ---------- */
+/* ---------- persistence, versions, AI ---------- */
 let saveT = null, opsT = null, aiT = null;
 function setSaved(t){ const e = $("#saveSt"); if(e) e.textContent = t; }
 function dirty(rerender){ if(rerender){ renderDashboard(); renderBar(); } else { const b = $("#chgN"); if(b) b.textContent = diffCount(); } saveDraft(); }
-function saveLocal(){ try{ localStorage.setItem(LSKEY, JSON.stringify({ live:S.live, draft:S.draft, ops:S.ops })); }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LSKEY, JSON.stringify({ live:S.live, draft:S.draft, ops:S.ops, history:S.history })); }catch(e){} }
 function saveDraft(){
   setSaved("Saving…"); clearTimeout(saveT);
   saveT = setTimeout(async () => {
@@ -1098,26 +1260,40 @@ function saveDraft(){
   }, 600);
 }
 function saveOps(){ clearTimeout(opsT); opsT = setTimeout(async () => { if(S.mode === "server"){ try{ await api("ops", { method:"PUT", body: JSON.stringify({ ops:S.ops }) }); }catch(e){ toast("Contacts not saved: " + e.message); } } else saveLocal(); }, 400); }
-function scheduleAI(){ if(!S.ai.enabled) return; clearTimeout(aiT); aiT = setTimeout(() => maybeAI("draft"), 5000); if(!S.ai.enabled) renderIssues(); }
+function scheduleAI(){ if(!S.ai.enabled){ renderIssues(); return; } clearTimeout(aiT); aiT = setTimeout(() => maybeAI("draft"), 5000); }
 async function maybeAI(which, force){
-  if(S.mode !== "server"){ renderIssues(); return; }
-  if(!S.ai.enabled){ renderIssues(); return; }
+  if(S.mode !== "server" || !S.ai.enabled){ renderIssues(); return; }
   const c = S.issues[which]; if(!force && c && !c.stale && c.items) return;
   S.aiBusy = true; renderIssues();
   try{ const res = await api("ai/issues", { method:"POST", body: JSON.stringify({ which, force: !!force }) }); S.issues[which] = res; }
   catch(e){ if(force) toast("AI couldn't refresh the issues: " + e.message); }
   S.aiBusy = false; renderIssues();
 }
+function histEntry(live, note){ return { version: live.version, at: live.publishedAt, by: live.publishedBy, note: note || "", snapshot: clone(live) }; }
 async function publish(){
   if(S.mode === "server"){
-    try{ const res = await api("publish", { method:"POST", body: JSON.stringify({ draft:S.draft }) }); S.live = normalize(res.live); S.draft = normalize(res.live); if(res.issues) S.issues.live = res.issues; }
+    try{ const res = await api("publish", { method:"POST", body: JSON.stringify({ draft:S.draft }) }); S.live = normalize(res.live); S.draft = normalize(res.live); if(res.issues) S.issues.live = res.issues; if(res.history) S.history = res.history; }
     catch(e){ toast("Not published: " + e.message); return; }
   } else {
     const live = Object.assign(clone(S.draft), { version:(S.live.version || 1) + 1, publishedAt: new Date().toISOString(), publishedBy:"You (preview)" });
-    S.live = live; S.draft = clone(live); saveLocal();
+    if(!S.history.some(x => x.version === S.live.version)) S.history.unshift(histEntry(S.live));
+    S.history.unshift(histEntry(live)); S.live = normalize(live); S.draft = normalize(live); saveLocal();
   }
   S.pubConfirm = false; S.view = "live"; renderAll();
   toast(`Published v${S.live.version}. The President now sees these figures.`);
+}
+async function restoreVersion(v){
+  if(S.mode === "server"){
+    try{ const res = await api("restore", { method:"POST", body: JSON.stringify({ version: v }) }); S.live = normalize(res.live); S.draft = normalize(res.live); S.history = res.history || S.history; }
+    catch(e){ toast("Not restored: " + e.message); return; }
+  } else {
+    const h0 = S.history.find(x => x.version === v); if(!h0 || !h0.snapshot){ toast("That version isn't stored in this preview."); return; }
+    if(!S.history.some(x => x.version === S.live.version)) S.history.unshift(histEntry(S.live));
+    const live = Object.assign(clone(h0.snapshot), { version: S.live.version + 1, publishedAt: new Date().toISOString(), publishedBy: "You (preview)" });
+    S.history.unshift(histEntry(live, `Restored from v${v}`)); S.live = normalize(live); S.draft = normalize(live); saveLocal();
+  }
+  S.vmenu = false; S.restoreAsk = null; S.view = "live"; renderAll();
+  toast(`v${v} is live again as v${S.live.version}.`);
 }
 async function api(path, opts = {}){
   const r = await fetch("/api/" + path, Object.assign({ headers:{ "content-type":"application/json" }, credentials:"same-origin" }, opts));
@@ -1129,19 +1305,23 @@ let toastT = null;
 function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4200); }
 
 /* ---------- boot ---------- */
-function mergeOps(o){ const d = clone(OPS_DEFAULT); if(!o) return d; return { directory: Object.assign(d.directory, o.directory || {}), settings: Object.assign(d.settings, o.settings || {}), outbox: o.outbox || [] }; }
+function mergeOps(o){
+  const d = clone(OPS_DEFAULT); if(!o) return d;
+  return { dirV: 2, directory: o.dirV === 2 && o.directory ? o.directory : d.directory, settings: Object.assign(d.settings, o.settings || {}, o.dirV === 2 ? {} : { cc: "" }), outbox: o.outbox || [] };
+}
 function valid(x){ return !!(x && x.commercial && x.operations); }
 async function boot(){
   loadPrefs();
-  S.live = normalize(DATA); S.draft = normalize(DATA); S.ops = clone(OPS_DEFAULT);
-  try{ const j = JSON.parse(localStorage.getItem(LSKEY) || "null"); if(j && valid(j.live)){ S.live = normalize(j.live); S.draft = normalize(valid(j.draft) ? j.draft : j.live); S.ops = mergeOps(j.ops); } }catch(e){}
+  S.live = normalize(DATA); S.draft = normalize(DATA); S.ops = clone(OPS_DEFAULT); S.history = [histEntry(S.live, "Q3 tracker extract")];
+  try{ const j = JSON.parse(localStorage.getItem(LSKEY) || "null"); if(j && valid(j.live)){ S.live = normalize(j.live); S.draft = normalize(valid(j.draft) ? j.draft : j.live); S.ops = mergeOps(j.ops); S.history = j.history || S.history; } }catch(e){}
   renderAll();
   try{
     const st = await Promise.race([api("state"), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000))]);
     S.mode = "server"; S.me = st.me || S.me; S.mail = st.mail || S.mail; S.ai = st.ai || S.ai;
-    if(!valid(st.live) && S.me.admin){ const ops = st.ops && st.ops.directory ? mergeOps(st.ops) : OPS_DEFAULT; Object.assign(st, await api("init", { method:"POST", body: JSON.stringify({ live: normalize(DATA), draft: normalize(DATA), ops }) })); }
+    if((!valid(st.live) || (st.live.schema || 0) < DATA.schema) && S.me.admin) Object.assign(st, await api("init", { method:"POST", body: JSON.stringify({ live: normalize(DATA), draft: normalize(DATA), ops: mergeOps(st.ops) }) }));
     if(!valid(st.live)) throw new Error("No published data yet.");
-    S.live = normalize(st.live); S.draft = normalize(valid(st.draft) ? st.draft : st.live); S.ops = mergeOps(st.ops); S.issues = st.issues || S.issues;
+    S.live = normalize(st.live); S.draft = normalize(valid(st.draft) ? st.draft : st.live); S.ops = mergeOps(st.ops); S.issues = st.issues || S.issues; S.history = st.history || [];
+    if(st.ops && st.ops.dirV !== 2 && S.me.admin) saveOps();
     renderAll();
     maybeAI("live");
   }catch(e){ if(S.mode !== "server"){ S.mode = "demo"; S.me = { admin:true, email:"", setup:false }; } renderBar(); }

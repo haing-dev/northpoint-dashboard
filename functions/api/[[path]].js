@@ -20,6 +20,11 @@ function who(request, env) {
 }
 
 const read = (env, key) => env.DASH.get(key, "json");
+function histMeta(history, live) {
+  const list = (history || []).map(({ version, at, by, note }) => ({ version, at, by, note }));
+  if (live && live.version && !list.some((x) => x.version === live.version)) list.unshift({ version: live.version, at: live.publishedAt, by: live.publishedBy || "", note: "" });
+  return list.sort((a, b) => b.version - a.version);
+}
 const write = (env, key, value) => env.DASH.put(key, JSON.stringify(value));
 const valid = (d) => !!(d && d.commercial && d.operations);
 
@@ -51,11 +56,11 @@ async function claude(env, system, user, maxTokens) {
 }
 
 const ISSUES_SYSTEM = `You support the programme management office of a platform business. You review the data behind the President's dashboard and list the issues the President should know about beyond the escalation cards already shown.
-Focus on: figures that disagree between sources or owners, missing or shared owners, stale updates, totals or weights that don't add up or rest on unchecked assumptions, cost trends, delivery steps that are blocked or have no update, deadlines at risk, and headline text that the figures no longer support.
-Rules: use only the data given; cite the actual figures and dates; don't repeat an escalation card unless you add something new; be concise and specific; no speculation.
+Focus on: figures that disagree between sources or owners, missing or shared owners, stale updates, totals or weights that don't add up or rest on unchecked assumptions, cost trends and cost to serve versus the margin target (costModel holds the NorthPoint deal-model drivers and the revenue per account for each offer), delivery steps that are blocked or have no update, deadlines at risk, and headline text that the figures no longer support.
+Rules: use only the data given; cite the actual figures and dates; leave out anything the escalation cards already cover (same topic, project or figure), even if you would phrase it differently; be concise and specific; no speculation.
 Reply with JSON only, no prose, in this shape:
-{"issues":[{"title":"max 10 words","detail":"max 45 words, with figures","severity":"high|medium|low","category":"Data reporting|Commercial|Cost|Delivery|Ownership","rowIds":["ids of rows or projects from the data"],"owners":["role names that appear in the data"]}]}
-Return 3 to 7 issues, most severe first.`;
+{"issues":[{"title":"max 8 words","issue":"what is wrong, max 30 words, with figures","impact":"why it matters, max 25 words","next":"who should do what by when, max 25 words","severity":"high|medium|low","category":"Data reporting|Commercial|Cost|Delivery|Ownership","rowIds":["ids of rows or projects from the data; use cm-margin for the deal margin"],"owners":["role names that appear in the data"]}]}
+Return 3 to 6 issues, most severe first.`;
 
 const EMAIL_SYSTEM = `You draft follow-up emails for a programme management office. The emails go to senior leaders who own figures or projects on the President's dashboard.
 Write plainly and politely, in short paragraphs, with the specific figures given. Say what is needed, from whom, and by when. No filler, no exaggeration, nothing beyond the facts given. Address recipients by first name. Sign off with the sender's name.
@@ -63,7 +68,7 @@ Reply with JSON only: {"subject":"...","body":"..."} where body is plain text wi
 
 function compact(d) {
   // Keep the payload small and readable for the model.
-  return JSON.stringify({ asOf: d.meta && d.meta.asOf, header: d.header, escalations: d.escalations, commercial: d.commercial, cost: d.cost, operations: d.operations, footnote: d.footnote, today: new Date().toISOString().slice(0, 10) });
+  return JSON.stringify({ asOf: d.meta && d.meta.asOf, header: d.header, escalations: d.escalations, commercial: d.commercial, cost: d.cost, costModel: d.costModel, operations: d.operations, footnote: d.footnote, today: new Date().toISOString().slice(0, 10) });
 }
 
 export async function onRequest({ request, env, params }) {
@@ -81,9 +86,9 @@ export async function onRequest({ request, env, params }) {
     const live = await read(env, "live");
     const liveIssues = valid(live) ? await issuesState(env, "live", live) : null;
     if (!me.admin) return J({ me, ai, live, issues: { live: liveIssues, draft: null } });
-    const [draft, ops] = await Promise.all([read(env, "draft"), read(env, "ops")]);
+    const [draft, ops, history] = await Promise.all([read(env, "draft"), read(env, "ops"), read(env, "history")]);
     const draftIssues = valid(draft) ? await issuesState(env, "draft", draft) : null;
-    return J({ me, mail, ai, live, draft, ops, issues: { live: liveIssues, draft: draftIssues } });
+    return J({ me, mail, ai, live, draft, ops, history: histMeta(history, live), issues: { live: liveIssues, draft: draftIssues } });
   }
 
   if (path === "ai/issues" && method === "POST") {
@@ -98,7 +103,7 @@ export async function onRequest({ request, env, params }) {
     try {
       const out = await claude(env, ISSUES_SYSTEM, "Dashboard data:\n" + compact(data), 1800);
       const items = (out.issues || []).slice(0, 8).map((x) => ({
-        title: String(x.title || "").slice(0, 120), detail: String(x.detail || "").slice(0, 500),
+        title: String(x.title || "").slice(0, 120), issue: String(x.issue || x.detail || "").slice(0, 400), impact: String(x.impact || "").slice(0, 300), next: String(x.next || "").slice(0, 300),
         severity: ["high", "medium", "low"].includes(x.severity) ? x.severity : "medium",
         category: String(x.category || "").slice(0, 40), rowIds: (x.rowIds || []).map(String).slice(0, 10), owners: (x.owners || []).map(String).slice(0, 6),
       }));
@@ -114,13 +119,15 @@ export async function onRequest({ request, env, params }) {
 
   if (path === "init" && method === "POST") {
     const existing = await read(env, "live");
-    if (valid(existing)) return J({ error: "The dashboard is already set up." }, 409);
+    const b0 = await request.clone().json().catch(() => ({}));
+    if (valid(existing) && (existing.schema || 0) >= ((b0.live && b0.live.schema) || 0)) return J({ error: "The dashboard is already set up." }, 409);
     const b = await body();
     if (!valid(b.live)) return J({ error: "Missing dashboard data." }, 400);
     const draft = valid(b.draft) ? b.draft : b.live, ops = b.ops || {};
-    if (existing) await write(env, "history-v1", { live: existing, at: new Date().toISOString() }); // keep the old-format data
-    await Promise.all([write(env, "live", b.live), write(env, "draft", draft), write(env, "ops", ops), write(env, "history", [])]);
-    return J({ live: b.live, draft, ops, issues: { live: null, draft: null } });
+    if (existing) await write(env, "archive-schema-" + (existing.schema || 1), { live: existing, at: new Date().toISOString() }); // keep the old-format data
+    const history = [{ version: b.live.version || 1, at: b.live.publishedAt || new Date().toISOString(), by: b.live.publishedBy || "", note: "Q3 tracker extract", snapshot: b.live }];
+    await Promise.all([write(env, "live", b.live), write(env, "draft", draft), write(env, "ops", ops), write(env, "history", history)]);
+    return J({ live: b.live, draft, ops, history: histMeta(history, b.live), issues: { live: null, draft: null } });
   }
 
   if (path === "draft" && method === "PUT") {
@@ -143,14 +150,30 @@ export async function onRequest({ request, env, params }) {
     if (!valid(b.draft)) return J({ error: "Missing draft." }, 400);
     const prev = await read(env, "live");
     const history = (await read(env, "history")) || [];
+    if (valid(prev) && !history.some((x) => x.version === prev.version)) history.unshift({ version: prev.version, at: prev.publishedAt, by: prev.publishedBy || "", note: "", snapshot: prev });
     const live = { ...b.draft, version: ((prev && prev.version) || 0) + 1, publishedAt: new Date().toISOString(), publishedBy: me.email || "admin" };
-    history.unshift({ version: live.version, at: live.publishedAt, by: live.publishedBy, snapshot: live });
-    const writes = [write(env, "live", live), write(env, "draft", live), write(env, "history", history.slice(0, 40))];
+    history.unshift({ version: live.version, at: live.publishedAt, by: live.publishedBy, note: "", snapshot: live });
+    const kept = history.slice(0, 40);
+    const writes = [write(env, "live", live), write(env, "draft", live), write(env, "history", kept)];
     const di = await read(env, "issues:draft");
     let issues = null;
     if (di && di.hash === (await hashOf(live))) { issues = { ...di, stale: false }; writes.push(write(env, "issues:live", di)); }
     await Promise.all(writes);
-    return J({ live, issues });
+    return J({ live, issues, history: histMeta(kept, live) });
+  }
+
+  if (path === "restore" && method === "POST") {
+    const b = await body();
+    const prev = await read(env, "live");
+    const history = (await read(env, "history")) || [];
+    const h0 = history.find((x) => x.version === +b.version);
+    if (!h0 || !valid(h0.snapshot)) return J({ error: "That version isn't stored." }, 404);
+    if (valid(prev) && !history.some((x) => x.version === prev.version)) history.unshift({ version: prev.version, at: prev.publishedAt, by: prev.publishedBy || "", note: "", snapshot: prev });
+    const live = { ...h0.snapshot, version: ((prev && prev.version) || 0) + 1, publishedAt: new Date().toISOString(), publishedBy: me.email || "admin" };
+    history.unshift({ version: live.version, at: live.publishedAt, by: live.publishedBy, note: `Restored from v${h0.version}`, snapshot: live });
+    const kept = history.slice(0, 40);
+    await Promise.all([write(env, "live", live), write(env, "draft", live), write(env, "history", kept)]);
+    return J({ live, history: histMeta(kept, live) });
   }
 
   if (path === "ai/email" && method === "POST") {
