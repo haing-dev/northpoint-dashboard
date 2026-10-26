@@ -196,6 +196,11 @@ body.focusing tr.lit td:first-child{box-shadow:inset 3px 0 0 var(--deep)}
 .co{position:fixed;background:var(--deep);color:#fff;font:700 12px/1.3 var(--sans);padding:5px 9px 5px 5px;border-radius:2px;display:flex;align-items:center;gap:7px;max-width:230px;box-shadow:0 3px 10px rgba(5,28,44,.25);animation:pop .14s ease-out}
 .co::after{content:"";position:absolute;left:var(--ax,50%);top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--deep)}
 .co.below::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--deep)}
+.co.stack::after{display:none}
+#tip.multi{background:none;padding:0;display:flex;flex-direction:column;gap:6px}
+#tip.multi .tb{background:var(--deep);padding:6px 8px;border-radius:2px}
+.xn{font:700 9px var(--sans);color:var(--grey-text);margin-left:2px;vertical-align:top}
+.xr{display:inline-flex;gap:10px}.xri{display:inline-flex;flex-direction:column;align-items:center;gap:2px}.xri small{font-size:9px;color:var(--grey-text)}
 .co .cn{flex:none;width:20px;height:20px;border-radius:50%;background:#fff;color:var(--deep);font:700 11px/20px var(--sans);text-align:center}
 @keyframes pop{from{opacity:0;transform:translateY(4px) scale(.96)}to{opacity:1;transform:none}}
 .focusbar{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;background:#fff;border:1px solid var(--deep);box-shadow:0 6px 18px rgba(0,0,0,.15);padding:6px 8px 6px 12px;font-size:12px;display:flex;gap:10px;align-items:center}
@@ -370,7 +375,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 11, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 12, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Platform BU Leadership Dashboard",
@@ -384,18 +389,18 @@ const DATA = {
       rows: ["pipe", "np", "other"], jump: "pipe" }
   ],
   escalations: [
-    { id: 1, title: "NORTHPOINT EXECUTION RISK",
-      issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
-      impact: "NorthPoint failure would jeopardize 40% of pipeline",
-      next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date", jump: "np" },
-    { id: 2, title: "Q3 BOOKING SHORTAGE",
+    { id: 1, title: "Q3 BOOKING SHORTAGE",
       issue: "Q3 bookings are 32% ($19M) below plan",
       impact: "Q426-Q127 pipeline must cover for the shortfall, and North Point delivery is key",
       next: "Ask Head of Sales for a recovery plan by the next review" },
-    { id: 3, title: "DELIVERY REPORTING",
+    { id: 2, title: "DELIVERY REPORTING",
       issue: "Bank A and Release 4.2 status not updated",
       impact: "We can't confirm Bank A's 1 Nov go-live or that Release 4.2 shipped",
-      next: "Ask Head of Delivery and Head of Product to report every project with an owner and date" }
+      next: "Ask Head of Delivery and Head of Product to report every project with an owner and date" },
+    { id: 3, title: "NORTHPOINT EXECUTION RISK",
+      issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
+      impact: "NorthPoint failure would jeopardize 40% of pipeline",
+      next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date", jump: "np" }
   ],
   commercial: [
     { id: "revenue", name: "Recognized revenue", rows: [
@@ -408,16 +413,16 @@ const DATA = {
         owners: [ { role: "Finance BP", source: "Finance booking log", value: 41 },
                   { role: "Head of Sales", source: "CRM", value: 48, unreliable: true } ], owner: 0,
         risk: { reporting: "amber" }, tips: { reporting: { text: "CRM shows $48M vs $41M in Finance's booking log" } },
-        varTip: { text: "$19M below plan", esc: 2 }, updated: "2026-09-30" },
+        varTip: { text: "$19M below plan", esc: 1 }, updated: "2026-09-30" },
       { id: "pipe", period: "n2q", metric: "Q4 2026-Q1 2027 Booking pipeline revenue", plan: 210, field: "forecast", rollup: true, varSub: false,
         owners: [ { role: "Head of Sales", source: "CRM, weighted" } ], owner: 0,
         risk: { concentration: "red", reporting: "amber" },
-        tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 1 },
+        tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 3 },
                 reporting: { text: "NorthPoint is also counted in the Payments BU pipeline" } }, updated: "2026-09-30" },
       { id: "np", period: "n2q", parent: "pipe", child: true, weighted: true, metric: "NorthPoint", field: "forecast", dealValue: 140, weight: 70,
         owners: [ { role: "Head of Sales", source: "CRM, weighted" } ], owner: 0,
         risk: { concentration: "red", staffing: "red" },
-        tips: { concentration: { text: "40% of weighted pipeline" }, staffing: { text: "Needs 24 engineers from Jan 2027; 4 available", esc: 1 } }, updated: "2026-09-30" },
+        tips: { concentration: { text: "40% of weighted pipeline" }, staffing: { text: "Needs 24 engineers from Jan 2027; 4 available", esc: 3 } }, updated: "2026-09-30" },
       { id: "other", period: "n2q", parent: "pipe", child: true, weighted: true, metric: "Other deals", field: "forecast", dealValue: null, weight: null,
         owners: [ { role: "Head of Sales", source: "CRM, weighted", value: 147 } ], owner: 0,
         risk: { reporting: "amber" }, tips: { reporting: { text: "CRM figure, not yet checked" } }, updated: "2026-09-30" }
@@ -446,7 +451,7 @@ const DATA = {
     { id: "banka", section: "Client delivery", name: "Bank A Go-Live", owner: "", source: "", deadline: "2026-11-01",
       forecast: "2026-11-01", forecastNote: "Green, reported", updated: null, sample: true,
       risk: { reporting: "red", staffing: "nodata" },
-      tips: { reporting: { text: "No owner or date", esc: 3 }, staffing: { text: "Staffing not tracked" } },
+      tips: { reporting: { text: "No owner or date", esc: 2 }, staffing: { text: "Staffing not tracked" } },
       keyNote: { tag: "Reporting", text: "No owner or timeline" },
       stages: [
         { name: "Requirements sign-off", start: "2026-06-15", end: "2026-07-15", status: "done", note: "Signed off 14 Jul" },
@@ -458,7 +463,7 @@ const DATA = {
     { id: "npexec", section: "Client delivery", name: "NorthPoint Execution", owner: "Head of Delivery", source: "Delivery plan", deadline: "2027-01-04",
       kpi: { label: "Engineers available", plan: 24, actual: 4, source: "HR system, Head of Talent" }, updated: "2026-09-25", sample: true,
       risk: { reporting: "green", staffing: "red" },
-      tips: { reporting: { text: "Delivery plan, updated 25 Sep" }, staffing: { text: "4 of 24 engineers available", esc: 1 } },
+      tips: { reporting: { text: "Delivery plan, updated 25 Sep" }, staffing: { text: "4 of 24 engineers available", esc: 3 } },
       keyNote: { tag: "Staffing", text: "4/24 engineers available for Jan 2027 execution" },
       stages: [
         { name: "Staffing plan & funding decision", start: "2026-09-15", end: "2026-10-15", status: "blocked", tag: "Funding", blocker: "Funding for 20 engineers not approved" },
@@ -468,7 +473,7 @@ const DATA = {
       ]},
     { id: "rel42", section: "Product delivery", name: "Release 4.2", owner: "Head of Product", source: "Jira", deadline: "2026-09-15",
       forecast: "2026-09-15", forecastNote: "On track in Jira, as of 12 Aug", updated: "2026-08-12", sample: true,
-      risk: { reporting: "amber" }, tips: { reporting: { text: "Last update 12 Aug", esc: 3 } },
+      risk: { reporting: "amber" }, tips: { reporting: { text: "Last update 12 Aug", esc: 2 } },
       keyNote: { tag: "Reporting", text: "No update since 12 Aug" },
       stages: [
         { name: "Development", start: "2026-07-01", end: "2026-08-21", status: "active", note: "In progress at last update, 12 Aug" },
@@ -743,6 +748,23 @@ function dotCell(key, label, c, chg){
   if(editing() && key) return `<td class="ctr${chg}"${escA}><button type="button" class="dotbtn" data-pop="${h(key)}" aria-label="Change ${label}">${dot || '<span class="plus">+</span>'}</button></td>`;
   return `<td class="ctr${chg}"${escA}>${dot}</td>`;
 }
+const RANK = { red:3, amber:2, green:1, nodata:0 };
+function execItems(d, r, cost){
+  if(r.placeholder) return [];
+  if(cost){ const v = varOf(d, r, "actual"); return v ? [{ label:"Overspending", st: v.pct > 10 ? "red" : v.pct > 0 ? "amber" : "green", tip: `${v.main} vs plan`, esc:null }] : []; }
+  return [["concentration","Concentration"],["staffing","Staffing"]].filter(([k]) => r.risk[k]).map(([k, l]) => ({ key:k, label:l, st:r.risk[k], tip:(r.tips[k] || {}).text || cap(STATUS[r.risk[k]]), esc:(r.tips[k] || {}).esc || null }));
+}
+function execCell(d, r, cost, chg){
+  if(editing() && !cost && !r._alt && !r.model){
+    return `<td class="ctr${chg}"><span class="xr">${[["concentration","Concentration"],["staffing","Staffing"]].map(([k, l]) => { const st = r.risk[k];
+      return `<span class="xri"><button type="button" class="dotbtn" data-pop="row:${h(r.id)}:${k}" aria-label="Change ${l}">${st ? `<span class="dot ${st}"></span>` : '<span class="plus">+</span>'}</button><small>${l}</small></span>`; }).join("")}</span></td>`;
+  }
+  const it = execItems(d, r, cost);
+  if(!it.length) return `<td class="ctr${chg}">${nd()}</td>`;
+  const worst = it.reduce((a, b) => RANK[b.st] > RANK[a.st] ? b : a), tips = it.map(x => `${x.label}: ${x.tip}`);
+  const esc = it.filter(x => x.esc), escA = esc.length ? ` data-esc="${esc[0].esc}" data-cotext="${h(tips.join("||"))}"` : "";
+  return `<td class="ctr${chg}"${escA}><span class="dot ${worst.st}" tabindex="0" role="img" data-tip="${h(tips.join("||"))}" aria-label="${h("Execution risk: " + tips.join(". "))}"></span>${it.length > 1 ? `<sup class="xn">${it.length}</sup>` : ""}</td>`;
+}
 function numInput(key, v, extra = ""){ return `<input class="ci ${extra}" inputmode="decimal" data-set="${h(key)}" data-t="num" value="${h(blank(v) ? "" : v)}" aria-label="Edit value">`; }
 function valCell(d, r, f, chg){
   const c = cellData(d, r)[f], bold = f !== "plan";
@@ -810,18 +832,18 @@ function dealInputs(d, r){
 const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
   const d = cur();
-  const cols = ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","source","updated","fu"];
-  const W = { metric:19, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, concentration:7, reporting:6.5, staffing:6, owner:9, source:9, updated:5, fu:6 };
+  const cols = ["metric","plan","actual","forecast","varA","varF","exec","reporting","owner","source","updated","fu"];
+  const W = { metric:19, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, exec:9.75, reporting:9.75, owner:9, source:9, updated:5, fu:6 };
   const cost = kind === "cost";
-  if(cost){ cols.splice(0, cols.length, "metric","plan","actual","forecast","varA","overspend","reporting","owner","source","updated","fu"); Object.assign(W, { varA:13, overspend:9.75, reporting:9.75 }); }
+  if(cost){ cols.splice(0, cols.length, "metric","plan","actual","forecast","varA","exec","reporting","owner","source","updated","fu"); W.varA = 13; }
   const N = cols.length;
   const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
-    annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting quality</th>', staffing:'<th class="c g">Staffing</th>',
+    annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting quality</th>', exec:'<th class="c g">Execution risk</th>',
     owner:"<th>Data owner</th>", source:"<th>Data source</th>", updated:"<th>Last updated</th>", fu:'<th class="fu c">Follow up</th>' }, VAR_HEAD);
-  if(cost) Object.assign(head, { actual:'<th class="r">Current</th>', forecast:'<th class="r">Run rate</th>', varA:'<th class="r g">Run rate</th>', overspend:'<th class="c g">Overspending</th>' });
+  if(cost) Object.assign(head, { actual:'<th class="r">Current</th>', forecast:'<th class="r">Run rate</th>', varA:'<th class="r g">Run rate</th>' });
   const grp = [];
   cols.forEach(c => {
-    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["concentration","reporting","staffing","overspend"].includes(c) ? "RISK ASSESSMENT" : "";
+    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["exec","reporting"].includes(c) ? "RISK ASSESSMENT" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
   let html = `<colgroup>${cols.map(c => `<col style="width:${W[c]}%">`).join("")}</colgroup><thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
@@ -851,9 +873,7 @@ function finTable(el, secs, kind){
         }
         else if(k === "fu") tr += `<td class="fu ctr">${r._alt ? "" : `<button class="btn xs" data-act="follow" data-ref="row:${h(r.id)}">Follow up</button>`}</td>`;
         else if(cost && r.placeholder && ["plan","actual","forecast","owner","source","updated"].includes(k)) tr += `<td class="${["owner","source","updated"].includes(k) ? "ndc ndc-" + k : "num"}">${nd()}</td>`;
-        else if(cost && k === "overspend"){
-          if(r.placeholder) tr += `<td class="ctr">${nd()}</td>`;
-          else { const v = varOf(d, r, "actual"); tr += dotCell(null, "Overspending", { st: !v ? null : v.pct > 10 ? "red" : v.pct > 0 ? "amber" : "green", tip: v ? `${v.main} vs plan` : "" }, ""); } }
+        else if(k === "exec") tr += execCell(d, r, cost, C("concentration") || C("staffing"));
         else if(cost && k === "reporting" && r.placeholder) tr += `<td class="ctr">${nd()}</td>`;
         else if(cost && k === "reporting" && r.annualOf){ const src = findRow(d, r.annualOf); tr += src ? dotCell(null, "Reporting quality", cellData(d, src).reporting, "") : "<td></td>"; }
         else if(r.placeholder || (r.annualOf && !["plan","forecast","varA"].includes(k))) tr += "<td></td>";
@@ -864,7 +884,6 @@ function finTable(el, secs, kind){
         else if(k === "varA" || k === "varF") tr += varCell(c[k], C(k));
         else if(k === "annual") tr += `<td class="num${C("annual")}">${c.annual.t ? `<span class="b${c.annual.adverse ? " neg" : ""}">${h(c.annual.t)}</span><span class="sub">vs plan</span>` : na()}</td>`;
         else if(kind === "cost" && (k === "concentration" || k === "staffing")) tr += "<td></td>";
-        else if(k === "staffing" && !c.staffing.st && !editing()) tr += `<td class="ctr">${nd()}</td>`;
         else if(COLS.some(x => x[0] === k)) tr += dotCell(r._alt || r.model ? null : `row:${r.id}:${k}`, COLS.find(x => x[0] === k)[1], c[k], C(k));
         else if(k === "owner") tr += ownerCell(r, c.owner, C("owner") || C("all"));
         else if(k === "source") tr += sourceCell(r, c.source, C("source"));
@@ -1151,14 +1170,19 @@ function placeCallouts(n){
   document.querySelectorAll(`td[data-esc="${n}"]`).forEach(td => {
     const tgt = td.querySelector(".dot,.vt,.dotbtn,.tag") || td, r = tgt.getBoundingClientRect();
     if(r.bottom < 0 || r.top > vh || r.width === 0) return;
-    const co = document.createElement("div"); co.className = "co";
-    co.innerHTML = `<span class="cn">${n}</span><span>${h(td.dataset.cotext || "")}</span>`;
-    layer.appendChild(co);
-    const w = co.offsetWidth, ht = co.offsetHeight;
-    let left = r.left + r.width / 2 - w / 2; left = Math.max(8, Math.min(left, vw - w - 8));
-    let top = r.top - ht - 10;
-    if(top < 8){ top = r.bottom + 10; co.classList.add("below"); }
-    co.style.left = left + "px"; co.style.top = top + "px"; co.style.setProperty("--ax", (r.left + r.width / 2 - left) + "px");
+    const texts = (td.dataset.cotext || "").split("||");
+    let edge = null, below = r.top - 60 * texts.length < 8;
+    (below ? texts : [...texts].reverse()).forEach((txt, j) => {
+      const co = document.createElement("div"); co.className = "co" + (j ? " stack" : "");
+      co.innerHTML = `<span class="cn">${n}</span><span>${h(txt)}</span>`;
+      layer.appendChild(co);
+      const w = co.offsetWidth, ht = co.offsetHeight;
+      let left = r.left + r.width / 2 - w / 2; left = Math.max(8, Math.min(left, vw - w - 8));
+      let top;
+      if(below){ top = edge == null ? r.bottom + 10 : edge + 6; edge = top + ht; if(!j) co.classList.add("below"); }
+      else { top = edge == null ? r.top - ht - 10 : edge - ht - 6; edge = top; }
+      co.style.left = left + "px"; co.style.top = top + "px"; co.style.setProperty("--ax", (r.left + r.width / 2 - left) + "px");
+    });
   });
 }
 document.addEventListener("mouseover", e => { const tp = e.target.closest("[data-tip]"); if(tp) showTip(tp); });
@@ -1168,7 +1192,9 @@ document.addEventListener("focusout", e => { if(e.target.matches("[data-tip]")) 
 window.addEventListener("scroll", () => { hideTip(); if(S.focus && S.focus.startsWith("esc")) placeCallouts(+S.focus.slice(3)); if(S.pop) positionPop(); if(S.vmenu) renderVMenu(); }, true);
 window.addEventListener("resize", () => { if(S.focus && S.focus.startsWith("esc")) placeCallouts(+S.focus.slice(3)); });
 function showTip(el){
-  const tip = $("#tip"); tip.textContent = el.dataset.tip; tip.hidden = false;
+  const tip = $("#tip"), parts = el.dataset.tip.split("||"); tip.hidden = false;
+  tip.classList.toggle("multi", parts.length > 1);
+  if(parts.length > 1) tip.innerHTML = parts.map(t => `<div class="tb">${h(t)}</div>`).join(""); else tip.textContent = parts[0];
   const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight, vw = document.documentElement.clientWidth;
   let left = r.left + r.width / 2 - tw / 2; left = Math.max(8, Math.min(left, vw - tw - 8));
   let top = r.top - th - 10, pos = "top"; if(top < 8){ top = r.bottom + 10; pos = "bottom"; }
