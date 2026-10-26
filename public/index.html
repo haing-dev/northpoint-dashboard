@@ -73,7 +73,21 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .kv{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;margin-top:10px;font-size:14px}
 .kv>span:first-child{font:700 11px/1.7 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--grey-text)}
 .kv .b{font-weight:700}
-.cf{padding-top:14px;align-self:end;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cf{padding-top:14px;align-self:start;cursor:default}
+.cfr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fus{display:inline-flex;align-items:center;gap:5px;font-size:12px}
+.fus.bad{color:var(--neg);font-weight:700}.fus.ok{color:var(--ok-fg)}
+.fut{margin-left:auto;font-size:12px}
+.fuh{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--rule)}
+.fuh li{padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px}
+.fuh2{color:var(--grey-text);margin-top:2px}
+.fuh3{display:flex;align-items:center;gap:10px;margin-top:4px}
+.fuh3 .btn,.fuh3 .lnk{margin-left:auto}
+.rec{cursor:help;text-decoration:underline dotted;text-underline-offset:3px}
+.dtick{margin:0 5px 0 0;vertical-align:middle;accent-color:var(--deep);cursor:pointer}
+.dtick.wif{outline:2px solid #B9A85A;outline-offset:1px}
+tr.off td:not(.sticky){opacity:.4}
+tr.off td.sticky .m{text-decoration:line-through;color:var(--grey-text)}
 .muted{color:var(--grey-text);font-size:11px}
 .hint{color:var(--grey-text);font-size:11px;margin-left:auto}
 [contenteditable="true"]{outline:1px dashed #B9A85A;outline-offset:2px;border-radius:1px;cursor:text}
@@ -198,10 +212,12 @@ tr.d2 td .b{font-weight:400}
 tr.alt .m{font-weight:400}
 tr.unrel td{color:var(--neg)}
 tr.unrel td .sub{color:var(--neg)}
-.mw{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mw{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dg{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.mn{display:inline-flex;align-items:center;white-space:nowrap}
 .wsel{font:12px var(--sans);padding:2px 4px;border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink)}
 .dealin{display:inline-flex;align-items:center;gap:1px;font-size:12px;color:var(--grey-text);border:1px solid var(--rule-strong);border-radius:2px;padding:1px 5px;background:#fff}
-.dealin .ci{width:40px;border:0;font-weight:400;text-align:right;padding:1px 0}
+.dealin .ci{width:34px;border:0;font-weight:400;text-align:right;padding:1px 0}
 .dealin.wif,.wsel.wif{border-color:var(--dot-amber);background:var(--chg)}
 .dot.nd{cursor:default}
 .wsel.wif{border-color:var(--dot-amber);background:var(--chg)}
@@ -243,7 +259,7 @@ button.tag{cursor:pointer;font:700 9px/1.4 var(--sans)}
 .ssel{font:11px var(--sans);padding:2px 4px;border:1px dashed #B9A85A;background:#fff;border-radius:2px}
 
 /* tooltip, popover, toast */
-#tip{position:fixed;z-index:80;background:var(--deep);color:#fff;font:700 12px/1.35 var(--sans);padding:6px 8px;border-radius:2px;max-width:240px;pointer-events:none;left:0;top:0}
+#tip{position:fixed;z-index:80;background:var(--deep);color:#fff;font:700 12px/1.35 var(--sans);padding:6px 8px;border-radius:2px;max-width:280px;pointer-events:none;left:0;top:0}
 #tip::after{content:"";position:absolute;left:var(--ax,50%);transform:translateX(-50%);border:6px solid transparent}
 #tip[data-pos="top"]::after{top:100%;border-top-color:var(--deep)}
 #tip[data-pos="bottom"]::after{bottom:100%;border-bottom-color:var(--deep)}
@@ -460,7 +476,7 @@ const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MINUS = "−";
 const S = { mode:"demo", me:{ admin:false, email:"", setup:false }, ai:{ enabled:false }, mail:{ enabled:false, from:"" },
   live:null, draft:null, ops:null, history:[], view:"live", tf:"all", offer:"sales", collapsed:{}, issuesOpen:false, issues:{ live:null, draft:null }, aiBusy:false,
-  pubConfirm:false, discardConfirm:false, modal:null, pop:null, focus:null, vmenu:false, restoreAsk:null, whatIf:{}, noWhatIf:false };
+  pubConfirm:false, discardConfirm:false, modal:null, pop:null, focus:null, vmenu:false, restoreAsk:null, whatIf:{}, noWhatIf:false, fuOpen:{} };
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -516,6 +532,7 @@ function ownerRole(r){ const o = ownerOf(r); return o ? o.role : ""; }
 function wi(d, row){ return d === S.live && S.view === "live" && !S.noWhatIf ? S.whatIf[row.id] : null; }
 function wOf(d, row){ const x = wi(d, row); return x && "w" in x ? x.w : row.weight; }
 function dvOf(d, row){ const x = wi(d, row); return x && "dv" in x ? x.dv : row.dealValue; }
+function offOf(d, row){ const x = wi(d, row); return x && "off" in x ? !!x.off : !!row.off; }
 function val(d, row, f){
   if(row.model) return modelVal(d, row, f);
   if(row.derive){ const a = findRow(d, row.derive.num), b = findRow(d, row.derive.den); if(!a || !b) return null; const x = val(d, a, f), y = val(d, b, f); return blank(x) || blank(y) || !+y ? null : x / y; }
@@ -523,7 +540,7 @@ function val(d, row, f){
   if(f === "forecast" && !blank(dv) && !blank(w)) return r1(+dv * +w / 100);
   if(f === row.field && row.owners.length){ const o = ownerOf(row); if(o && "value" in o) return blank(o.value) ? null : +o.value; }
   else if(!blank(row[f])) return +row[f];
-  if(row.rollup){ const ch = children(d, row).map(c => val(d, c, f)).filter(x => !blank(x)); if(ch.length) return r1(ch.reduce((a, b) => a + b, 0)); }
+  if(row.rollup){ const ch = children(d, row).filter(c => !offOf(d, c)).map(c => val(d, c, f)).filter(x => !blank(x)); if(ch.length) return r1(ch.reduce((a, b) => a + b, 0)); }
   return null;
 }
 function fmtV(row, v){
@@ -592,6 +609,7 @@ function cellData(d, row){
     owner:{ t: o ? o.role : (row.model || row.derive ? "" : "None"), sub: o ? o.source : "", warn: row.ownerWarn || (!o && !row.model && !row.derive) || (o && o.unreliable) },
     source:{ t: row.owners.map(x => x.source).join(", "), bad: !!(o && o.unreliable) },
     all:{ t: row.owners.map(x => `${x.role}${"value" in x ? " " + x.value : ""}${x.unreliable ? " unreliable" : ""}`).join("; ") },
+    inc:{ t: row.weighted && offOf(d, row) ? "Excluded from pipeline" : "" },
     updated:{ t: fmtDate(row.updated), stale: !!row.updated && !!d.meta.asOf && row.updated < d.meta.asOf }
   };
 }
@@ -712,20 +730,34 @@ function varCell(c, chg){
   const inner = `<span class="b${c.adverse ? " neg" : ""}">${h(c.main)}</span>${c.sub ? `<span class="sub">${h(c.sub)}</span>` : ""}`;
   return `<td class="num${chg}"${escA}>${c.tip ? `<span class="vt" tabindex="0" data-tip="${h(c.tip)}">${inner}</span>` : inner}</td>`;
 }
+function ownerRec(r, o){
+  if(r.ownerRec) return r.ownerRec;
+  const main = ownerOf(r), multi = r.owners.length > 1;
+  if(multi && o.unreliable){
+    const good = r.owners.find(x => !x.unreliable) || main;
+    const gap = "value" in o && "value" in good && !blank(o.value) && !blank(good.value) ? Math.abs(+o.value - +good.value) : null;
+    return `Recommend ${good.role} as the only data owner, using ${good.source}${"value" in good && !blank(good.value) ? ` (${fmtV(r, good.value)})` : ""}. Ask ${o.role} to reconcile ${o.source}${gap ? ` (${fmtV(r, gap)} gap)` : ""} with ${good.role} by ${fmtDow(S.ops.settings.replyBy)}.`;
+  }
+  if(!multi && r.ownerWarn) return `Recommend Finance BP as data owner, using the finance ledger. The ${o.source.toLowerCase().startsWith("spreadsheet") ? o.role + " spreadsheet" : o.source} isn't an audited source for ${r.metric.replace(/^FY-\d+ /, "").toLowerCase()}.`;
+  return "";
+}
+function recTip(t){ return t ? ` data-tip="${h(t)}" tabindex="0"` : ""; }
 function ownerOrder(r){ const main = r.owner || 0; return [main, ...r.owners.map((_, i) => i).filter(i => i !== main)]; }
 function ownerCell(r, c, chg){
   if(!r.owners.length) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : nd()}</td>`;
   const multi = r.owners.length > 1, main = r.owner || 0;
   return `<td class="${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], bad = o.unreliable || (!multi && r.ownerWarn), good = multi && !o.unreliable && i === main;
     const ctrl = editing() && multi ? `<span class="ofl"><button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${i}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button>${i !== main ? `<button type="button" class="flag" data-act="mainowner" data-rid="${h(r.id)}" data-i="${i}" title="Show this owner's figure in the table">Use as main</button>` : ""}</span>` : "";
-    return `<span class="ol${bad ? " neg b" : good ? " okc" : ""}">${h(o.role)}${ctrl}</span>`; }).join("")}</td>`;
+    const tip = bad ? ownerRec(r, o) : "";
+    return `<span class="ol${bad ? " neg b" : good ? " okc" : ""}${tip ? " rec" : ""}"${recTip(tip)}>${h(o.role)}${ctrl}</span>`; }).join("")}</td>`;
 }
 function sourceCell(r, c, chg){
   if(!r.owners.length || !c.t) return `<td class="srcc${chg}">${nd()}</td>`;
   const main = r.owner || 0;
   const multi = r.owners.length > 1;
   return `<td class="srcc${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], good = multi && !o.unreliable && i === main;
-    return `<span class="ol${o.unreliable ? " neg" : good ? " okc" : ""}">${h(o.source || "")}${multi && "value" in o ? ` (${blank(o.value) ? "no figure" : h(fmtV(r, o.value))})` : ""}</span>`; }).join("")}</td>`;
+    const tip = o.unreliable ? ownerRec(r, o) : "";
+    return `<span class="ol${o.unreliable ? " neg" : good ? " okc" : ""}${tip ? " rec" : ""}"${recTip(tip)}>${h(o.source || "")}${multi && "value" in o ? ` (${blank(o.value) ? "no figure" : h(fmtV(r, o.value))})` : ""}</span>`; }).join("")}</td>`;
 }
 function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
@@ -733,8 +765,8 @@ function updCell(key, iso, c, chg){
 }
 function dealInputs(d, r){
   const w = wOf(d, r), dv = dvOf(d, r), x = wi(d, r) || {}, opts = Array.from({ length: 11 }, (_, i) => i * 10);
-  return `<span class="dealin${"dv" in x ? " wif" : ""}" title="Deal value">$<input class="ci dv" inputmode="decimal" data-act="deal" data-rid="${h(r.id)}" value="${h(blank(dv) ? "" : dv)}" placeholder="" aria-label="Deal value for ${h(r.metric)}, $M">M</span>` +
-    `<select class="wsel${"w" in x ? " wif" : ""}" data-act="weight" data-rid="${h(r.id)}" aria-label="Weight for ${h(r.metric)}"><option value=""${blank(w) ? " selected" : ""}></option>${opts.map(o => `<option value="${o}"${!blank(w) && +w === o ? " selected" : ""}>${o}%</option>`).join("")}${!blank(w) && !opts.includes(+w) ? `<option value="${w}" selected>${w}%</option>` : ""}</select>`;
+  return `<span class="dg"><span class="dealin${"dv" in x ? " wif" : ""}" title="Deal value">$<input class="ci dv" inputmode="decimal" data-act="deal" data-rid="${h(r.id)}" value="${h(blank(dv) ? "" : dv)}" placeholder="" aria-label="Deal value for ${h(r.metric)}, $M">M</span>` +
+    `<select class="wsel${"w" in x ? " wif" : ""}" data-act="weight" data-rid="${h(r.id)}" aria-label="Weight for ${h(r.metric)}"><option value=""${blank(w) ? " selected" : ""}></option>${opts.map(o => `<option value="${o}"${!blank(w) && +w === o ? " selected" : ""}>${o}%</option>`).join("")}${!blank(w) && !opts.includes(+w) ? `<option value="${w}" selected>${w}%</option>` : ""}</select></span>`;
 }
 const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
@@ -765,12 +797,13 @@ function finTable(el, secs, kind){
     if(sec.pending && !rows.length){ html += `<tr class="dimmable"><td colspan="${N}" class="pend">${h(sec.pending)}</td></tr>`; return; }
     rows.forEach(r => {
       const c = cellData(d, r), ch = changedMap(d, r), C = k => ch[k] || "", o = ownerOf(r);
-      const cls = `dimmable${r.child ? " child" : ""}${r.depth === 2 ? " d2" : ""}${r._alt ? " alt" : ""}${o && o.unreliable ? " unrel" : ""}`;
+      const cls = `dimmable${r.weighted && offOf(d, r) ? " off" : ""}${r.child ? " child" : ""}${r.depth === 2 ? " d2" : ""}${r._alt ? " alt" : ""}${o && o.unreliable ? " unrel" : ""}`;
       let tr = `<tr data-row="${h(r.id)}" class="${cls}">`;
       cols.forEach(k => {
         if(k === "metric"){
           const nm = editing() && !r._alt && !r.model ? `<span class="m" contenteditable="true" data-edit="row:${h(r.id)}:metric">${h(r.metric)}</span>` : `<span class="m">${h(r.metric)}</span>`;
-          tr += `<td class="sticky${C("metric")}"><span class="mw">${nm}${r.weighted && !r._alt ? dealInputs(d, r) : ""}</span></td>`;
+          const tick = r.weighted && !r._alt ? `<input type="checkbox" class="dtick${wi(d, r) && "off" in wi(d, r) ? " wif" : ""}" data-act="dealon" data-rid="${h(r.id)}"${offOf(d, r) ? "" : " checked"} aria-label="Include ${h(r.metric)} in the pipeline" title="Include in pipeline">` : "";
+          tr += `<td class="sticky${C("metric")}${C("inc")}"><span class="mw"><span class="mn">${tick}${nm}</span>${r.weighted && !r._alt ? dealInputs(d, r) : ""}</span></td>`;
         }
         else if(k === "plan" || k === "actual" || k === "forecast") tr += valCell(d, r, k, C(k));
         else if(k === "varA" || k === "varF") tr += varCell(c[k], C(k));
@@ -862,7 +895,7 @@ function opsTable(el){
     const escTip = Object.values(p.tips).find(t => t && t.esc);
     const subline = ed && p.kpi ? `${h(p.kpi.label)}: ${numInput(`proj:${p.id}:kpi.actual`, p.kpi.actual, "w")} of ${numInput(`proj:${p.id}:kpi.plan`, p.kpi.plan, "w plain")}` : "";
     const ownerHtml = ed ? `<select class="osel${p.owner ? "" : " neg"}" data-set="proj:${h(p.id)}:owner" data-t="text" aria-label="Owner"><option value="">None</option>${roles.map(r => `<option${r === p.owner ? " selected" : ""}>${h(r)}</option>`).join("")}</select>`
-      : `<span class="${p.owner ? "" : "neg b"}">${h(p.owner || "None")}</span>`;
+      : `<span class="${p.owner ? "" : "neg b rec"}"${p.owner ? "" : recTip(p.ownerRec || `Recommend naming an owner today, e.g. Head of Delivery${p.deadline && days(todayISO(), p.deadline) >= 0 ? `: deadline in ${days(todayISO(), p.deadline)} days` : ""}. Without one, nobody confirms progress or the date.`)}>${h(p.owner || "None")}</span>`;
 
     const upd = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:updated" data-t="date" value="${h(p.updated || "")}" aria-label="Last update">`
       : (p.updated ? `<span class="${p.updated < d.meta.asOf ? "neg" : ""}">${h(fmtDate(p.updated))}</span>` : nd());
@@ -899,6 +932,26 @@ function opsTable(el){
 
 /* ---------- cards + issues ---------- */
 function lastFollow(ref){ return S.ops.outbox.find(m => m.ref === ref); }
+const toNames = m => (m.to || []).map(x => String(x).replace(/\s*<.*>$/, "")).join(", ");
+function replyState(m){
+  if(m.replied) return { k:"ok", t:`Replied ${fmtDate(m.replied.at.slice(0, 10))}` };
+  if(!m.replyBy) return { k:"warn", t:"Awaiting reply" };
+  return todayISO() > m.replyBy ? { k:"bad", t:`Reply overdue since ${fmtDow(m.replyBy)}` } : { k:"warn", t:`Awaiting reply · due ${fmtDow(m.replyBy)}` };
+}
+const DELIV = { sent:"Sent", simulated:"Logged, not delivered", logged:"Logged, not delivered", failed:"Failed" };
+function fuBlock(id){
+  const list = S.ops.outbox.filter(m => m.ref === "esc" + id), open = !!S.fuOpen[id], last = list[0];
+  const rs = last ? replyState(last) : null;
+  let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="esc${id}">Follow up</button>`;
+  html += last ? `<span class="fus ${rs.k}"><i class="dot ${rs.k === "ok" ? "green" : rs.k === "bad" ? "red" : "amber"}"></i>${h(toNames(last))} · ${h(rs.t)}</span>` : `<span class="muted">No follow-up yet</span>`;
+  if(list.length) html += `<button class="lnk fut" data-act="fuhist" data-id="${id}" aria-expanded="${open}">History (${list.length}) ${open ? "▲" : "▼"}</button>`;
+  html += `</div>`;
+  if(open && list.length) html += `<ol class="fuh">${list.map(m => { const r = replyState(m);
+    return `<li><div class="fuh1"><b>${h(fmtDate(m.at.slice(0, 10)))}</b> to ${h(toNames(m))}<span class="muted"> · ${h(DELIV[m.status] || m.status || "")}</span></div>
+      <div class="fuh2">${h(m.subject || "")}</div>
+      <div class="fuh3"><span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${m.replied ? `<button class="lnk" data-act="fureply" data-mid="${h(m.id)}" data-v="0">Undo</button>` : `<button class="btn xs" data-act="fureply" data-mid="${h(m.id)}" data-v="1">Mark replied</button>`}</div></li>`; }).join("")}</ol>`;
+  return html + `</div>`;
+}
 function renderCards(d){
   const ed = editing();
   const E = (path, txt, cls = "") => ed ? `<span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>` : `<span class="${cls}">${h(txt)}</span>`;
@@ -909,7 +962,7 @@ function renderCards(d){
       <div class="kv"><span>Issue</span>${E(`escalations.${i}.issue`, e.issue, "b")}</div>
       <div class="kv"><span>Impact</span>${E(`escalations.${i}.impact`, e.impact)}</div>
       <div class="kv"><span>Next step</span>${E(`escalations.${i}.next`, e.next)}</div>
-      <div class="cf"><button class="btn sm" data-act="follow" data-ref="esc${e.id}">Follow up</button>${lf ? `<span class="muted">Followed up ${h(fmtDate(lf.at))}${lf.status === "sent" ? "" : " (logged)"}</span>` : ""}</div></article>`;
+      ${fuBlock(e.id)}</article>`;
   }).join("");
 }
 function currentIssues(){
@@ -939,7 +992,7 @@ function diffList(a, b){
   T("Title", a.header.title, b.header.title); T("Kicker", a.header.kicker, b.header.kicker); T("Footnote", a.footnote, b.footnote);
   b.escalations.forEach((e, i) => ["title","issue","impact","next"].forEach(k => T(`Card ${e.id} ${k === "next" ? "next step" : k}`, (a.escalations[i] || {})[k], e[k])));
   allRows(b).forEach(r => { const o = findRow(a, r.id); if(!o){ out.push(r.metric); return; } const ca = cellData(a, o), cb = cellData(b, r);
-    Object.keys(cb).forEach(k => { if(cellText(ca[k]) !== cellText(cb[k])) out.push(`${r.metric}: ${k === "var" ? "vs plan" : k === "deal" ? "deal value" : k === "annual" ? "a year at this rate" : k}`); }); });
+    Object.keys(cb).forEach(k => { if(cellText(ca[k]) !== cellText(cb[k])) out.push(`${r.metric}: ${k === "var" ? "vs plan" : k === "deal" ? "deal value" : k === "annual" ? "a year at this rate" : k === "inc" ? "in pipeline" : k}`); }); });
   Object.keys(b.costModel || {}).forEach(k => T(`Cost to serve: ${k}`, (a.costModel || {})[k], b.costModel[k]));
   b.operations.forEach(p => { const o = findProj(a, p.id); if(!o){ out.push(p.name); return; }
     ["name","owner","deadline","updated","risk","tips","kpi","forecast","keyNote"].forEach(k => T(`${p.name}: ${k === "keyNote" ? "notes" : k}`, o[k], p[k]));
@@ -990,7 +1043,7 @@ function renderDashboard(){
   $("#foot").innerHTML = d.footnote ? h(d.footnote) : ""; $("#foot").hidden = !d.footnote;
   finTable($("#tCost"), d.cost, "cost");
   const wis = Object.entries(S.whatIf).filter(([id, x]) => findRow(S.live, id) && x && Object.keys(x).length);
-  $("#wif").innerHTML = !editing() && wis.length ? `<span class="wifbar">What-if, not saved: ${wis.map(([id, x]) => `${h(findRow(S.live, id).metric)}${"dv" in x ? ` deal ${blank(x.dv) ? "N/A" : money(x.dv)}` : ""}${"w" in x ? ` at ${blank(x.w) ? "N/A" : x.w + "%"}` : ""}`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
+  $("#wif").innerHTML = !editing() && wis.length ? `<span class="wifbar">What-if, not saved: ${wis.map(([id, x]) => `${h(findRow(S.live, id).metric)}${"dv" in x ? ` deal ${blank(x.dv) ? "N/A" : money(x.dv)}` : ""}${"w" in x ? ` at ${blank(x.w) ? "N/A" : x.w + "%"}` : ""}${"off" in x ? (x.off ? " excluded" : " included") : ""}`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
   opsTable($("#tOps"));
   $("#opsNote").innerHTML = d.opsNote ? h(d.opsNote) : ""; $("#opsNote").hidden = !d.opsNote;
   if(keep) setFocus(keep.startsWith("esc") ? "esc" : "iss", +keep.slice(3), false);
@@ -1084,6 +1137,11 @@ document.addEventListener("change", e => {
   const el = e.target;
   if(el.matches('select[data-act="tf"]')){ S.tf = el.value; savePrefs(); renderDashboard(); return; }
   if(el.matches('select[data-act="offer"]')){ S.offer = el.value; savePrefs(); renderDashboard(); return; }
+  if(el.matches('[data-act="dealon"]')){
+    const id = el.dataset.rid, off = !el.checked;
+    if(editing()){ const r = findRow(S.draft, id); if(r){ r.off = off; dirty(true); } }
+    else { const r = findRow(S.live, id), x = Object.assign({}, S.whatIf[id]); if(r && off === !!r.off) delete x.off; else x.off = off; if(Object.keys(x).length) S.whatIf[id] = x; else delete S.whatIf[id]; renderDashboard(); }
+    return; }
   if(el.matches('[data-act="weight"],[data-act="deal"]')){
     const isW = el.dataset.act === "weight", raw = el.value.trim().replace(/[$,M\s%]/g, ""), v = raw === "" ? null : +raw, id = el.dataset.rid;
     if(v != null && isNaN(v)){ toast("Enter a number, for example 140."); renderDashboard(); return; }
@@ -1230,7 +1288,7 @@ async function sendModal(){
   const email = { to: rc.map(r => r.email), cc: st.cc, subject: m.subject, body: m.body };
   let res = { status:"simulated" };
   if(S.mode === "server"){ try{ res = (await api("send", { method:"POST", body: JSON.stringify({ emails:[email], fromName: st.senderName, replyTo: st.senderEmail }) })).results[0]; }catch(e){ toast("Not sent: " + e.message); return; } }
-  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "" });
+  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "", replyBy: st.replyBy || null });
   saveOps(); closeModal(); renderDashboard();
   toast(res.status === "sent" ? `Sent to ${rc.map(r => r.name).join(" and ")}.` : res.status === "failed" ? "Sending failed: " + (res.error || "unknown error") : "Logged. Nothing was delivered because email isn't connected yet.");
 }
@@ -1247,6 +1305,7 @@ document.addEventListener("click", async e => {
   const a = e.target.closest("[data-act]");
   if(!a){
     if(e.target.isContentEditable || e.target.closest("input,select,textarea,a")) return;
+    if(e.target.closest(".cf")) return;
     const card = e.target.closest(".card[data-card]"); if(card){ const k = "esc" + card.dataset.card; if(S.focus === k) clearFocus(); else setFocus("esc", +card.dataset.card, true); return; }
     const li = e.target.closest("li[data-issue]"); if(li){ const k = "iss" + li.dataset.issue; if(S.focus === k) clearFocus(); else setFocus("iss", +li.dataset.issue, true); return; }
     if(S.focus && !e.target.closest("#focusbar")) clearFocus();
@@ -1267,6 +1326,8 @@ document.addEventListener("click", async e => {
     case "issues": S.issuesOpen = !S.issuesOpen; savePrefs(); if(S.focus && S.focus.startsWith("iss")) clearFocus(); renderIssues(); break;
     case "ai-refresh": maybeAI(S.view === "draft" ? "draft" : "live", true); break;
     case "follow": openModal(a.dataset.ref); break;
+    case "fuhist": S.fuOpen[a.dataset.id] = !S.fuOpen[a.dataset.id]; renderCards(cur()); break;
+    case "fureply": { const m2 = S.ops.outbox.find(x => x.id === a.dataset.mid); if(m2){ if(a.dataset.v === "1") m2.replied = { at: new Date().toISOString() }; else delete m2.replied; saveOps(); renderCards(cur()); } break; }
     case "pub": S.pubConfirm = true; renderDraftbar(); break;
     case "discard": S.discardConfirm = true; renderDraftbar(); break;
     case "cancel": S.pubConfirm = S.discardConfirm = false; renderDraftbar(); break;
