@@ -111,14 +111,16 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.tr{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
 .tr th{font:400 11px var(--sans);text-transform:uppercase;letter-spacing:.03em;color:var(--grey-text);text-align:left;padding:4px 8px;vertical-align:bottom;background:#fff;white-space:nowrap}
-.tr th.r{text-align:right}.tr th.c{text-align:center}
+.tr th.r{text-align:center}.tr th.c{text-align:center}
 .tr th.g{font-weight:700;color:var(--ink);text-transform:none;font-size:12px;letter-spacing:0}
 .tr tr.grp th{padding-bottom:0}
 .tr tr.grp th span{display:block;border-bottom:1px solid var(--rule-strong);padding-bottom:3px;text-align:center;font-weight:700;color:var(--ink)}
 .tr tr.cols th{border-bottom:2px solid var(--deep);padding-bottom:6px}
 .tr td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:middle;position:relative;background:#fff}
 .tr tr{scroll-margin-top:90px}
-.tr td.num{text-align:right;white-space:nowrap}
+.tr td.num{text-align:center;white-space:nowrap}
+.okc{color:var(--ok-fg);font-weight:700}
+.tr td.num .ci{text-align:center}
 .tr td.ctr{text-align:center;white-space:nowrap}
 .tr .sticky{position:sticky;left:0;z-index:1}
 .tr td.sticky{min-width:220px}
@@ -300,7 +302,6 @@ textarea.in{resize:vertical;line-height:1.5}
   <div id="draftbar"></div>
   <header class="dimmable" id="hdr">
     <div class="kicker" id="kicker"></div>
-    <h1 id="title"></h1>
   </header>
   <div class="lbl dimmable">Escalations to the President</div>
   <section class="cards" id="cards" aria-label="Escalations to the President"></section>
@@ -337,7 +338,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 7, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 8, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Platform BU Leadership Dashboard",
@@ -375,11 +376,11 @@ const DATA = {
         tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 1 },
                 reporting: { text: "NorthPoint is also counted in the Payments BU pipeline" } }, updated: "2026-09-30" },
       { id: "np", period: "n2q", parent: "pipe", child: true, weighted: true, metric: "NorthPoint", field: "forecast", dealValue: 140, weight: 70,
-        owners: [ { role: "Head of Sales", source: "CRM" } ], owner: 0,
+        owners: [ { role: "Head of Sales", source: "CRM, weighted" } ], owner: 0,
         risk: { concentration: "red", staffing: "red" },
         tips: { concentration: { text: "40% of weighted pipeline" }, staffing: { text: "Needs 24 engineers from Jan 2027; 4 available", esc: 1 } }, updated: "2026-09-30" },
       { id: "other", period: "n2q", parent: "pipe", child: true, weighted: true, metric: "Other deals", field: "forecast", dealValue: null, weight: null,
-        owners: [ { role: "Head of Sales", source: "CRM, weighted total", value: 147 } ], owner: 0,
+        owners: [ { role: "Head of Sales", source: "CRM, weighted", value: 147 } ], owner: 0,
         risk: { reporting: "amber" }, tips: { reporting: { text: "CRM figure, not yet checked" } }, updated: "2026-09-30" }
     ]}
   ],
@@ -448,7 +449,7 @@ const OPS_DEFAULT = {
 
 /* ===================================================================== */
 const LSKEY = "northpoint-dash-v3", PREFKEY = "northpoint-prefs";
-const COLS = [["concentration","Concentration"],["reporting","Reporting"],["staffing","Staffing"]];
+const COLS = [["concentration","Concentration"],["reporting","Reporting quality"],["staffing","Staffing"]];
 const STATUS = { green:"on track", amber:"needs attention", red:"off track", nodata:"no data" };
 const STAGE = { done:"Done", active:"In progress", planned:"Planned", late:"Late", blocked:"Blocked", noupdate:"No update" };
 const TAGS = ["Reporting","Staffing","Funding","Ownership","Dependency"];
@@ -715,15 +716,16 @@ function ownerOrder(r){ const main = r.owner || 0; return [main, ...r.owners.map
 function ownerCell(r, c, chg){
   if(!r.owners.length) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : nd()}</td>`;
   const multi = r.owners.length > 1, main = r.owner || 0;
-  return `<td class="${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], bad = o.unreliable || (!multi && r.ownerWarn);
+  return `<td class="${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], bad = o.unreliable || (!multi && r.ownerWarn), good = multi && !o.unreliable && i === main;
     const ctrl = editing() && multi ? `<span class="ofl"><button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${i}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button>${i !== main ? `<button type="button" class="flag" data-act="mainowner" data-rid="${h(r.id)}" data-i="${i}" title="Show this owner's figure in the table">Use as main</button>` : ""}</span>` : "";
-    return `<span class="ol${bad ? " neg b" : ""}">${h(o.role)}${ctrl}</span>`; }).join("")}</td>`;
+    return `<span class="ol${bad ? " neg b" : good ? " okc" : ""}">${h(o.role)}${ctrl}</span>`; }).join("")}</td>`;
 }
 function sourceCell(r, c, chg){
   if(!r.owners.length || !c.t) return `<td class="srcc${chg}">${nd()}</td>`;
   const main = r.owner || 0;
-  return `<td class="srcc${chg}">${ownerOrder(r).map(i => { const o = r.owners[i];
-    return `<span class="ol${o.unreliable ? " neg" : ""}">${h(o.source || "")}${i !== main && "value" in o ? ` (${blank(o.value) ? "no figure" : h(fmtV(r, o.value))})` : ""}</span>`; }).join("")}</td>`;
+  const multi = r.owners.length > 1;
+  return `<td class="srcc${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], good = multi && !o.unreliable && i === main;
+    return `<span class="ol${o.unreliable ? " neg" : good ? " okc" : ""}">${h(o.source || "")}${multi && "value" in o ? ` (${blank(o.value) ? "no figure" : h(fmtV(r, o.value))})` : ""}</span>`; }).join("")}</td>`;
 }
 function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
@@ -731,8 +733,8 @@ function updCell(key, iso, c, chg){
 }
 function dealInputs(d, r){
   const w = wOf(d, r), dv = dvOf(d, r), x = wi(d, r) || {}, opts = Array.from({ length: 11 }, (_, i) => i * 10);
-  return `<span class="dealin${"dv" in x ? " wif" : ""}" title="Deal value">$<input class="ci dv" inputmode="decimal" data-act="deal" data-rid="${h(r.id)}" value="${h(blank(dv) ? "" : dv)}" placeholder="N/A" aria-label="Deal value for ${h(r.metric)}, $M">M</span>` +
-    `<select class="wsel${"w" in x ? " wif" : ""}" data-act="weight" data-rid="${h(r.id)}" aria-label="Weight for ${h(r.metric)}"><option value=""${blank(w) ? " selected" : ""}>N/A</option>${opts.map(o => `<option value="${o}"${!blank(w) && +w === o ? " selected" : ""}>${o}%</option>`).join("")}${!blank(w) && !opts.includes(+w) ? `<option value="${w}" selected>${w}%</option>` : ""}</select>`;
+  return `<span class="dealin${"dv" in x ? " wif" : ""}" title="Deal value">$<input class="ci dv" inputmode="decimal" data-act="deal" data-rid="${h(r.id)}" value="${h(blank(dv) ? "" : dv)}" placeholder="" aria-label="Deal value for ${h(r.metric)}, $M">M</span>` +
+    `<select class="wsel${"w" in x ? " wif" : ""}" data-act="weight" data-rid="${h(r.id)}" aria-label="Weight for ${h(r.metric)}"><option value=""${blank(w) ? " selected" : ""}></option>${opts.map(o => `<option value="${o}"${!blank(w) && +w === o ? " selected" : ""}>${o}%</option>`).join("")}${!blank(w) && !opts.includes(+w) ? `<option value="${w}" selected>${w}%</option>` : ""}</select>`;
 }
 const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
@@ -741,11 +743,12 @@ function finTable(el, secs, kind){
   const W = { metric:21, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, concentration:8.5, reporting:6.5, staffing:6, owner:9.5, source:10, updated:6 };
   const N = cols.length;
   const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
-    annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting</th>', staffing:'<th class="c g">Staffing</th>',
+    annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting quality</th>', staffing:'<th class="c g">Staffing</th>',
     owner:"<th>Data owner</th>", source:"<th>Data source</th>", updated:"<th>Last updated</th>" }, VAR_HEAD);
+  if(kind === "cost"){ head.concentration = "<th></th>"; head.staffing = "<th></th>"; }
   const grp = [];
   cols.forEach(c => {
-    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
+    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : kind !== "cost" && ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
   let html = `<colgroup>${cols.map(c => `<col style="width:${W[c]}%">`).join("")}</colgroup><thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
@@ -754,7 +757,7 @@ function finTable(el, secs, kind){
     let rows = sec.rows;
     if(sec.timeframe && S.tf !== "all") rows = rows.filter(r => r.period === S.tf);
     let summary = "";
-    if(collapsed && rows.length) summary = `<span class="csum">${rows.filter(r => !r.child).map(r => { const c = cellData(d, r), v = c.varA.main ? c.varA : c.varF; return `${h(r.metric)}: <b>${h(c[r.field].t || "—")}</b>${v.main ? ` <span class="${v.adverse ? "neg" : ""}">${h(v.main)}</span>` : ""} ${r.risk.reporting ? `<i class="dot ${r.risk.reporting}"></i>` : ""}`; }).join(" · ")}</span>`;
+    if(collapsed && rows.length) summary = `<span class="csum">${rows.filter(r => !r.child).map(r => { const c = cellData(d, r), v = c.varA.main ? c.varA : c.varF; return `${h(r.metric)}: <b>${h(c[r.field].t || "—")}</b>${v.main ? ` <span class="${v.adverse ? "neg" : ""}">${h(v.main)}</span>` : ""} ${r.risk.reporting && r.risk.reporting !== "green" ? `<i class="dot ${r.risk.reporting}"></i>` : ""}`; }).join(" · ")}</span>`;
     const tfSel = sec.timeframe ? `<label class="csum">Period <select class="tf" data-act="tf" aria-label="Booking period">${Object.entries(TF).map(([k, l]) => `<option value="${k}"${S.tf === k ? " selected" : ""}>${h(l)}</option>`).join("")}</select></label>` : "";
     const offSel = sec.offerSelect ? `<label class="csum">Margin for <select class="tf" data-act="offer" aria-label="Offer">${Object.entries(d.costModel.offers).map(([k, o]) => `<option value="${k}"${S.offer === k ? " selected" : ""}>${h(o.name)}</option>`).join("")}</select></label>` : "";
     html += `<tr class="sh dimmable"><th colspan="${N}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}${offSel}</div></th></tr>`;
@@ -772,6 +775,8 @@ function finTable(el, secs, kind){
         else if(k === "plan" || k === "actual" || k === "forecast") tr += valCell(d, r, k, C(k));
         else if(k === "varA" || k === "varF") tr += varCell(c[k], C(k));
         else if(k === "annual") tr += `<td class="num${C("annual")}">${c.annual.t ? `<span class="b${c.annual.adverse ? " neg" : ""}">${h(c.annual.t)}</span><span class="sub">vs plan</span>` : na()}</td>`;
+        else if(kind === "cost" && (k === "concentration" || k === "staffing")) tr += "<td></td>";
+        else if(k === "staffing" && !c.staffing.st && !editing()) tr += `<td class="ctr">${nd()}</td>`;
         else if(COLS.some(x => x[0] === k)) tr += dotCell(r._alt || r.model ? null : `row:${r.id}:${k}`, COLS.find(x => x[0] === k)[1], c[k], C(k));
         else if(k === "owner") tr += ownerCell(r, c.owner, C("owner") || C("all"));
         else if(k === "source") tr += sourceCell(r, c.source, C("source"));
@@ -847,7 +852,7 @@ function projNotesOld(p, ed){
 function opsTable(el){
   const d = cur(), ax = axis(d), ed = editing(), now = todayISO();
   const roles = uniq(["Head of Delivery","Head of Product","Head of Sales","Head of Platform","Head of Talent","Finance BP", ...d.operations.map(p => p.owner).filter(Boolean)]);
-  let html = `<colgroup>${[21, 9.5, 7, 8, 8.5, 18, 6.5, 21.5].map(w => `<col style="width:${w}%">`).join("")}</colgroup><thead><tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner</th><th>Last updated</th><th>Deadline</th><th>Status</th><th>Notes</th><th class="fu">Follow up</th>
+  let html = `<colgroup>${[21, 9.5, 7, 8, 8.5, 18, 6.5, 21.5].map(w => `<col style="width:${w}%">`).join("")}</colgroup><thead><tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner</th><th>Last updated</th><th>Deadline</th><th class="c">Status</th><th>Notes</th><th class="fu c">Follow up</th>
     <th><div class="tlh">${ax.months.map(m => `<i style="left:${ax.pct(m)}%"></i><span style="left:${ax.pct(m)}%">${MON[pd(m).m - 1]}${pd(m).m === 1 ? " " + String(pd(m).y).slice(2) : ""}</span>`).join("")}${now >= ax.start && now <= ax.end ? `<span class="td" style="left:${ax.pct(now)}%">Today</span>` : ""}</div></th></tr></thead><tbody>`;
   let lastSec = null;
   d.operations.forEach(p => {
@@ -867,9 +872,9 @@ function opsTable(el){
       <td class="${chg("owner").trim()}">${ownerHtml}</td>
       <td class="${chg("updated").trim()}">${upd}</td>
       <td class="${chg("deadline").trim()}">${dl}<span class="sub${cd && cd.bad ? " neg b" : ""}">${cd ? h(cd.t) : ""}</span></td>
-      <td><span class="sc ${st.k}">${h(st.label)}</span></td>
+      <td class="ctr"><span class="sc ${st.k}">${h(st.label)}</span></td>
       <td class="${chg("keyNote").trim()}"${escTip ? ` data-esc="${escTip.esc}" data-cotext="${h(escTip.text)}"` : ""}>${projNotes(p, ed)}</td>
-      <td class="fu"><button class="btn xs" data-act="follow" data-ref="proj:${h(p.id)}">Follow up</button></td>
+      <td class="fu ctr"><button class="btn xs" data-act="follow" data-ref="proj:${h(p.id)}">Follow up</button></td>
       <td${p.sample ? ' class="mockbars" title="Steps are a mock plan"' : ""}>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
     if(!open) return;
     p.stages.forEach((s, i) => {
@@ -882,8 +887,8 @@ function opsTable(el){
       else notes = s.blocker ? `<span class="nl">${s.tag ? `<span class="tag red">${h(s.tag)}</span>` : ""}<span class="blk">${h(s.blocker)}</span></span>` : "";
       html += `<tr class="stage dimmable${p.sample ? " mock" : ""}" data-row="${h(p.id)}"${p.sample ? ' title="Mock step"' : ""}>
         <td class="sticky${sc}"><span class="sn" ${ed ? `contenteditable="true" data-edit="${k}:name"` : ""}>${h(s.name)}</span></td>
-        <td></td><td></td><td class="nt${sc}">${dates}</td><td class="${sc.trim()}">${stt}</td><td class="${sc.trim()}">${notes}</td>
-        <td class="fu">${s.blocker ? `<button class="btn xs" data-act="follow" data-ref="blk:${h(p.id)}:${i}">Follow up</button>` : ""}</td><td>${bars(ax, [s], null, false)}</td></tr>`;
+        <td></td><td></td><td class="nt${sc}">${dates}</td><td class="ctr${sc}">${stt}</td><td class="${sc.trim()}">${notes}</td>
+        <td class="fu ctr">${s.blocker ? `<button class="btn xs" data-act="follow" data-ref="blk:${h(p.id)}:${i}">Follow up</button>` : ""}</td><td>${bars(ax, [s], null, false)}</td></tr>`;
     });
   });
   el.innerHTML = html + "</tbody>";
@@ -979,7 +984,6 @@ function renderDashboard(){
   const d = cur(), keep = S.focus;
   hideTip(); clearFocus(true);
   $("#kicker").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:header.kicker">${h(d.header.kicker)}</span>` : h(d.header.kicker);
-  $("#title").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:header.title">${h(d.header.title)}</span>` : h(d.header.title);
   document.body.classList.toggle("edit", editing());
   renderDraftbar(); renderCards(d); renderIssues();
   finTable($("#tCom"), d.commercial, "com");
