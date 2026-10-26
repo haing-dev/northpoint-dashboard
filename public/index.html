@@ -760,12 +760,13 @@ function valCell(d, r, f, chg){
     }
   }
   if(!c.t){ const calc = r.rollup || r.derive || r.model || (f === "forecast" && r.weighted && !blank(dvOf(d, r)) && !blank(wOf(d, r))); return `<td class="num${chg}">${calc ? na() : nd()}</td>`; }
-  return `<td class="num${chg}"><span class="${bold ? "b" : ""}">${h(c.t)}</span></td>`;
+  const fv = (f === "actual" || f === "forecast") ? varOf(d, r, f) : null, good = fv && !fv.adverse && Math.abs(fv.diff) > 1e-9;
+  return `<td class="num${chg}"><span class="${bold ? "b" : ""}${good ? " okc" : ""}">${h(c.t)}</span></td>`;
 }
 function varCell(c, chg){
   if(!c.main) return `<td class="num${chg}">${na()}</td>`;
   const escA = c.esc ? ` data-esc="${c.esc}" data-cotext="${h(c.tip)}"` : "";
-  const inner = `<span class="b${c.adverse ? " neg" : ""}">${h(c.main)}</span>${c.sub ? `<span class="sub">${h(c.sub)}</span>` : ""}`;
+  const inner = `<span class="b${c.adverse ? " neg" : Math.abs(c.diff || 0) > 1e-9 ? " okc" : ""}">${h(c.main)}</span>${c.sub ? `<span class="sub">${h(c.sub)}</span>` : ""}`;
   return `<td class="num${chg}"${escA}>${c.tip ? `<span class="vt" tabindex="0" data-tip="${h(c.tip)}">${inner}</span>` : inner}</td>`;
 }
 function ownerRec(r, o){
