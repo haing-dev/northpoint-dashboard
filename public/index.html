@@ -65,8 +65,8 @@ button.chip:hover{background:#ECEEF0}
 h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:balance}
 .lbl{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text);margin:24px 0 8px}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.card{background:var(--card-bg);padding:16px;display:grid;grid-row:span 5;grid-template-rows:subgrid;row-gap:0;align-content:start;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s ease;position:relative}
-.card:hover,.card:focus-visible{transform:translateY(-5px) scale(1.015);box-shadow:0 14px 30px rgba(5,28,44,.20),0 0 0 1px rgba(5,28,44,.25);background:#F7F7F7;z-index:2}
+.card{background:#FBEAEA;padding:16px;display:grid;grid-row:span 5;grid-template-rows:subgrid;row-gap:0;align-content:start;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s ease;position:relative}
+.card:hover,.card:focus-visible{transform:translateY(-5px) scale(1.015);box-shadow:0 14px 30px rgba(5,28,44,.20),0 0 0 1px rgba(5,28,44,.25);background:#F8E1E1;z-index:2}
 .card.lit{outline:2px solid var(--deep)}
 .ct{display:flex;align-items:center;gap:10px;font:700 15px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px}
 .cb{flex:none;width:24px;height:24px;border-radius:50%;background:var(--deep);color:#fff;font:700 13px/24px var(--sans);text-align:center}
@@ -75,7 +75,10 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .kv .b{font-weight:700}
 .cf{padding-top:14px;align-self:start;cursor:default}
 #hlwrap{margin-bottom:4px}
-.hlc{background:var(--ok-bg);border-left:4px solid var(--dot-green, #2E8540);padding:16px}
+.hlc{background:var(--ok-bg);border-left:4px solid var(--dot-green, #2E8540);padding:16px;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
+.hlc:hover,.hlc:focus-visible{transform:translateY(-3px);box-shadow:0 14px 30px rgba(5,28,44,.16),0 0 0 1px rgba(29,98,50,.35)}
+.hlc.lit{outline:2px solid var(--ok-fg)}
+.tr td.ndc{text-align:left}.tr td.ndc-owner{padding-left:41px}.tr td.ndc-source{padding-left:43px}.tr td.ndc-updated{padding-left:30px}
 .hlc .ct{margin-bottom:2px}
 .cb.ok{background:var(--ok-fg)}
 .hlg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
@@ -331,7 +334,7 @@ textarea.in{resize:vertical;line-height:1.5}
   <header class="dimmable" id="hdr">
     <div class="kicker" id="kicker"></div>
   </header>
-  <div id="hlwrap" class="dimmable"><div class="lbl">On Track</div><section id="hl" aria-label="On Track"></section></div>
+  <div id="hlwrap"><div class="lbl dimmable">On Track</div><section id="hl" aria-label="On Track"></section></div>
   <div class="lbl dimmable">Escalations to the President</div>
   <section class="cards" id="cards" aria-label="Escalations to the President"></section>
   <section class="issues dimmable" id="issues" aria-label="Other issues"></section>
@@ -367,7 +370,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 10, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 11, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Platform BU Leadership Dashboard",
@@ -376,8 +379,9 @@ const DATA = {
   highlights: [
     { id: 1, title: "PIPELINE AHEAD OF PLAN",
       good: "Q4 2026–Q1 2027 weighted booking pipeline of $245M exceeds $210M plan by 17%",
-      risk: "NorthPoint accounts for $98M (40%) but cannot yet be staffed; other deals ($147M) lack defined value or weighting",
-      next: "Follow up NorthPoint deal with Head of Delivery; other deals with Head of Sales" }
+      risk: "NorthPoint accounts for $98M (40%) of weighted pipeline but is at risk of understaffing for client deployed engineers; other deals ($147M) lack defined value or weighting",
+      next: "Follow up NorthPoint deal with Head of Delivery; other deals with Head of Sales",
+      rows: ["pipe", "np", "other"], jump: "pipe" }
   ],
   escalations: [
     { id: 1, title: "NORTHPOINT EXECUTION RISK",
@@ -443,7 +447,7 @@ const DATA = {
       forecast: "2026-11-01", forecastNote: "Green, reported", updated: null, sample: true,
       risk: { reporting: "red", staffing: "nodata" },
       tips: { reporting: { text: "No owner or date", esc: 3 }, staffing: { text: "Staffing not tracked" } },
-      keyNote: { tag: "Reporting", text: "No reporting: no owner or date" },
+      keyNote: { tag: "Reporting", text: "No owner or timeline" },
       stages: [
         { name: "Requirements sign-off", start: "2026-06-15", end: "2026-07-15", status: "done", note: "Signed off 14 Jul" },
         { name: "Build & integration", start: "2026-07-16", end: "2026-09-15", status: "late", note: "Finished 20 Sep, 5 days late" },
@@ -455,7 +459,7 @@ const DATA = {
       kpi: { label: "Engineers available", plan: 24, actual: 4, source: "HR system, Head of Talent" }, updated: "2026-09-25", sample: true,
       risk: { reporting: "green", staffing: "red" },
       tips: { reporting: { text: "Delivery plan, updated 25 Sep" }, staffing: { text: "4 of 24 engineers available", esc: 1 } },
-      keyNote: { tag: "Staffing", text: "4 of 24 engineers available" },
+      keyNote: { tag: "Staffing", text: "4/24 engineers available for Jan 2027 execution" },
       stages: [
         { name: "Staffing plan & funding decision", start: "2026-09-15", end: "2026-10-15", status: "blocked", tag: "Funding", blocker: "Funding for 20 engineers not approved" },
         { name: "Hiring & contractor sourcing", start: "2026-10-16", end: "2026-12-11", status: "blocked", tag: "Staffing", blocker: "Waiting on the funding decision" },
@@ -845,7 +849,7 @@ function finTable(el, secs, kind){
           tr += `<td class="sticky${C("metric")}${C("inc")}"><span class="mw"><span class="mn">${rt}${tick}${nm}</span>${r.weighted && !r._alt ? dealInputs(d, r) : ""}</span></td>`;
         }
         else if(k === "fu") tr += `<td class="fu ctr">${r._alt ? "" : `<button class="btn xs" data-act="follow" data-ref="row:${h(r.id)}">Follow up</button>`}</td>`;
-        else if(cost && r.placeholder && ["plan","actual","forecast","owner","source"].includes(k)) tr += `<td class="${k === "owner" || k === "source" ? "" : "num"}">${nd()}</td>`;
+        else if(cost && r.placeholder && ["plan","actual","forecast","owner","source","updated"].includes(k)) tr += `<td class="${["owner","source","updated"].includes(k) ? "ndc ndc-" + k : "num"}">${nd()}</td>`;
         else if(cost && k === "overspend"){
           if(r.placeholder) tr += `<td class="ctr">${nd()}</td>`;
           else { const v = varOf(d, r, "actual"); tr += dotCell(null, "Overspending", { st: !v ? null : v.pct > 10 ? "red" : v.pct > 0 ? "amber" : "green", tip: v ? `${v.main} vs plan` : "" }, ""); } }
@@ -1005,7 +1009,7 @@ function fuBlock(ref){
 function renderHighlights(d){
   const ed = editing(), E = (path, txt, cls = "") => ed ? `<span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>` : `<span class="${cls}">${h(txt)}</span>`;
   $("#hlwrap").hidden = !d.highlights.length;
-  $("#hl").innerHTML = d.highlights.map((g, i) => `<article class="hlc">
+  $("#hl").innerHTML = d.highlights.map((g, i) => `<article class="hlc dimmable${S.focus === "hl" + g.id ? " lit" : ""}" tabindex="0" role="button" data-hl="${g.id}" aria-label="${h(titleCase(g.title))}. Show in the tables">
     <div class="ct"><span class="cb ok">✓</span>${E(`highlights.${i}.title`, g.title)}</div>
     <div class="hlg"><div class="kv"><span>Highlight</span>${E(`highlights.${i}.good`, g.good, "b")}</div>
       <div class="kv"><span>Risk</span>${E(`highlights.${i}.risk`, g.risk)}</div>
@@ -1107,7 +1111,7 @@ function renderDashboard(){
   $("#wif").innerHTML = !editing() && wis.length ? `<span class="wifbar">What-if, not saved: ${wis.map(([id, x]) => `${h(findRow(S.live, id).metric)}${"dv" in x ? ` deal ${blank(x.dv) ? "N/A" : money(x.dv)}` : ""}${"w" in x ? ` at ${blank(x.w) ? "N/A" : x.w + "%"}` : ""}${"off" in x ? (x.off ? " excluded" : " included") : ""}`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
   opsTable($("#tOps"));
   $("#opsNote").innerHTML = d.opsNote ? h(d.opsNote) : ""; $("#opsNote").hidden = !d.opsNote;
-  if(keep) setFocus(keep.startsWith("esc") ? "esc" : "iss", +keep.slice(3), false);
+  if(keep){ const kk = keep.startsWith("esc") ? "esc" : keep.startsWith("hl") ? "hl" : "iss"; setFocus(kk, +keep.slice(kk.length), false); }
 }
 function renderAll(){ renderBar(); renderDashboard(); if(S.modal) renderModal(); }
 
@@ -1124,6 +1128,7 @@ function setFocus(kind, n, jump){
   let ids, label;
   let jumpId = null;
   if(kind === "esc"){ ids = linkedRows(n); const e = cur().escalations.find(x => x.id === n); if(e && e.jump){ ids.add(e.jump); jumpId = e.jump; } document.querySelectorAll(`.card[data-card="${n}"]`).forEach(c => { c.classList.add("lit"); c.setAttribute("aria-pressed", "true"); }); label = `Escalation ${n}`; }
+  else if(kind === "hl"){ const g = cur().highlights.find(x => x.id === n); ids = new Set(g && g.rows || []); if(g && g.jump) jumpId = g.jump; document.querySelectorAll(`.hlc[data-hl="${n}"]`).forEach(c => c.classList.add("lit")); label = g ? titleCase(g.title) : "On track"; }
   else { const it = currentIssues().items[n]; ids = new Set(it ? it.rowIds || [] : []); $("#issues").classList.add("lit"); const li = document.querySelector(`li[data-issue="${n}"]`); if(li) li.classList.add("lit"); label = it ? it.title : "Issue"; }
   const rows = [];
   ids.forEach(id => document.querySelectorAll(`tr[data-row="${CSS.escape(id)}"]`).forEach(tr => { tr.classList.add("lit"); rows.push(tr); }));
@@ -1381,6 +1386,7 @@ document.addEventListener("click", async e => {
   if(!a){
     if(e.target.isContentEditable || e.target.closest("input,select,textarea,a")) return;
     if(e.target.closest(".cf")) return;
+    const hlc = e.target.closest(".hlc[data-hl]"); if(hlc){ const k = "hl" + hlc.dataset.hl; if(S.focus === k) clearFocus(); else setFocus("hl", +hlc.dataset.hl, true); return; }
     const card = e.target.closest(".card[data-card]"); if(card){ const k = "esc" + card.dataset.card; if(S.focus === k) clearFocus(); else setFocus("esc", +card.dataset.card, true); return; }
     const li = e.target.closest("li[data-issue]"); if(li){ const k = "iss" + li.dataset.issue; if(S.focus === k) clearFocus(); else setFocus("iss", +li.dataset.issue, true); return; }
     if(S.focus && !e.target.closest("#focusbar")) clearFocus();
