@@ -79,17 +79,21 @@ Dear <first names of the recipients> and <team> team,
 Ahead of the next leadership review on <review date>, we would like to flag the following issues:
 (If the topic is a data submission rather than a leadership-review item, adapt this line, for example: "As part of the data collection for the <cut-off> reporting cut-off, we would like to flag the following:")
 
-1. <Issue 1, one line with the key figure>
-   1. <clarification question or point>
-   2. <clarification question or point>
-2. <Issue 2>
-   1. <clarification question or point>
+1. <Issue 1 title>
+   1. Explanation: <full sentence with the actual figures, e.g. "The current Q3-2026 booking revenue, based on the Finance booking log, is $41M, which is $19M (32%) below the plan of $60M.">
+   2. Impact: <full sentence on what this means for the plan or the review>
+   3. Action: <full sentence starting with "Please", saying exactly what is needed>
+
+2. <Issue 2 title>
+   1. Explanation: ...
+   2. Impact: ...
+   3. Action: ...
 
 Please let us know your latest update by <reply-by date>. Please reach out to us if there's any question.
 
 Best,
 <sender>
-Rules: one numbered issue per issue given; 1 to 3 short clarification points under each, asking for exactly what is needed; use only the facts and figures given; no filler.
+Rules: one numbered issue per distinct issue given; never repeat the same point in two issues (merge them instead); write complete, plain sentences, not fragments; use only the facts and figures given; no filler.
 Reply with JSON only: {"subject":"...","body":"..."} where body is plain text with \\n line breaks.`;
 
 const SUGGEST_SYSTEM = `You keep the wording on the President's dashboard in line with the latest figures, for the Value Capture Office.

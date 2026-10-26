@@ -1473,23 +1473,29 @@ function refContext(ref){
   return null;
 }
 function rowRisks(d, r, prefix){
-  const cost = d.cost.some(sc => sc.rows.includes(r));
-  return riskSlots(d, r, cost).filter(x => x.st !== "nodata" || !cost || x.key !== "overspend").map(x => ({ st: x.st, label: (prefix ? r.metric + " · " : "") + x.label, text: x.text, esc: x.esc }));
+  const cost = d.cost.some(sc => sc.rows.includes(r)), pre = prefix ? r.metric + " · " : "";
+  const out = riskSlots(d, r, cost).filter(x => x.st !== "nodata" || !cost || x.key !== "overspend").map(x => ({ st: x.st, label: pre + x.label, text: x.text, esc: x.esc, key: x.key, rid: r.id }));
+  const v = !cost && !r.placeholder ? varOf(d, r, r.field) : null;
+  if(v && v.adverse) out.unshift({ st: Math.abs(v.pct) > 10 ? "red" : "amber", label: pre + "Variance", text: `${Math.abs(v.pct)}% ${v.pct < 0 ? "below" : "above"} plan`, esc: (r.varTip || {}).esc || null, key: "variance", rid: r.id });
+  return out;
 }
+const projItems = (p, pre) => projRisks(p).map(x => Object.assign(x, { pid: p.id, key: x.label.toLowerCase(), label: (pre ? p.name + " · " : "") + x.label }));
+const stageItems = (p, s, i) => stageRisks(s).map(x => Object.assign(x, { pid: p.id, si: i, key: x.label.toLowerCase(), label: `${s.name} · ${x.label}` }));
 function ctxRisks(d, ref){
   if(ref.startsWith("sub:")){ const x = submissions(d).find(s => "sub:" + s.key === ref); if(!x) return [];
-    const out = []; if(x.st !== "ok") out.push({ st: x.st === "missing" ? "red" : "amber", label: "Submission", text: x.st === "missing" ? "Not submitted" : `Late; last update ${fmtDate(x.updated)}` });
-    out.push({ st: x.risk || "nodata", label: "Reporting quality", text: x.tip || (x.risk ? cap(STATUS[x.risk]) : "No data") }); return out; }
-  if(ref.startsWith("row:")){ const r = findRow(d, ref.slice(4)); return r ? rowRisks(d, r) : []; }
-  if(ref.startsWith("blk:")){ const [, pid, si] = ref.split(":"), p = findProj(d, pid), s = p && p.stages[+si]; return s ? stageRisks(s) : []; }
+    const out = []; if(x.st !== "ok") out.push({ st: x.st === "missing" ? "red" : "amber", label: "Submission", text: x.st === "missing" ? "Not submitted" : `Late; last update ${fmtDate(x.updated)}`, key: "submission", sub: x });
+    else out.push({ st: x.risk || "nodata", label: "Reporting quality", text: x.tip || (x.risk ? cap(STATUS[x.risk]) : "No data"), key: "reporting", rid: x.rid, pid: x.pid });
+    return out; }
+  if(ref.startsWith("row:")){ const r = findRow(d, ref.slice(4)); return r ? (r.placeholder ? [] : rowRisks(d, r)) : []; }
+  if(ref.startsWith("blk:")){ const [, pid, si] = ref.split(":"), p = findProj(d, pid), s = p && p.stages[+si]; return s ? stageItems(p, s, +si) : []; }
   if(ref.startsWith("proj:")){ const p = findProj(d, ref.slice(5)); if(!p) return [];
-    return [...projRisks(p), ...p.stages.flatMap(s => stageRisks(s).map(x => Object.assign(x, { label: `${s.name} · ${x.label}` })))]; }
+    return [...projItems(p), ...p.stages.flatMap((s, i) => stageItems(p, s, i))]; }
   if(ref.startsWith("esc")){ const n = +ref.slice(3), ids = linkedRows(n), out = [];
     ids.forEach(id => { const r = findRow(d, id); if(r) out.push(...rowRisks(d, r, true).filter(x => x.st !== "nodata" && x.st !== "green"));
-      const p = findProj(d, id); if(p) out.push(...projRisks(p).map(x => Object.assign(x, { label: `${p.name} · ${x.label}` }))); });
+      const p = findProj(d, id); if(p) out.push(...projItems(p, true)); });
     return out; }
   if(ref.startsWith("hl")){ const g = d.highlights.find(x => "hl" + x.id === ref), out = [];
-    (g && g.rows || []).forEach(id => { const r = findRow(d, id); if(r) out.push(...rowRisks(d, r, true).filter(x => x.st !== "nodata" && x.st !== "green")); });
+    (g && g.rows || []).forEach(id => { const r = findRow(d, id); if(r) out.push(...rowRisks(d, r, true).filter(x => x.st !== "nodata" && x.st !== "green" && x.key !== "variance")); });
     return out; }
   return [];
 }
@@ -1498,32 +1504,98 @@ function ctxOf(m){
   return Object.assign({}, m.ctx, { base: m.ctx.issue, picked: pk, issue: m.ctx.issue + (pk.length ? `\n\nIssues to address:\n${pk.map(x => `- ${x.label}: ${x.text}`).join("\n")}` : "") });
 }
 const teamOf = role => { const r = String(role || "").replace(/^(Head|Director|VP|Chief) of /i, "").replace(/\s+BP$/i, "").trim(); return /^staff$/i.test(r) ? "" : r; };
-function askFor(x){
-  const l = String(x.label).toLowerCase(), tx = String(x.text || "").toLowerCase();
-  if(tx.includes("no owner") || tx.includes("owner to confirm")) return ["Who owns this, and when can they confirm the timeline?"];
-  if(x.kind === "status" && (l.includes("reporting") || l.includes("blocker"))) return ["What is the latest status, and on what date was it taken?", "When is the next update due?"];
-  if(l.includes("concentration")) return ["What share of the pipeline does this deal represent today?", "Is there a plan to reduce the dependency on a single deal?"];
-  if(l.includes("staffing")) return ["How many people are in place versus needed, and by when?", "What is the plan and timing to close the gap?"];
-  if(l.includes("overspend")) return ["What is driving the cost above plan?", "What actions will bring it back to plan, and by when?"];
-  if(l.includes("ownership")) return ["Who owns this, and can they confirm the date?"];
-  if(l.includes("funding")) return ["When is the funding decision expected, and who makes it?"];
-  if(l.includes("submission")) return ["Please send the data with its source and the date it was taken."];
-  if(l.includes("reporting")) return ["Can you confirm the latest figure and its source?", "When was it last updated, and when is the next update due?"];
-  return ["What is the latest status, and when do you expect it to be resolved?"];
+const lc1 = t => { t = String(t || "").trim().replace(/\.$/, ""); const w = t.split(/\s/)[0]; return /^[A-Z][a-z]*$/.test(w) && w !== "I" ? t[0].toLowerCase() + t.slice(1) : t; };
+const sent = t => { t = String(t || "").trim(); if(!t) return ""; t = t[0].toUpperCase() + t.slice(1); return /[.?!]$/.test(t) ? t : t + "."; };
+function dueLine(p){ if(!p || !p.deadline) return ""; const cd = countdown(p); return `We cannot confirm that ${p.name} will meet its ${fmtLong(p.deadline)} deadline${cd ? ` (${cd.t})` : ""}.`; }
+function issueKey(x){
+  if(x.key === "concentration") return "conc";
+  if(x.key === "staffing") return x.rid === "np" || x.pid === "npexec" ? "staff:np" : "staff:" + (x.rid || x.pid);
+  if(x.si != null) return `s:${x.pid}:${x.si}`;
+  return `${x.key}:${x.rid || x.pid || ""}`;
+}
+function issueFor(d, x){
+  const r = x.rid ? findRow(d, x.rid) : null, p = x.pid ? findProj(d, x.pid) : null, s = p && x.si != null ? p.stages[x.si] : null;
+  const fv = (row, v) => fmtV(row, v) || "no figure", where = s ? `${s.name} (${p.name})` : p ? p.name : r ? r.metric : "";
+  const pipe = findRow(d, "pipe"), np = findRow(d, "np"), npx = findProj(d, "npexec");
+  if(x.key === "variance" && r){
+    const a = val(d, r, r.field), pl = val(d, r, "plan"), diff = r1(a - pl), pc = Math.abs(Math.round(diff / pl * 100)), below = diff < 0, o = ownerOf(r);
+    const pipeLbl = pipe ? ((pipe.metric.match(/^(.*?)\s+Booking/i) || [])[1] || "").replace(/(\d{4})-(Q\d)/, "$1–$2") : "";
+    return { t: `${r.metric} ${below ? "below" : "above"} plan`,
+      ex: `The current ${r.metric}${o ? `, based on the ${o.source}` : ""}, is ${fv(r, a)}, which is ${fv(r, Math.abs(diff))} (${pc}%) ${below ? "below" : "above"} the plan of ${fv(r, pl)}.`,
+      im: below && /booking/i.test(r.metric) && pipe && r.id !== "pipe" ? `This shortfall would need to be recovered through the ${pipeLbl} pipeline to stay on plan.` : below ? "This puts the full-year plan at risk unless the gap is recovered in the coming quarters." : "This is above plan and needs to be confirmed before the review.",
+      ac: `Please share the latest figure and your plan to recover the ${fv(r, Math.abs(diff))} gap, with dates.` };
+  }
+  if(x.key === "overspend" && r){
+    const a = val(d, r, "actual"), pl = val(d, r, "plan"), diff = a - pl, pc = Math.abs(Math.round(diff / pl * 100)), per = r.perMonth ? " a month" : r.annualOf ? " a year" : "";
+    return { t: `${r.metric} above plan`,
+      ex: `${r.metric} is running at ${fv(r, a)}${per} against a plan of ${fv(r, pl)}${per}, which is ${fv(r, Math.abs(diff))} (${pc}%) over plan.`,
+      im: r.perMonth ? `At this rate, the annual cost would be ${money(diff * 12)} above plan.` : r.fmt === "unit" ? "This raises the cost to serve each account above plan and puts the deal margin at risk." : "This puts the annual cost plan at risk.",
+      ac: "Please explain what is driving the overspend and the actions to bring it back to plan, with dates." };
+  }
+  if(x.key === "concentration"){
+    const pf = pipe ? val(d, pipe, "forecast") : null, pp = pipe ? val(d, pipe, "plan") : null, nv = np ? val(d, np, "forecast") : null;
+    if(!blank(pf) && !blank(nv)){ const rest = r1(pf - nv);
+      return { t: "Pipeline dependence on NorthPoint",
+        ex: `NorthPoint accounts for ${money(nv)} (${Math.round(nv / pf * 100)}%) of the ${money(pf)} weighted pipeline.`,
+        im: `If NorthPoint slips, the weighted pipeline would fall to ${money(rest)}, ${rest < pp ? `below the ${money(pp)} plan` : `still above the ${money(pp)} plan`}.`,
+        ac: "Please confirm the latest status of the NorthPoint deal and the plan to reduce the dependence on a single deal." }; }
+  }
+  if(x.key === "staffing"){
+    const kp = (p && p.kpi) ? p : (x.rid === "np" || x.pid === "npexec") ? npx : null, k = kp && kp.kpi, name = kp ? (kp.id === "npexec" ? "NorthPoint" : kp.name) : where;
+    const nvv = np ? val(d, np, "forecast") : null;
+    if(k && /available/i.test(k.label)) return { t: "NorthPoint staffing gap",
+      ex: `NorthPoint needs ${k.plan} engineers for execution from ${fmtLong(kp.deadline)}, and ${k.actual} are available today.`,
+      im: `Without the remaining ${k.plan - k.actual} engineers, NorthPoint delivery${!blank(nvv) ? ` and its ${money(nvv)} of weighted pipeline` : ""} are at risk.`,
+      ac: "Please confirm the hiring and funding plan to close the gap, with dates." };
+    if(k) return { t: `${kp.name} behind plan`,
+      ex: `${k.actual} of the ${k.plan} planned ${k.label.toLowerCase()} have been made, ${k.plan - k.actual} behind plan.`,
+      im: kp.deadline ? `This puts the ${fmtLong(kp.deadline)} target at risk.` : "This puts the plan at risk.",
+      ac: "Please share the hiring plan to close the gap, with dates." };
+    return { t: `${name}: staffing`, ex: sent(`Staffing for ${name} is flagged: ${String(x.text || "").replace(/\.$/, "")}`), im: dueLine(p) || "This puts delivery at risk.", ac: "Please confirm the staffing plan to close the gap, with dates." };
+  }
+  if(x.key === "submission" && x.sub){ const u = x.sub, cut = fmtLong(d.meta.asOf);
+    return { t: `${u.type} data ${u.st === "missing" ? "not submitted" : "out of date"}`,
+      ex: u.st === "missing" ? `We have not yet received the ${u.type} data${u.owner ? ` from ${u.owner}` : ""} for the ${cut} reporting cut-off.` : `The latest ${u.type} data we have is from ${fmtLong(u.updated)}, before the ${cut} reporting cut-off.`,
+      im: "Without it, the leadership review may show outdated or missing figures.",
+      ac: "Please send the latest data, with its source and the date it was taken." };
+  }
+  if(x.key === "reporting" && r){
+    const main = ownerOf(r), bad = r.owners.find(o => o.unreliable), good = r.owners.find(o => !o.unreliable) || main;
+    if(r.owners.length > 1 && bad && good && "value" in bad && "value" in good && !blank(bad.value) && !blank(good.value)){
+      const gap = Math.abs(+bad.value - +good.value);
+      return { t: `${r.metric}: ${bad.role} and ${good.role} figures differ`,
+        ex: `The current ${r.metric} reported by ${bad.role} (${bad.source}, ${fv(r, bad.value)}) differs by ${fv(r, gap)} from ${good.role} reporting (${good.source}, ${fv(r, good.value)}).`,
+        im: `Until the two figures are reconciled, we cannot confirm the actual ${r.metric} for the leadership review.`,
+        ac: `Please reconcile the ${bad.source} figure with the ${good.source} and confirm the correct figure. We recommend using the ${good.source} as the single source.` };
+    }
+    if(r.ownerWarn && main) return { t: `${r.metric}: data source not verified`,
+      ex: `${r.metric} is currently reported by ${main.role} from ${main.source}, which is not an audited source.`,
+      im: "The figure may differ from what Finance reports, so the leadership review could rely on an unverified number.",
+      ac: "Please confirm the figure with Finance and agree on Finance BP as the data owner." };
+    return { t: `${r.metric}: figure not yet confirmed`, ex: sent(`The reporting for ${r.metric} is flagged: ${String(x.text || "").replace(/\.$/, "")}`),
+      im: "We cannot fully rely on this figure for the leadership review until it is confirmed.",
+      ac: "Please confirm the figure, its source and when it was last updated." };
+  }
+  if(p){
+    const tx = String(x.text || "").toLowerCase(), noOwner = tx.includes("owner");
+    if(x.key === "funding") return { t: `${where}: funding decision pending`, ex: sent(`${where} is blocked: ${lc1(x.text)}`), im: dueLine(p), ac: "Please confirm when the funding decision will be made and by whom." };
+    if(noOwner) return { t: `${where}: no confirmed owner`, ex: sent(`${where} has no named owner or confirmed timeline${x.key === "ownership" ? `: ${lc1(x.text)}` : ""}`), im: dueLine(p) || "Without an owner, nobody can confirm progress or the date.", ac: "Please name an owner and confirm the timeline." };
+    return { t: `${where}: status not confirmed`, ex: sent(`We have no recent status for ${where}: ${lc1(x.text)}`), im: dueLine(p), ac: "Please share the latest status, with the date it was taken, and confirm the timeline." };
+  }
+  return { t: x.label, ex: sent(x.text), im: "", ac: "Please share the latest status and when you expect it to be resolved." };
 }
 function templateDraft(ctx, keys){
-  const st = S.ops.settings, people = keys.map(k => S.ops.directory[k]).filter(Boolean);
+  const st = S.ops.settings, d = cur(), people = keys.map(k => S.ops.directory[k]).filter(Boolean);
   const names = people.map(p => p.name.split(" ")[0]);
   const team = teamOf(ctx.owner) || (people[0] ? teamOf(people[0].title) : "");
   const nm = !names.length ? "" : names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
   const greet = `Dear ${nm ? nm + (team ? ` and ${team} team` : "") : (team ? `${team} team` : "all")},`;
   const isData = String(ctx.ref || "").startsWith("sub:");
-  const intro = isData ? `As part of the data collection for the ${fmtLong(cur().meta.asOf)} reporting cut-off, we would like to flag the following:` : `Ahead of the next leadership review on ${fmtDow(st.reviewDate)}, we would like to flag the following issues:`;
-  const issues = [];
-  const first = [ctx.impact ? `Why it matters: ${ctx.impact.replace(/\.$/, "")}.` : "", ctx.rec || "", ...(ctx.facts || []).map(f => `Where it stands: ${f}.`), ctx.next ? `${ctx.next.replace(/\.$/, "")}?`.replace(/^(\w)/, c => c.toUpperCase()).replace(/\?$/, ".") : ""].filter(Boolean);
-  issues.push({ t: (ctx.base || ctx.issue).replace(/\.$/, ""), b: first.slice(0, 3) });
-  (ctx.picked || []).forEach(x => issues.push({ t: `${x.label}: ${x.text}`, b: askFor(x) }));
-  const list = issues.map((it, i) => `${i + 1}. ${it.t}${it.b.map((q, j) => `\n   ${j + 1}. ${q}`).join("")}`).join("\n");
+  const intro = isData ? `As part of the data collection for the ${fmtLong(d.meta.asOf)} reporting cut-off, we would like to flag the following:` : `Ahead of the next leadership review on ${fmtDow(st.reviewDate)}, we would like to flag the following issues:`;
+  const seen = new Set(), issues = [];
+  (ctx.picked || []).forEach(x => { const k = issueKey(x); if(seen.has(k)) return; seen.add(k); issues.push(issueFor(d, x)); });
+  if(!issues.length) issues.push({ t: ctx.label, ex: sent(ctx.base || ctx.issue), im: sent(ctx.impact), ac: ctx.next ? sent(/^(please|confirm|send|share)/i.test(ctx.next) ? (/^please/i.test(ctx.next) ? ctx.next : "Please " + lc1(ctx.next)) : "Please " + lc1(ctx.next)) : "Please share the latest update." });
+  const list = issues.map((it, i) => `${i + 1}. ${it.t}\n   1. Explanation: ${it.ex}${it.im ? `\n   2. Impact: ${it.im}` : ""}\n   ${it.im ? 3 : 2}. Action: ${it.ac}`).join("\n\n");
   const body = `${greet}\n\n${intro}\n\n${list}\n\nPlease let us know your latest update by ${fmtDow(st.replyBy)}. Please reach out to us if there's any question.\n\nBest,\n${st.senderName}`;
   return { subject: `Follow-up: ${ctx.label} (update by ${fmtDow(st.replyBy)})`, body };
 }
