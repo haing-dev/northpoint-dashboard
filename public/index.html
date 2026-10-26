@@ -189,6 +189,10 @@ tr.unrel td{color:var(--neg)}
 tr.unrel td .sub{color:var(--neg)}
 .mw{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wsel{font:12px var(--sans);padding:2px 4px;border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink)}
+.dealin{display:inline-flex;align-items:center;gap:1px;font-size:12px;color:var(--grey-text);border:1px solid var(--rule-strong);border-radius:2px;padding:1px 5px;background:#fff}
+.dealin .ci{width:40px;border:0;font-weight:400;text-align:right;padding:1px 0}
+.dealin.wif,.wsel.wif{border-color:var(--dot-amber);background:var(--chg)}
+.dot.nd{cursor:default}
 .wsel.wif{border-color:var(--dot-amber);background:var(--chg)}
 .wsel:disabled{color:var(--grey-text);border-style:dashed}
 .ofl{display:flex;gap:4px;margin-top:3px}
@@ -299,14 +303,12 @@ textarea.in{resize:vertical;line-height:1.5}
   <div class="tt dimmable" id="sec-com"><span class="n">1</span><h2>Commercial</h2><span class="note">USD, $M</span><span id="wif"></span></div>
   <div class="tw"><table class="tr" id="tCom"></table></div>
   <p class="foot dimmable" id="foot"></p>
-  <div class="tt dimmable" id="sec-cost"><span class="n">2</span><h2>Cost</h2><span class="note">Platform cloud run-rate, and NorthPoint cost to serve from the deal model</span></div>
+  <div class="tt dimmable" id="sec-cost"><span class="n">2</span><h2>Cost</h2><span class="note">Platform cloud run-rate</span></div>
   <div class="tw"><table class="tr" id="tCost"></table></div>
   <div class="tt dimmable" id="sec-ops"><span class="n">3</span><h2>Operations</h2><span class="note">Delivery plan by project</span></div>
   <div class="tw"><table class="tr ops" id="tOps"></table></div>
   <div class="tlleg dimmable" id="tlleg"></div>
   <p class="foot dimmable" id="opsNote"></p>
-  <div class="tt dimmable" id="sec-tal"><span class="n">4</span><h2>Talent</h2><span class="note">Engineering capacity</span></div>
-  <div class="tw"><table class="tr" id="tTal"></table></div>
 </main>
 <div id="callouts" aria-hidden="true"></div>
 <div id="focusbar"></div>
@@ -326,7 +328,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 5, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 6, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Q3 2026 LEADERSHIP REVIEW · PRESIDENT'S VIEW",
@@ -379,61 +381,15 @@ const DATA = {
         risk: { reporting: "green" }, tips: { reporting: { text: "From cloud billing, 30 Sep" } }, updated: "2026-09-30" },
       { id: "cloud-unit", metric: "Cost per active account (per month)", child: true, parent: "cloud", fmt: "unit", plan: 0.04, field: "actual", better: "lower",
         owners: [ { role: "Head of Platform", source: "Deal model: 2026 estimate + 20% cloud premium", value: 0.048 } ], owner: 0,
-        risk: { reporting: "amber" }, tips: { reporting: { text: "Unit cost from the deal model, not yet confirmed by billing" } }, updated: "2026-09-30" },
-      { id: "cloud-accts", metric: "Active accounts (implied)", child: true, parent: "cloud", fmt: "accounts", derive: { num: "cloud", den: "cloud-unit" },
-        owners: [ { role: "Head of Platform", source: "Run-rate ÷ cost per account" } ], owner: 0, updated: "2026-09-30" }
-    ]},
-    { id: "npcost", name: "NorthPoint cost to serve (deal model, 5-year contract)", offerSelect: true, rows: [
-      { id: "npc", metric: "Total cost to serve", model: { line: "all" }, better: "lower", owners: [ { role: "Deal team", source: "NorthPoint deal model v31" } ] },
-      { id: "npc-cloud", metric: "Cloud hosting", child: true, model: { line: "cloud" }, better: "lower" },
-      { id: "npc-cloud-u", metric: "Cost per account (per month)", child: true, depth: 2, fmt: "unit", model: { line: "cloud", part: "unit", key: "cloudPerAcct" }, better: "lower" },
-      { id: "npc-cloud-v", metric: "Account-months (millions)", child: true, depth: 2, fmt: "count", model: { line: "cloud", part: "vol" } },
-      { id: "npc-env", metric: "Dedicated platform environments", child: true, model: { line: "env" }, better: "lower" },
-      { id: "npc-env-u", metric: "Cost per environment (per year)", child: true, depth: 2, model: { line: "env", part: "unit", key: "envCost" }, better: "lower" },
-      { id: "npc-env-v", metric: "Environment-years (one per 2.5M accounts)", child: true, depth: 2, fmt: "count", model: { line: "env", part: "vol" } },
-      { id: "npc-lic", metric: "Third-party software licences", child: true, model: { line: "lic" }, better: "lower" },
-      { id: "npc-lic-u", metric: "Cost per account (per month)", child: true, depth: 2, fmt: "unit", model: { line: "lic", part: "unit", key: "licPerAcct" }, better: "lower" },
-      { id: "npc-lic-v", metric: "Account-months (millions)", child: true, depth: 2, fmt: "count", model: { line: "lic", part: "vol" } },
-      { id: "npc-sup", metric: "Client support engineers", child: true, model: { line: "sup" }, better: "lower" },
-      { id: "npc-sup-u", metric: "Cost per engineer (per year)", child: true, depth: 2, fmt: "k", model: { line: "sup", part: "unit", key: "supportCost" }, better: "lower" },
-      { id: "npc-sup-v", metric: "Engineer-years (one per 750k accounts, min 4)", child: true, depth: 2, fmt: "count", model: { line: "sup", part: "vol" } },
-      { id: "npc-impl", metric: "Implementation (one-time, 2027)", child: true, model: { line: "impl" }, better: "lower" },
-      { id: "npc-impl-u", metric: "Cost per engineer-month", child: true, depth: 2, fmt: "k", model: { line: "impl", part: "unit", key: "implRate" }, better: "lower" },
-      { id: "npc-impl-v", metric: "Engineer-months", child: true, depth: 2, fmt: "count", model: { line: "impl", part: "vol", key: "implMonths" } },
-      { id: "cm-margin", metric: "Gross margin, 5-year (plan = target)", fmt: "pct", model: { line: "margin", key: "marginTarget" }, better: "higher" }
+        risk: { reporting: "amber" }, tips: { reporting: { text: "Unit cost from the deal model, not yet confirmed by billing" } }, updated: "2026-09-30" }
     ]}
   ],
-  talent: [
-    { id: "talent", name: "Engineering talent", rows: [
-      { id: "hires", metric: "Engineering hires (cumulative 2026)", fmt: "count", plan: 25, field: "actual",
-        owners: [ { role: "Head of Talent", source: "HR system", value: 19 } ], owner: 0,
-        risk: { staffing: "amber" }, tips: { staffing: { text: "19 of 25 planned hires made by 30 Sep" } }, updated: "2026-09-30" },
-      { id: "eng-avail", metric: "Engineers available for new implementations, Q1 2027", fmt: "count", plan: 24, field: "actual",
-        owners: [ { role: "Head of Talent", source: "HR system", value: 4 } ], owner: 0,
-        risk: { staffing: "red" }, tips: { staffing: { text: "4 of 24 engineers available", esc: 1 } }, updated: "2026-09-30" }
-    ]}
-  ],
-  costModel: {
-    source: "NorthPoint deal model v31, P&L tab",
-    years: [2027, 2028, 2029, 2030, 2031],
-    accounts: [1.0, 3.0, 6.0, 6.3, 6.6],
-    cloudPerAcct: 0.04, cloudPremium: 20,
-    envCost: 1.5, envCapacity: 2.5, envMin: 1,
-    licPerAcct: 0.02,
-    supportCost: 0.18, supportCapacity: 0.75, supportMin: 4,
-    implRate: 0.02, implMonths: 280,
-    marginTarget: 70,
-    offers: {
-      sales:     { name: "Sales' proposal",   revenue: [0.273333, 0.351111, 0.370556, 0.371481, 0.372323] },
-      dream:     { name: "Dream counter",     revenue: [1.23064, 0.563338, 0.557291, 0.557127, 0.556452] },
-      realistic: { name: "Realistic counter", revenue: [0.59637, 0.508436, 0.483532, 0.468493, 0.452117] }
-    }
-  },
   operations: [
     { id: "banka", section: "Client delivery", name: "Bank A Go-Live", owner: "", source: "", deadline: "2026-11-01",
       forecast: "2026-11-01", forecastNote: "Green, reported", updated: null, sample: true,
       risk: { reporting: "red", staffing: "nodata" },
       tips: { reporting: { text: "No owner or date", esc: 3 }, staffing: { text: "Staffing not tracked" } },
+      keyNote: { tag: "Reporting", text: "No reporting: no owner or date" },
       stages: [
         { name: "Requirements sign-off", start: "2026-06-15", end: "2026-07-15", status: "done", note: "Signed off 14 Jul" },
         { name: "Build & integration", start: "2026-07-16", end: "2026-09-15", status: "late", note: "Finished 20 Sep, 5 days late" },
@@ -445,6 +401,7 @@ const DATA = {
       kpi: { label: "Engineers available", plan: 24, actual: 4, source: "HR system, Head of Talent" }, updated: "2026-09-25", sample: true,
       risk: { reporting: "green", staffing: "red" },
       tips: { reporting: { text: "Delivery plan, updated 25 Sep" }, staffing: { text: "4 of 24 engineers available", esc: 1 } },
+      keyNote: { tag: "Staffing", text: "4 of 24 engineers available" },
       stages: [
         { name: "Staffing plan & funding decision", start: "2026-09-15", end: "2026-10-15", status: "blocked", tag: "Funding", blocker: "Funding for 20 engineers not approved" },
         { name: "Hiring & contractor sourcing", start: "2026-10-16", end: "2026-12-11", status: "blocked", tag: "Staffing", blocker: "Waiting on the funding decision" },
@@ -454,11 +411,16 @@ const DATA = {
     { id: "rel42", section: "Product delivery", name: "Release 4.2", owner: "Head of Product", source: "Jira", deadline: "2026-09-15",
       forecast: "2026-09-15", forecastNote: "On track in Jira, as of 12 Aug", updated: "2026-08-12", sample: true,
       risk: { reporting: "amber" }, tips: { reporting: { text: "Last update 12 Aug", esc: 3 } },
+      keyNote: { tag: "Reporting", text: "No update since 12 Aug" },
       stages: [
         { name: "Development", start: "2026-07-01", end: "2026-08-21", status: "active", note: "In progress at last update, 12 Aug" },
         { name: "QA & regression", start: "2026-08-24", end: "2026-09-10", status: "noupdate", tag: "Reporting", blocker: "No status since 12 Aug" },
         { name: "Release", start: "2026-09-15", end: "2026-09-15", status: "noupdate", milestone: true, tag: "Reporting", blocker: "Not confirmed as shipped" }
-      ]}
+      ]},
+    { id: "hires", section: "Talent", name: "Engineering hires (cumulative 2026)", owner: "Head of Talent", source: "HR system", deadline: "2026-12-31",
+      kpi: { label: "Engineering hires", plan: 25, actual: 19 }, updated: "2026-09-30",
+      risk: { staffing: "amber" }, tips: { staffing: { text: "19 of 25 planned hires made by 30 Sep" } },
+      keyNote: { tag: "Staffing", text: "19 of 25 hires made, 6 behind plan" }, stages: [] }
   ],
   footnote: "Note: NorthPoint's $140M in the CRM is taken as deal value, so at 70% it adds $98M to the weighted pipeline. Source: Q3 tracker extract, 30 Sep 2026.",
   opsNote: "Operations steps are a sample plan until project owners send theirs."
@@ -526,11 +488,11 @@ function normRow(r){
 function normProj(p){ const o = Object.assign({ owner:"", deadline:null, stages:[], risk:{}, tips:{}, updated:null }, p); o.risk = Object.assign({ reporting:null, staffing:null }, p.risk || {}); return o; }
 function normalize(d){
   d = clone(d);
-  if(!d.talent) d.talent = clone(DATA.talent);
+  d.talent = d.talent || [];
   ["commercial","cost","talent"].forEach(k => (d[k] || []).forEach(s => { s.rows = (s.rows || []).map(normRow); }));
   d.operations = (d.operations || []).map(normProj);
   d.meta = Object.assign({ asOf:null, currency:"USD" }, d.meta || {});
-  if(!d.costModel) d.costModel = clone(DATA.costModel);
+  d.costModel = d.costModel || null;
   if(d.opsNote == null) d.opsNote = DATA.opsNote;
   return d;
 }
@@ -541,12 +503,14 @@ function findProj(d, id){ return d.operations.find(p => p.id === id) || null; }
 function children(d, row){ return allRows(d).filter(r => r.parent === row.id); }
 function ownerOf(r){ return r.owners[r.owner || 0] || null; }
 function ownerRole(r){ const o = ownerOf(r); return o ? o.role : ""; }
-function wOf(d, row){ if(d === S.live && S.view === "live" && !S.noWhatIf && S.whatIf[row.id] != null) return S.whatIf[row.id]; return row.weight; }
+function wi(d, row){ return d === S.live && S.view === "live" && !S.noWhatIf ? S.whatIf[row.id] : null; }
+function wOf(d, row){ const x = wi(d, row); return x && "w" in x ? x.w : row.weight; }
+function dvOf(d, row){ const x = wi(d, row); return x && "dv" in x ? x.dv : row.dealValue; }
 function val(d, row, f){
   if(row.model) return modelVal(d, row, f);
   if(row.derive){ const a = findRow(d, row.derive.num), b = findRow(d, row.derive.den); if(!a || !b) return null; const x = val(d, a, f), y = val(d, b, f); return blank(x) || blank(y) || !+y ? null : x / y; }
-  const w = wOf(d, row);
-  if(f === "forecast" && !blank(row.dealValue) && !blank(w)) return r1(+row.dealValue * +w / 100);
+  const w = wOf(d, row), dv = dvOf(d, row);
+  if(f === "forecast" && !blank(dv) && !blank(w)) return r1(+dv * +w / 100);
   if(f === row.field && row.owners.length){ const o = ownerOf(row); if(o && "value" in o) return blank(o.value) ? null : +o.value; }
   else if(!blank(row[f])) return +row[f];
   if(row.rollup){ const ch = children(d, row).map(c => val(d, c, f)).filter(x => !blank(x)); if(ch.length) return r1(ch.reduce((a, b) => a + b, 0)); }
@@ -607,7 +571,7 @@ function cellData(d, row){
   const t = c => row.tips[c] || {};
   const o = ownerOf(row), vA = varOf(d, row, "actual"), vF = varOf(d, row, "forecast"), vt = row.varTip || {}, vtw = vt.which || "actual";
   return {
-    metric:{ t: row.metric, sub: row.weighted ? `${blank(row.dealValue) ? "no deal value" : money(row.dealValue)} at ${blank(wOf(d, row)) ? "CRM mix" : wOf(d, row) + "%"}` : "" },
+    metric:{ t: row.metric, sub: row.weighted ? `deal ${blank(dvOf(d, row)) ? "N/A" : money(dvOf(d, row))} at ${blank(wOf(d, row)) ? "N/A" : wOf(d, row) + "%"}` : "" },
     plan:{ t: fmtV(row, val(d, row, "plan")) }, actual:{ t: fmtV(row, val(d, row, "actual")) }, forecast:{ t: fmtV(row, val(d, row, "forecast")) },
     varA: vA ? Object.assign({}, vA, vtw === "actual" ? { tip: vt.text || "", esc: vt.esc || null } : { tip:"", esc:null }) : { main:null },
     varF: vF ? Object.assign({}, vF, vtw === "forecast" ? { tip: vt.text || "", esc: vt.esc || null } : { tip:"", esc:null }) : { main:null },
@@ -616,6 +580,7 @@ function cellData(d, row){
     reporting:{ st: row.risk.reporting, tip: t("reporting").text || "", esc: t("reporting").esc || null },
     staffing:{ st: row.risk.staffing, tip: t("staffing").text || "", esc: t("staffing").esc || null },
     owner:{ t: o ? o.role : (row.model || row.derive ? "" : "None"), sub: o ? o.source : "", warn: row.ownerWarn || (!o && !row.model && !row.derive) || (o && o.unreliable) },
+    source:{ t: o ? o.source : "", bad: !!(o && o.unreliable) },
     all:{ t: row.owners.map(x => `${x.role}${"value" in x ? " " + x.value : ""}${x.unreliable ? " unreliable" : ""}`).join("; ") },
     updated:{ t: fmtDate(row.updated), stale: !!row.updated && !!d.meta.asOf && row.updated < d.meta.asOf }
   };
@@ -686,13 +651,6 @@ function ruleIssues(d){
         issue: `${t.text || cap(STATUS[st])} for ${p.name}.`, impact: `We can't tell whether ${p.name} has the ${c === "staffing" ? "people" : "reporting"} it needs before ${fmtLong(p.deadline)}.`,
         next: `Ask ${p.owner || "the project owner"} to report ${c} with a date by ${rb}.`, rowIds:[p.id] }); });
   });
-  const c = npCost(d, "forecast"), tgt = +d.costModel.marginTarget || 0;
-  if(c.margin != null && c.margin < tgt){
-    out.push({ title:"NorthPoint deal margin below target", category:"Commercial", severity:"high",
-      issue:`Under ${c.offer.name}, NorthPoint's 5-year gross margin is ${Math.round(c.margin)}% against the ${Math.round(tgt)}% target.`,
-      impact:`Cost to serve of ${money(c.total)} over five years against ${money(c.rev)} of revenue; year 1 loses money because of the ${money(c.L.impl.total)} implementation.`,
-      next:`Ask Head of Sales and Finance BP to agree which offer goes to the client before the review on ${fmtDow(S.ops.settings.reviewDate)}.`, rowIds:["cm-margin"] });
-  }
   const known = knownFigures(d), texts = [d.header.title, ...d.escalations.flatMap(e => [e.issue, e.impact])];
   const bad = uniq(texts.flatMap(t => (String(t).match(/\$\d+(?:\.\d+)?M|\d+(?:\.\d+)?%/g) || []).filter(x => !known.has(x))));
   if(bad.length) out.unshift({ title:"Headline doesn't match the figures", category:"Data reporting", severity:"high", issue:`The title or cards mention ${bad.join(", ")}, which no figure in the tables supports.`, impact:"The President may act on numbers that have since changed.", next:"Update the headline and cards, or check the figures that changed.", rowIds:[] });
@@ -704,6 +662,7 @@ function ruleIssues(d){
 function cur(){ return S.view === "draft" ? S.draft : S.live; }
 const editing = () => S.view === "draft";
 const na = () => '<span class="na">—</span>';
+const nd = () => '<span class="dot nodata nd" role="img" aria-label="No data" title="No data"></span>';
 function changedMap(d, row){
   if(!editing()) return {};
   const o = findRow(S.live, row.id);
@@ -728,13 +687,14 @@ function valCell(d, r, f, chg){
       if(f === "plan" && !r._alt && !(r.child && r.fmt === "usd" && r.parent)) return `<td class="num${chg}">${numInput(`row:${r.id}:plan`, r.plan, "plain")}</td>`;
       if(f === r.field){
         const o = ownerOf(r);
-        if(f === "forecast" && !blank(r.dealValue) && !blank(r.weight)) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">deal × weight</span></td>`;
+        if(f === "forecast" && !blank(r.dealValue) && !blank(r.weight)) return `<td class="num${chg}"><span class="b">${h(c.t)}</span></td>`;
         if(o && "value" in o) return `<td class="num${chg}">${numInput(`row:${r.id}:@value:${r.owner || 0}`, o.value)}</td>`;
-        if(r.rollup && c.t) return `<td class="num${chg}"><span class="b">${h(c.t)}</span><span class="auto">sum of deals</span></td>`;
+        if(r.rollup && c.t) return `<td class="num${chg}"><span class="b">${h(c.t)}</span></td>`;
       }
     }
   }
-  return `<td class="num${chg}">${c.t ? `<span class="${bold ? "b" : ""}">${h(c.t)}</span>${r.derive && f !== "plan" ? '<span class="auto">implied</span>' : ""}` : na()}</td>`;
+  if(!c.t){ const calc = r.rollup || r.derive || r.model || (f === "forecast" && r.weighted && !blank(dvOf(d, r)) && !blank(wOf(d, r))); return `<td class="num${chg}">${calc ? na() : nd()}</td>`; }
+  return `<td class="num${chg}"><span class="${bold ? "b" : ""}">${h(c.t)}</span></td>`;
 }
 function varCell(c, chg){
   if(!c.main) return `<td class="num${chg}">${na()}</td>`;
@@ -744,29 +704,29 @@ function varCell(c, chg){
 }
 function ownerCell(r, c, chg){
   const o = ownerOf(r), multi = r.owners.length > 1;
-  if(!o) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : na()}</td>`;
+  if(!o) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : nd()}</td>`;
   const flag = editing() && multi ? `<span class="ofl"><button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${r.owner || 0}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button>${r._alt ? `<button type="button" class="flag" data-act="mainowner" data-rid="${h(r.id)}" data-i="${r.owner}" title="Use this figure in the main row">Use as main</button>` : ""}</span>` : "";
-  return `<td class="${chg}"><span class="${c.warn ? "neg b" : ""}">${h(o.role)}</span><span class="sub${o.unreliable ? " neg" : ""}">${h(o.source || "")}</span>${flag}</td>`;
+  return `<td class="${chg}"><span class="${c.warn ? "neg b" : ""}">${h(o.role)}</span>${flag}</td>`;
 }
+function sourceCell(r, c, chg){ return `<td class="srcc${chg}">${c.t ? `<span class="${c.bad ? "neg" : ""}">${h(c.t)}</span>` : nd()}</td>`; }
 function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
-  return `<td class="${chg}">${c.t ? `<span class="${c.stale ? "neg" : ""}">${h(c.t)}</span>` : na()}</td>`;
+  return `<td class="${chg}">${c.t ? `<span class="${c.stale ? "neg" : ""}">${h(c.t)}</span>` : nd()}</td>`;
 }
-function weightSelect(d, r){
-  const w = wOf(d, r), noDeal = blank(r.dealValue), opts = Array.from({ length: 11 }, (_, i) => i * 10);
-  const live = !editing() && S.whatIf[r.id] != null;
-  return `<select class="wsel${live ? " wif" : ""}" data-act="weight" data-rid="${h(r.id)}" aria-label="Weight for ${h(r.metric)}" ${noDeal ? 'disabled title="Needs a deal value to weight"' : ""}>${blank(w) ? '<option value="" selected>CRM mix</option>' : ""}${opts.map(o => `<option value="${o}"${+w === o && !blank(w) ? " selected" : ""}>${o}%</option>`).join("")}${!blank(w) && !opts.includes(+w) ? `<option value="${w}" selected>${w}%</option>` : ""}</select>`;
+function dealInputs(d, r){
+  const w = wOf(d, r), dv = dvOf(d, r), x = wi(d, r) || {}, opts = Array.from({ length: 11 }, (_, i) => i * 10);
+  return `<span class="dealin${"dv" in x ? " wif" : ""}" title="Deal value">$<input class="ci dv" inputmode="decimal" data-act="deal" data-rid="${h(r.id)}" value="${h(blank(dv) ? "" : dv)}" placeholder="N/A" aria-label="Deal value for ${h(r.metric)}, $M">M</span>` +
+    `<select class="wsel${"w" in x ? " wif" : ""}" data-act="weight" data-rid="${h(r.id)}" aria-label="Weight for ${h(r.metric)}"><option value=""${blank(w) ? " selected" : ""}>N/A</option>${opts.map(o => `<option value="${o}"${!blank(w) && +w === o ? " selected" : ""}>${o}%</option>`).join("")}${!blank(w) && !opts.includes(+w) ? `<option value="${w}" selected>${w}%</option>` : ""}</select>`;
 }
 const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
   const d = cur();
-  const cols = kind === "com" ? ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","updated"]
-    : kind === "cost" ? ["metric","plan","actual","forecast","varA","varF","annual","reporting","owner","updated"]
-    : ["metric","plan","actual","forecast","varA","varF","staffing","owner","updated"];
+  const cols = kind === "com" ? ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","source","updated"]
+    : ["metric","plan","actual","forecast","varA","varF","reporting","owner","source","updated"];
   const N = cols.length;
   const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
     annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting</th>', staffing:'<th class="c g">Staffing</th>',
-    owner:"<th>Data owner</th>", updated:"<th>Last updated</th>" }, VAR_HEAD);
+    owner:"<th>Data owner</th>", source:"<th>Data source</th>", updated:"<th>Last updated</th>" }, VAR_HEAD);
   const grp = [];
   cols.forEach(c => {
     const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
@@ -793,23 +753,21 @@ function finTable(el, secs, kind){
       cols.forEach(k => {
         if(k === "metric"){
           const nm = editing() && !r._alt && !r.model ? `<span class="m" contenteditable="true" data-edit="row:${h(r.id)}:metric">${h(r.metric)}</span>` : `<span class="m">${h(r.metric)}</span>`;
-          let sub = "";
-          if(r.weighted && !r._alt) sub = `<span class="sub">${editing() ? `Deal value $${numInput(`row:${r.id}:dealValue`, r.dealValue, "plain w")}M` : (blank(r.dealValue) ? "Deal value not in the CRM extract" : `Deal value ${h(money(r.dealValue))}`)}</span>`;
-          else if(r.sub) sub = `<span class="sub">${h(r.sub)}</span>`;
-          tr += `<td class="sticky${C("metric")}"><span class="mw">${nm}${r.weighted && !r._alt ? weightSelect(d, r) : ""}</span>${sub}</td>`;
+          tr += `<td class="sticky${C("metric")}"><span class="mw">${nm}${r.weighted && !r._alt ? dealInputs(d, r) : ""}</span></td>`;
         }
         else if(k === "plan" || k === "actual" || k === "forecast") tr += valCell(d, r, k, C(k));
         else if(k === "varA" || k === "varF") tr += varCell(c[k], C(k));
         else if(k === "annual") tr += `<td class="num${C("annual")}">${c.annual.t ? `<span class="b${c.annual.adverse ? " neg" : ""}">${h(c.annual.t)}</span><span class="sub">vs plan</span>` : na()}</td>`;
         else if(COLS.some(x => x[0] === k)) tr += dotCell(r._alt || r.model ? null : `row:${r.id}:${k}`, COLS.find(x => x[0] === k)[1], c[k], C(k));
         else if(k === "owner") tr += ownerCell(r, c.owner, C("owner") || C("all"));
-        else if(k === "updated") tr += r.derive || r.model || r._alt ? `<td>${r._alt ? (c.updated.t ? h(c.updated.t) : "") : na()}</td>` : updCell(`row:${r.id}:updated`, r.updated, c.updated, C("updated"));
+        else if(k === "source") tr += sourceCell(r, c.source, C("source"));
+        else if(k === "updated") tr += r._alt ? `<td>${c.updated.t ? h(c.updated.t) : nd()}</td>` : updCell(`row:${r.id}:updated`, r.updated, c.updated, C("updated"));
       });
       html += tr + "</tr>";
     });
   });
   el.innerHTML = html + "</tbody>";
-  el.style.minWidth = kind === "com" ? "1150px" : "1000px";
+  el.style.minWidth = kind === "com" ? "1220px" : "1000px";
 }
 
 /* ---------- operations ---------- */
@@ -839,6 +797,7 @@ function bars(ax, stages, deadline, compact){
   return `<div class="tl">${html}</div>`;
 }
 function projStatus(p){
+  if(!p.stages.length && p.kpi) return +p.kpi.actual >= +p.kpi.plan ? { k:"done", label:"On plan" } : { k:"late", label:"Behind plan" };
   const st = p.stages.map(s => s.status), last = p.stages[p.stages.length - 1];
   if(last && last.status === "done") return { k:"done", label:"Delivered" };
   if(st.includes("blocked")) return { k:"blocked", label:"Blocked" };
@@ -855,6 +814,13 @@ function countdown(p){
   return { t:`${-n} days overdue`, bad:true };
 }
 function projNotes(p, ed){
+  const kn = p.keyNote || {};
+  const col = kn.tag ? (p.risk[kn.tag.toLowerCase()] || "red") : "red";
+  if(ed) return `<select class="ssel" data-set="proj:${h(p.id)}:keyNote.tag" data-t="text" aria-label="Issue type"><option value="">No tag</option>${TAGS.map(t => `<option${t === kn.tag ? " selected" : ""}>${t}</option>`).join("")}</select> <span contenteditable="true" data-edit="proj:${h(p.id)}:keyNote.text" aria-label="Key blocker">${h(kn.text || "")}</span>`;
+  if(!kn.text) return "";
+  return `<span class="nl">${kn.tag ? `<span class="tag ${col === "green" ? "" : col}">${h(kn.tag)}</span>` : ""}${h(kn.text)}</span>`;
+}
+function projNotesOld(p, ed){
   const items = [];
   ["reporting","staffing"].forEach(c => { const st = p.risk[c], t = p.tips[c] || {};
     if(!st || st === "green"){ if(ed) items.push(`<span class="nl"><button class="tag" data-pop="proj:${h(p.id)}:${c}">${cap(c)}: on track</button></span>`); return; }
@@ -875,24 +841,20 @@ function opsTable(el){
     const lp = findProj(S.live, p.id), chg = (...ks) => ed && ks.some(k => !lp || JSON.stringify(lp[k]) !== JSON.stringify(p[k])) ? " chg" : "";
     const open = !S.collapsed["p:" + p.id], st = projStatus(p), cd = countdown(p);
     const escTip = Object.values(p.tips).find(t => t && t.esc);
-    let subline = "";
-    if(p.kpi){ const dd = p.kpi.actual - p.kpi.plan, pc = p.kpi.plan ? Math.round(dd / p.kpi.plan * 100) : 0;
-      subline = ed ? `${h(p.kpi.label)}: ${numInput(`proj:${p.id}:kpi.actual`, p.kpi.actual, "w")} of ${numInput(`proj:${p.id}:kpi.plan`, p.kpi.plan, "w plain")}`
-        : `${h(p.kpi.label)}: <b>${p.kpi.actual} of ${p.kpi.plan}</b> <span class="${dd < 0 ? "neg b" : ""}">(${dd < 0 ? MINUS : "+"}${Math.abs(dd)}, ${pc < 0 ? MINUS : "+"}${Math.abs(pc)}%)</span>${p.kpi.source ? ` · ${h(p.kpi.source)}` : ""}`; }
-    else if(p.forecast) subline = `Forecast ${h(fmtDate(p.forecast))}${p.forecastNote ? " · " + h(p.forecastNote) : ""}`;
+    const subline = ed && p.kpi ? `${h(p.kpi.label)}: ${numInput(`proj:${p.id}:kpi.actual`, p.kpi.actual, "w")} of ${numInput(`proj:${p.id}:kpi.plan`, p.kpi.plan, "w plain")}` : "";
     const ownerHtml = ed ? `<select class="osel${p.owner ? "" : " neg"}" data-set="proj:${h(p.id)}:owner" data-t="text" aria-label="Owner"><option value="">None</option>${roles.map(r => `<option${r === p.owner ? " selected" : ""}>${h(r)}</option>`).join("")}</select>`
       : `<span class="${p.owner ? "" : "neg b"}">${h(p.owner || "None")}</span>`;
-    const srcLine = `<span class="sub">${h(p.source || "No source")}</span>`;
+
     const upd = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:updated" data-t="date" value="${h(p.updated || "")}" aria-label="Last update">`
-      : (p.updated ? `<span class="${p.updated < d.meta.asOf ? "neg" : ""}">${h(fmtDate(p.updated))}</span>` : na());
-    const dl = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:deadline" data-t="date" value="${h(p.deadline || "")}" aria-label="Deadline">` : `<span class="b">${h(fmtDate(p.deadline) || "—")}</span>`;
+      : (p.updated ? `<span class="${p.updated < d.meta.asOf ? "neg" : ""}">${h(fmtDate(p.updated))}</span>` : nd());
+    const dl = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:deadline" data-t="date" value="${h(p.deadline || "")}" aria-label="Deadline">` : `${p.deadline ? `<span class="b">${h(fmtDate(p.deadline))}</span>` : nd()}`;
     html += `<tr class="proj dimmable" data-row="${h(p.id)}">
-      <td class="sticky${chg("name","kpi")}"><button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}"><span class="cv">▾</span><span ${ed ? `contenteditable="true" data-edit="proj:${h(p.id)}:name"` : ""}>${h(p.name)}</span></button>${p.sample ? '<span class="tag" style="margin-left:6px" title="Mock steps until the project owner sends the real plan">Sample steps</span>' : ""}<span class="sub" style="padding-left:22px">${subline}</span></td>
-      <td class="${chg("owner").trim()}">${ownerHtml}${srcLine}</td>
+      <td class="sticky${chg("name","kpi")}"><button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}"><span class="cv">▾</span><span ${ed ? `contenteditable="true" data-edit="proj:${h(p.id)}:name"` : ""}>${h(p.name)}</span></button>${subline ? `<span class="sub" style="padding-left:22px">${subline}</span>` : ""}</td>
+      <td class="${chg("owner").trim()}">${ownerHtml}</td>
       <td class="${chg("updated").trim()}">${upd}</td>
       <td class="${chg("deadline").trim()}">${dl}<span class="sub${cd && cd.bad ? " neg b" : ""}">${cd ? h(cd.t) : ""}</span></td>
       <td><span class="sc ${st.k}">${h(st.label)}</span></td>
-      <td class="${chg("risk","tips").trim()}"${escTip ? ` data-esc="${escTip.esc}" data-cotext="${h(escTip.text)}"` : ""}>${projNotes(p, ed)}</td>
+      <td class="${chg("keyNote").trim()}"${escTip ? ` data-esc="${escTip.esc}" data-cotext="${h(escTip.text)}"` : ""}>${projNotes(p, ed)}</td>
       <td class="fu"><button class="btn xs" data-act="follow" data-ref="proj:${h(p.id)}">Follow up</button></td>
       <td>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
     if(!open) return;
@@ -902,8 +864,8 @@ function opsTable(el){
         : `${h(fmtDate(s.start) || "")}${s.end && s.end !== s.start ? " – " + h(fmtDate(s.end)) : ""}`;
       const stt = ed ? `<select class="ssel" data-set="${k}:status" data-t="text" aria-label="Step status">${Object.entries(STAGE).map(([v, l]) => `<option value="${v}"${v === s.status ? " selected" : ""}>${l}</option>`).join("")}</select>` : `<span class="sc ${s.status}">${STAGE[s.status] || h(s.status)}</span>`;
       let notes;
-      if(ed) notes = `<select class="ssel" data-set="${k}:tag" data-t="text" aria-label="Issue type"><option value="">No tag</option>${TAGS.map(t => `<option${t === s.tag ? " selected" : ""}>${t}</option>`).join("")}</select> <span class="blk" contenteditable="true" data-edit="${k}:blocker" aria-label="Blocker">${h(s.blocker || "")}</span>${s.note ? `<span class="sub nt">${h(s.note)}</span>` : ""}`;
-      else notes = (s.blocker ? `<span class="nl">${s.tag ? `<span class="tag red">${h(s.tag)}</span>` : ""}<span class="blk">${h(s.blocker)}</span></span>` : "") + (s.note ? `<span class="${s.blocker ? "sub " : ""}nt">${h(s.note)}</span>` : "") || na();
+      if(ed) notes = `<select class="ssel" data-set="${k}:tag" data-t="text" aria-label="Issue type"><option value="">No tag</option>${TAGS.map(t => `<option${t === s.tag ? " selected" : ""}>${t}</option>`).join("")}</select> <span class="blk" contenteditable="true" data-edit="${k}:blocker" aria-label="Blocker">${h(s.blocker || "")}</span>`;
+      else notes = s.blocker ? `<span class="nl">${s.tag ? `<span class="tag red">${h(s.tag)}</span>` : ""}<span class="blk">${h(s.blocker)}</span></span>` : "";
       html += `<tr class="stage dimmable" data-row="${h(p.id)}">
         <td class="sticky${sc}"><span class="sn" ${ed ? `contenteditable="true" data-edit="${k}:name"` : ""}>${h(s.name)}</span></td>
         <td></td><td></td><td class="nt${sc}">${dates}</td><td class="${sc.trim()}">${stt}</td><td class="${sc.trim()}">${notes}</td>
@@ -959,9 +921,9 @@ function diffList(a, b){
   b.escalations.forEach((e, i) => ["title","issue","impact","next"].forEach(k => T(`Card ${e.id} ${k === "next" ? "next step" : k}`, (a.escalations[i] || {})[k], e[k])));
   allRows(b).forEach(r => { const o = findRow(a, r.id); if(!o){ out.push(r.metric); return; } const ca = cellData(a, o), cb = cellData(b, r);
     Object.keys(cb).forEach(k => { if(cellText(ca[k]) !== cellText(cb[k])) out.push(`${r.metric}: ${k === "var" ? "vs plan" : k === "deal" ? "deal value" : k === "annual" ? "a year at this rate" : k}`); }); });
-  Object.keys(b.costModel).forEach(k => T(`Cost to serve: ${k}`, (a.costModel || {})[k], b.costModel[k]));
+  Object.keys(b.costModel || {}).forEach(k => T(`Cost to serve: ${k}`, (a.costModel || {})[k], b.costModel[k]));
   b.operations.forEach(p => { const o = findProj(a, p.id); if(!o){ out.push(p.name); return; }
-    ["name","owner","deadline","updated","risk","tips","kpi","forecast"].forEach(k => T(`${p.name}: ${k}`, o[k], p[k]));
+    ["name","owner","deadline","updated","risk","tips","kpi","forecast","keyNote"].forEach(k => T(`${p.name}: ${k === "keyNote" ? "notes" : k}`, o[k], p[k]));
     p.stages.forEach((s, i) => T(`${p.name}: ${s.name}`, o.stages[i], s)); });
   return out;
 }
@@ -1009,9 +971,8 @@ function renderDashboard(){
   finTable($("#tCom"), d.commercial, "com");
   $("#foot").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:footnote">${h(d.footnote)}</span>` : h(d.footnote);
   finTable($("#tCost"), d.cost, "cost");
-  finTable($("#tTal"), d.talent, "tal");
-  const wi = Object.entries(S.whatIf).filter(([id]) => findRow(S.live, id));
-  $("#wif").innerHTML = !editing() && wi.length ? `<span class="wifbar">What-if, not saved: ${wi.map(([id, w]) => `${h(findRow(S.live, id).metric)} at ${w}%`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
+  const wis = Object.entries(S.whatIf).filter(([id, x]) => findRow(S.live, id) && x && Object.keys(x).length);
+  $("#wif").innerHTML = !editing() && wis.length ? `<span class="wifbar">What-if, not saved: ${wis.map(([id, x]) => `${h(findRow(S.live, id).metric)}${"dv" in x ? ` deal ${blank(x.dv) ? "N/A" : money(x.dv)}` : ""}${"w" in x ? ` at ${blank(x.w) ? "N/A" : x.w + "%"}` : ""}`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
   opsTable($("#tOps"));
   $("#opsNote").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:opsNote">${h(d.opsNote || "")}</span>` : h(d.opsNote || "");
   if(keep) setFocus(keep.startsWith("esc") ? "esc" : "iss", +keep.slice(3), false);
@@ -1105,10 +1066,12 @@ document.addEventListener("change", e => {
   const el = e.target;
   if(el.matches('select[data-act="tf"]')){ S.tf = el.value; savePrefs(); renderDashboard(); return; }
   if(el.matches('select[data-act="offer"]')){ S.offer = el.value; savePrefs(); renderDashboard(); return; }
-  if(el.matches('select[data-act="weight"]')){
-    const v = el.value === "" ? null : +el.value, id = el.dataset.rid;
-    if(editing()){ const r = findRow(S.draft, id); if(r){ r.weight = v; dirty(true); } }
-    else { const r = findRow(S.live, id); if(r && v === r.weight) delete S.whatIf[id]; else S.whatIf[id] = v; renderDashboard(); }
+  if(el.matches('[data-act="weight"],[data-act="deal"]')){
+    const isW = el.dataset.act === "weight", raw = el.value.trim().replace(/[$,M\s%]/g, ""), v = raw === "" ? null : +raw, id = el.dataset.rid;
+    if(v != null && isNaN(v)){ toast("Enter a number, for example 140."); renderDashboard(); return; }
+    const field = isW ? "weight" : "dealValue", key = isW ? "w" : "dv";
+    if(editing()){ const r = findRow(S.draft, id); if(r){ r[field] = v; dirty(true); } }
+    else { const r = findRow(S.live, id), x = Object.assign({}, S.whatIf[id]); if(r && v === r[field]) delete x[key]; else x[key] = v; if(Object.keys(x).length) S.whatIf[id] = x; else delete S.whatIf[id]; renderDashboard(); }
     return; }
   if(el.closest("#modal")) return onModalChange(el);
   if(el.closest("#pop")) return onPopChange(el);
