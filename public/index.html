@@ -92,6 +92,7 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .hlg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 .hlg .kv{grid-template-columns:minmax(0,1fr);gap:2px}
 .ttl{color:var(--grey-text);font-weight:400}
+.osel2{display:block;margin-top:6px;width:100%;max-width:100%;font-size:11px}
 .tog.rt{padding:0 4px 0 0;margin-left:-2px}
 tr.ph td.sticky .m{color:var(--grey-text)}
 .cfr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -665,7 +666,7 @@ function cellData(d, row){
     staffing:{ st: row.risk.staffing, tip: t("staffing").text || "", esc: t("staffing").esc || null },
     owner:{ t: o ? o.role : (row.model || row.derive ? "" : "None"), sub: o ? o.source : "", warn: row.ownerWarn || (!o && !row.model && !row.derive) || (o && o.unreliable) },
     source:{ t: row.owners.map(x => x.source).join(", "), bad: !!(o && o.unreliable) },
-    all:{ t: row.owners.map(x => `${x.role}${"value" in x ? " " + x.value : ""}${x.unreliable ? " unreliable" : ""}`).join("; ") },
+    all:{ t: row.owners.map(x => `${x.role}${"value" in x ? " " + x.value : ""}${x.unreliable ? " unreliable" : ""}`).join("; ") + (row.owners.length > 1 && row.showAll === false ? " (main only shown)" : "") },
     inc:{ t: row.weighted && offOf(d, row) ? "Excluded from pipeline" : "" },
     updated:{ t: fmtDate(row.updated), stale: !!row.updated && !!d.meta.asOf && row.updated < d.meta.asOf }
   };
@@ -822,22 +823,26 @@ function ownerRec(r, o){
   return "";
 }
 function recTip(t){ return t ? ` data-tip="${h(t)}" tabindex="0"` : ""; }
-function ownerOrder(r){ const main = r.owner || 0; return [main, ...r.owners.map((_, i) => i).filter(i => i !== main)]; }
+function ownerOrder(r){ const main = r.owner || 0; return [main, ...r.owners.map((_, i) => i).filter(i => i !== main)].filter(i => r.showAll !== false || i === main); }
+function ownerSel(r){
+  const main = r.owner || 0, all = r.showAll !== false;
+  const opts = r.owners.flatMap((o, i) => [[`${i}:one`, `${o.role} only`], [`${i}:all`, `Both, ${o.role} main`]]);
+  return `<select class="ssel osel2" data-act="ownmode" data-rid="${h(r.id)}" aria-label="Main source and what to show">${opts.map(([v, l]) => `<option value="${v}"${v === `${main}:${all ? "all" : "one"}` ? " selected" : ""}>${h(l)}</option>`).join("")}</select>`;
+}
 function ownerCell(r, c, chg){
   if(!r.owners.length) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : nd()}</td>`;
-  const multi = r.owners.length > 1, main = r.owner || 0;
-  return `<td class="${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], bad = o.unreliable || (!multi && r.ownerWarn), good = multi && !o.unreliable && i === main;
-    const ctrl = editing() && multi ? `<span class="ofl"><button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${i}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button>${i !== main ? `<button type="button" class="flag" data-act="mainowner" data-rid="${h(r.id)}" data-i="${i}" title="Show this owner's figure in the table">Use as main</button>` : ""}</span>` : "";
+  const order = ownerOrder(r), multi = order.length > 1, main = r.owner || 0;
+  return `<td class="${chg}">${order.map(i => { const o = r.owners[i], bad = (multi && o.unreliable) || (r.owners.length === 1 && r.ownerWarn), good = r.owners.length > 1 && !o.unreliable && i === main;
     const tip = bad ? ownerRec(r, o) : "";
-    return `<span class="ol${bad ? " neg b" : good ? " okc" : ""}${tip ? " rec" : ""}"${recTip(tip)}>${h(o.role)}${ctrl}</span>`; }).join("")}</td>`;
+    return `<span class="ol${bad ? " neg b" : good ? " okc" : ""}${tip ? " rec" : ""}"${recTip(tip)}>${h(o.role)}</span>`; }).join("")}${editing() && r.owners.length > 1 && !r._alt ? ownerSel(r) : ""}</td>`;
 }
 function sourceCell(r, c, chg){
   if(!r.owners.length || !c.t) return `<td class="srcc${chg}">${nd()}</td>`;
-  const main = r.owner || 0;
-  const multi = r.owners.length > 1;
-  return `<td class="srcc${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], good = multi && !o.unreliable && i === main;
-    const tip = o.unreliable ? ownerRec(r, o) : "";
-    return `<span class="ol${o.unreliable ? " neg" : good ? " okc" : ""}${tip ? " rec" : ""}"${recTip(tip)}>${h(o.source || "")}${multi && "value" in o ? ` (${blank(o.value) ? "no figure" : h(fmtV(r, o.value))})` : ""}</span>`; }).join("")}</td>`;
+  const main = r.owner || 0, order = ownerOrder(r);
+  const multi = order.length > 1;
+  return `<td class="srcc${chg}">${order.map(i => { const o = r.owners[i], good = r.owners.length > 1 && !o.unreliable && i === main, bad = multi && o.unreliable;
+    const tip = bad ? ownerRec(r, o) : "";
+    return `<span class="ol${bad ? " neg" : good ? " okc" : ""}${tip ? " rec" : ""}"${recTip(tip)}>${h(o.source || "")}${multi && "value" in o ? ` (${blank(o.value) ? "no figure" : h(fmtV(r, o.value))})` : ""}</span>`; }).join("")}</td>`;
 }
 function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
@@ -1355,6 +1360,10 @@ document.addEventListener("change", e => {
   const el = e.target;
   if(el.matches('select[data-act="tf"]')){ S.tf = el.value; savePrefs(); renderDashboard(); return; }
   if(el.matches('select[data-act="offer"]')){ S.offer = el.value; savePrefs(); renderDashboard(); return; }
+  if(el.matches('[data-act="ownmode"]')){
+    const r = findRow(S.draft, el.dataset.rid), [i, mode] = el.value.split(":");
+    if(r){ r.owner = +i; r.owners.forEach((o, j) => { o.unreliable = j !== +i; }); r.showAll = mode === "all"; dirty(true); }
+    return; }
   if(el.matches('[data-act="dealon"]')){
     const id = el.dataset.rid, off = !el.checked;
     if(editing()){ const r = findRow(S.draft, id); if(r){ r.off = off; dirty(true); } }
