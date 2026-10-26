@@ -331,7 +331,7 @@ textarea.in{resize:vertical;line-height:1.5}
   <header class="dimmable" id="hdr">
     <div class="kicker" id="kicker"></div>
   </header>
-  <div id="hlwrap" class="dimmable"><div class="lbl">What's going well</div><section id="hl" aria-label="What's going well"></section></div>
+  <div id="hlwrap" class="dimmable"><div class="lbl">On Track</div><section id="hl" aria-label="On Track"></section></div>
   <div class="lbl dimmable">Escalations to the President</div>
   <section class="cards" id="cards" aria-label="Escalations to the President"></section>
   <section class="issues dimmable" id="issues" aria-label="Other issues"></section>
@@ -367,7 +367,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 9, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 10, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Platform BU Leadership Dashboard",
@@ -375,9 +375,9 @@ const DATA = {
   },
   highlights: [
     { id: 1, title: "PIPELINE AHEAD OF PLAN",
-      good: "Q4 2026–Q1 2027 booking pipeline is $245M weighted, 17% above the $210M plan",
-      risk: "NorthPoint is $98M (40%) of it and can't be staffed yet; Other deals ($147M) have no deal value or weight specified",
-      next: "Push NorthPoint with Head of Delivery; push Other deals with Head of Sales" }
+      good: "Q4 2026–Q1 2027 weighted booking pipeline of $245M exceeds $210M plan by 17%",
+      risk: "NorthPoint accounts for $98M (40%) but cannot yet be staffed; other deals ($147M) lack defined value or weighting",
+      next: "Follow up NorthPoint deal with Head of Delivery; other deals with Head of Sales" }
   ],
   escalations: [
     { id: 1, title: "NORTHPOINT EXECUTION RISK",
@@ -590,7 +590,7 @@ function fmtDiff(row, v){
   if(row.fmt === "unit") return (v > 0 ? "+" : v < 0 ? MINUS : "") + "$" + Math.abs(v).toFixed(3);
   if(row.fmt === "accounts") return (v > 0 ? "+" : v < 0 ? MINUS : "") + r1(Math.abs(v)) + "M";
   if(row.fmt === "k") return (v > 0 ? "+" : v < 0 ? MINUS : "") + "$" + Math.round(Math.abs(v) * 1000) + "k";
-  return smoney(v) + (row.perMonth ? "/mo" : "");
+  return smoney(v);
 }
 function varOf(d, row, which){
   const p = val(d, row, "plan"), v = val(d, row, which);
