@@ -808,15 +808,15 @@ function finTable(el, secs, kind){
   const cols = ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","source","updated","fu"];
   const W = { metric:19, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, concentration:7, reporting:6.5, staffing:6, owner:9, source:9, updated:5, fu:6 };
   const cost = kind === "cost";
-  if(cost){ cols.splice(0, cols.length, "metric","plan","actual","forecast","varA","reporting","gap","owner","source","updated","fu"); W.gap = 19.5; }
+  if(cost){ cols.splice(0, cols.length, "metric","plan","actual","forecast","varA","overspend","reporting","owner","source","updated","fu"); Object.assign(W, { varA:13, overspend:9.75, reporting:9.75 }); }
   const N = cols.length;
   const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
     annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting quality</th>', staffing:'<th class="c g">Staffing</th>',
     owner:"<th>Data owner</th>", source:"<th>Data source</th>", updated:"<th>Last updated</th>", fu:'<th class="fu c">Follow up</th>' }, VAR_HEAD);
-  if(cost) Object.assign(head, { actual:'<th class="r">Current</th>', forecast:'<th class="r">Run rate</th>', varA:'<th class="r g">Run rate</th>', gap:"<th></th>" });
+  if(cost) Object.assign(head, { actual:'<th class="r">Current</th>', forecast:'<th class="r">Run rate</th>', varA:'<th class="r g">Run rate</th>', overspend:'<th class="c g">Overspending</th>' });
   const grp = [];
   cols.forEach(c => {
-    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : !cost && ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
+    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["concentration","reporting","staffing","overspend"].includes(c) ? "RISK ASSESSMENT" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
   let html = `<colgroup>${cols.map(c => `<col style="width:${W[c]}%">`).join("")}</colgroup><thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
@@ -845,7 +845,10 @@ function finTable(el, secs, kind){
           tr += `<td class="sticky${C("metric")}${C("inc")}"><span class="mw"><span class="mn">${rt}${tick}${nm}</span>${r.weighted && !r._alt ? dealInputs(d, r) : ""}</span></td>`;
         }
         else if(k === "fu") tr += `<td class="fu ctr">${r._alt ? "" : `<button class="btn xs" data-act="follow" data-ref="row:${h(r.id)}">Follow up</button>`}</td>`;
-        else if(cost && k === "gap") tr += "<td></td>";
+        else if(cost && r.placeholder && ["plan","actual","forecast","owner","source"].includes(k)) tr += `<td class="${k === "owner" || k === "source" ? "" : "num"}">${nd()}</td>`;
+        else if(cost && k === "overspend"){
+          if(r.placeholder) tr += `<td class="ctr">${nd()}</td>`;
+          else { const v = varOf(d, r, "actual"); tr += dotCell(null, "Overspending", { st: !v ? null : v.pct > 10 ? "red" : v.pct > 0 ? "amber" : "green", tip: v ? `${v.main} vs plan` : "" }, ""); } }
         else if(cost && k === "reporting" && r.placeholder) tr += `<td class="ctr">${nd()}</td>`;
         else if(cost && k === "reporting" && r.annualOf){ const src = findRow(d, r.annualOf); tr += src ? dotCell(null, "Reporting quality", cellData(d, src).reporting, "") : "<td></td>"; }
         else if(r.placeholder || (r.annualOf && !["plan","forecast","varA"].includes(k))) tr += "<td></td>";
