@@ -1109,6 +1109,7 @@ function submissions(d){
 }
 const SUBST = { ok:["done","Submitted"], late:["late","Late"], missing:["blocked","Not submitted"] };
 function renderSubs(d){
+  const box = $("#subs"); box.hidden = !editing(); if(!editing()){ box.innerHTML = ""; return; }
   const L = submissions(d), open = !S.collapsed.subs, c = k => L.filter(x => x.st === k).length;
   let html = `<div class="subh"><button class="tog" data-act="sec" data-sec="subs" aria-expanded="${open}"><span class="cv">▾</span>Data submissions</button>
     <span class="csum">Due ${h(fmtDate(d.meta.asOf) || "")} · <b>${c("ok")} of ${L.length}</b> submitted${c("late") ? ` · <span class="warnt">${c("late")} late</span>` : ""}${c("missing") ? ` · <span class="neg">${c("missing")} not submitted</span>` : ""}</span></div>`;
