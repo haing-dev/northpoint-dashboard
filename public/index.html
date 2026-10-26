@@ -199,8 +199,12 @@ body.focusing tr.lit td:first-child{box-shadow:inset 3px 0 0 var(--deep)}
 .co.stack::after{display:none}
 #tip.multi{background:none;padding:0;display:flex;flex-direction:column;gap:6px}
 #tip.multi .tb{background:var(--deep);padding:6px 8px;border-radius:2px}
-.xn{font:700 9px var(--sans);color:var(--grey-text);margin-left:2px;vertical-align:top}
-.xr{display:inline-flex;gap:10px}.xri{display:inline-flex;flex-direction:column;align-items:center;gap:2px}.xri small{font-size:9px;color:var(--grey-text)}
+.xr{display:inline-flex;gap:10px;align-items:center;justify-content:center;vertical-align:middle}
+.xr>.dot,.rk .dot{box-sizing:border-box}
+.xr .xri{align-self:flex-start}
+.fr-top{align-items:start}.fr-top>span{padding-top:4px}
+.rkl{display:flex;flex-direction:column;gap:4px;max-height:150px;overflow:auto;border:1px solid var(--rule);padding:6px 8px;border-radius:2px}
+.rk{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer}.rk .dot{flex:none}.xri{display:inline-flex;flex-direction:column;align-items:center;gap:2px}.xri small{font-size:9px;color:var(--grey-text)}
 .co .cn{flex:none;width:20px;height:20px;border-radius:50%;background:#fff;color:var(--deep);font:700 11px/20px var(--sans);text-align:center}
 @keyframes pop{from{opacity:0;transform:translateY(4px) scale(.96)}to{opacity:1;transform:none}}
 .focusbar{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;background:#fff;border:1px solid var(--deep);box-shadow:0 6px 18px rgba(0,0,0,.15);padding:6px 8px 6px 12px;font-size:12px;display:flex;gap:10px;align-items:center}
@@ -749,21 +753,26 @@ function dotCell(key, label, c, chg){
   return `<td class="ctr${chg}"${escA}>${dot}</td>`;
 }
 const RANK = { red:3, amber:2, green:1, nodata:0 };
-function execItems(d, r, cost){
-  if(r.placeholder) return [];
-  if(cost){ const v = varOf(d, r, "actual"); return v ? [{ label:"Overspending", st: v.pct > 10 ? "red" : v.pct > 0 ? "amber" : "green", tip: `${v.main} vs plan`, esc:null }] : []; }
-  return [["concentration","Concentration"],["staffing","Staffing"]].filter(([k]) => r.risk[k]).map(([k, l]) => ({ key:k, label:l, st:r.risk[k], tip:(r.tips[k] || {}).text || cap(STATUS[r.risk[k]]), esc:(r.tips[k] || {}).esc || null }));
+function riskSlots(d, r, cost){
+  const src = r.annualOf ? findRow(d, r.annualOf) : r;
+  const one = (key, label) => { const st = src && !r.placeholder ? src.risk[key] : null, t = src && !r.placeholder ? (src.tips[key] || {}) : {};
+    return { key, label, st: st || "nodata", text: st ? (t.text || cap(STATUS[st])) : "No data", esc: t.esc || null, edit: !cost || key === "reporting" }; };
+  if(cost){
+    const v = r.placeholder ? null : varOf(d, r, "actual");
+    return [{ key:"overspend", label:"Overspending", st: !v ? "nodata" : v.pct > 10 ? "red" : v.pct > 0 ? "amber" : "green", text: v ? `${v.main} vs plan` : "No data", esc:null, edit:false }, one("reporting", "Reporting quality")];
+  }
+  return [one("concentration", "Concentration"), one("staffing", "Staffing"), one("reporting", "Reporting quality")];
+}
+function riskDot(x, esc){
+  const dc = x.st === "nodata" ? "nodata nd" : x.st;
+  return `<span class="dot ${dc}" tabindex="0" role="img" data-tip="${h(`${x.label}: ${x.text}`)}" aria-label="${h(`${x.label}: ${x.text}`)}"${esc && x.esc ? ` data-esc="${x.esc}" data-cotext="${h(`${x.label}: ${x.text}`)}"` : ""}></span>`;
 }
 function execCell(d, r, cost, chg){
-  if(editing() && !cost && !r._alt && !r.model){
-    return `<td class="ctr${chg}"><span class="xr">${[["concentration","Concentration"],["staffing","Staffing"]].map(([k, l]) => { const st = r.risk[k];
-      return `<span class="xri"><button type="button" class="dotbtn" data-pop="row:${h(r.id)}:${k}" aria-label="Change ${l}">${st ? `<span class="dot ${st}"></span>` : '<span class="plus">+</span>'}</button><small>${l}</small></span>`; }).join("")}</span></td>`;
+  const sl = riskSlots(d, r, cost);
+  if(editing() && !r._alt && !r.model && !r.placeholder && !r.annualOf){
+    return `<td class="ctr${chg}"><span class="xr">${sl.map(x => `<span class="xri">${x.edit ? `<button type="button" class="dotbtn" data-pop="row:${h(r.id)}:${x.key}" aria-label="Change ${x.label}">${x.st !== "nodata" ? `<span class="dot ${x.st}"></span>` : '<span class="plus">+</span>'}</button>` : riskDot(x)}<small>${x.label === "Reporting quality" ? "Reporting" : x.label}</small></span>`).join("")}</span></td>`;
   }
-  const it = execItems(d, r, cost);
-  if(!it.length) return `<td class="ctr${chg}">${nd()}</td>`;
-  const worst = it.reduce((a, b) => RANK[b.st] > RANK[a.st] ? b : a), tips = it.map(x => `${x.label}: ${x.tip}`);
-  const esc = it.filter(x => x.esc), escA = esc.length ? ` data-esc="${esc[0].esc}" data-cotext="${h(tips.join("||"))}"` : "";
-  return `<td class="ctr${chg}"${escA}><span class="dot ${worst.st}" tabindex="0" role="img" data-tip="${h(tips.join("||"))}" aria-label="${h("Execution risk: " + tips.join(". "))}"></span>${it.length > 1 ? `<sup class="xn">${it.length}</sup>` : ""}</td>`;
+  return `<td class="ctr${chg}"><span class="xr">${sl.map(x => riskDot(x, true)).join("")}</span></td>`;
 }
 function numInput(key, v, extra = ""){ return `<input class="ci ${extra}" inputmode="decimal" data-set="${h(key)}" data-t="num" value="${h(blank(v) ? "" : v)}" aria-label="Edit value">`; }
 function valCell(d, r, f, chg){
@@ -832,18 +841,18 @@ function dealInputs(d, r){
 const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
   const d = cur();
-  const cols = ["metric","plan","actual","forecast","varA","varF","exec","reporting","owner","source","updated","fu"];
-  const W = { metric:19, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, exec:9.75, reporting:9.75, owner:9, source:9, updated:5, fu:6 };
+  const cols = ["metric","plan","actual","forecast","varA","varF","exec","owner","source","updated","fu"];
+  const W = { metric:19, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, exec:19.5, owner:9, source:9, updated:5, fu:6 };
   const cost = kind === "cost";
-  if(cost){ cols.splice(0, cols.length, "metric","plan","actual","forecast","varA","exec","reporting","owner","source","updated","fu"); W.varA = 13; }
+  if(cost){ cols.splice(0, cols.length, "metric","plan","actual","forecast","varA","exec","owner","source","updated","fu"); W.varA = 13; }
   const N = cols.length;
   const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
-    annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting quality</th>', exec:'<th class="c g">Execution risk</th>',
+    annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting quality</th>', exec:'<th class="c g">Execution Risk</th>',
     owner:"<th>Data owner</th>", source:"<th>Data source</th>", updated:"<th>Last updated</th>", fu:'<th class="fu c">Follow up</th>' }, VAR_HEAD);
   if(cost) Object.assign(head, { actual:'<th class="r">Current</th>', forecast:'<th class="r">Run rate</th>', varA:'<th class="r g">Run rate</th>' });
   const grp = [];
   cols.forEach(c => {
-    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["exec","reporting"].includes(c) ? "RISK ASSESSMENT" : "";
+    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
   let html = `<colgroup>${cols.map(c => `<col style="width:${W[c]}%">`).join("")}</colgroup><thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
@@ -873,7 +882,7 @@ function finTable(el, secs, kind){
         }
         else if(k === "fu") tr += `<td class="fu ctr">${r._alt ? "" : `<button class="btn xs" data-act="follow" data-ref="row:${h(r.id)}">Follow up</button>`}</td>`;
         else if(cost && r.placeholder && ["plan","actual","forecast","owner","source","updated"].includes(k)) tr += `<td class="${["owner","source","updated"].includes(k) ? "ndc ndc-" + k : "num"}">${nd()}</td>`;
-        else if(k === "exec") tr += execCell(d, r, cost, C("concentration") || C("staffing"));
+        else if(k === "exec") tr += execCell(d, r, cost, C("concentration") || C("staffing") || C("reporting"));
         else if(cost && k === "reporting" && r.placeholder) tr += `<td class="ctr">${nd()}</td>`;
         else if(cost && k === "reporting" && r.annualOf){ const src = findRow(d, r.annualOf); tr += src ? dotCell(null, "Reporting quality", cellData(d, src).reporting, "") : "<td></td>"; }
         else if(r.placeholder || (r.annualOf && !["plan","forecast","varA"].includes(k))) tr += "<td></td>";
@@ -939,6 +948,14 @@ function countdown(p){
   if(n === 0) return { t:"today", bad:true };
   return { t:`${-n} days overdue`, bad:true };
 }
+function projRisks(p){
+  const out = [], kn = p.keyNote || {}, kt = (kn.tag || "").toLowerCase();
+  if(kn.text) out.push({ label: kn.tag || "Issue", st: p.risk[kt] && p.risk[kt] !== "green" ? p.risk[kt] : "red", text: kn.text });
+  ["reporting","staffing"].forEach(c => { const st = p.risk[c]; if(!st || st === "green" || c === kt) return; out.push({ label: cap(c), st, text: (p.tips[c] || {}).text || cap(STATUS[st]) }); });
+  return out;
+}
+function stageRisks(s){ return s.blocker ? [{ label: s.tag || "Blocker", st: s.status === "blocked" ? "red" : "amber", text: s.blocker }] : []; }
+function riskDots(items){ return items.length ? `<span class="xr">${items.map(x => riskDot(x)).join("")}</span>` : ""; }
 function projNotes(p, ed){
   const kn = p.keyNote || {};
   const col = kn.tag ? (p.risk[kn.tag.toLowerCase()] || "red") : "red";
@@ -959,7 +976,7 @@ function projNotesOld(p, ed){
 function opsTable(el){
   const d = cur(), ax = axis(d), ed = editing(), now = todayISO();
   const roles = uniq(["Head of Delivery","Head of Product","Head of Sales","Head of Platform","Head of Talent","Finance BP", ...d.operations.map(p => p.owner).filter(Boolean)]);
-  let html = `<colgroup>${[21, 9.5, 7, 8, 8.5, 18, 6.5, 21.5].map(w => `<col style="width:${w}%">`).join("")}</colgroup><thead><tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner</th><th>Last updated</th><th>Deadline</th><th class="c">Status</th><th>Notes</th><th class="fu c">Follow up</th>
+  let html = `<colgroup>${[21, 9.5, 7, 8, 8.5, ed ? 18 : 10, 6.5, ed ? 21.5 : 29.5].map(w => `<col style="width:${w}%">`).join("")}</colgroup><thead><tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner</th><th>Last updated</th><th>Deadline</th><th class="c">Status</th><th class="c">Execution Risk</th><th class="fu c">Follow up</th>
     <th><div class="tlh">${ax.months.map(m => `<i style="left:${ax.pct(m)}%"></i><span style="left:${ax.pct(m)}%">${MON[pd(m).m - 1]}${pd(m).m === 1 ? " " + String(pd(m).y).slice(2) : ""}</span>`).join("")}${now >= ax.start && now <= ax.end ? `<span class="td" style="left:${ax.pct(now)}%">Today</span>` : ""}</div></th></tr></thead><tbody>`;
   let lastSec = null;
   d.operations.forEach(p => {
@@ -980,7 +997,7 @@ function opsTable(el){
       <td class="${chg("updated").trim()}">${upd}</td>
       <td class="${chg("deadline").trim()}">${dl}<span class="sub${cd && cd.bad ? " neg b" : ""}">${cd ? h(cd.t) : ""}</span></td>
       <td class="ctr"><span class="sc ${st.k}">${h(st.label)}</span></td>
-      <td class="${chg("keyNote").trim()}"${escTip ? ` data-esc="${escTip.esc}" data-cotext="${h(escTip.text)}"` : ""}>${projNotes(p, ed)}</td>
+      <td class="${ed ? "" : "ctr"}${chg("keyNote")}">${ed ? projNotes(p, ed) : riskDots(projRisks(p)) || nd()}</td>
       <td class="fu ctr"><button class="btn xs" data-act="follow" data-ref="proj:${h(p.id)}">Follow up</button></td>
       <td${p.sample ? ' class="mockbars" title="Steps are a mock plan"' : ""}>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
     if(!open) return;
@@ -991,10 +1008,10 @@ function opsTable(el){
       const stt = ed ? `<select class="ssel" data-set="${k}:status" data-t="text" aria-label="Step status">${Object.entries(STAGE).map(([v, l]) => `<option value="${v}"${v === s.status ? " selected" : ""}>${l}</option>`).join("")}</select>` : `<span class="sc ${s.status}">${STAGE[s.status] || h(s.status)}</span>`;
       let notes;
       if(ed) notes = `<select class="ssel" data-set="${k}:tag" data-t="text" aria-label="Issue type"><option value="">No tag</option>${TAGS.map(t => `<option${t === s.tag ? " selected" : ""}>${t}</option>`).join("")}</select> <span class="blk" contenteditable="true" data-edit="${k}:blocker" aria-label="Blocker">${h(s.blocker || "")}</span>`;
-      else notes = s.blocker ? `<span class="nl">${s.tag ? `<span class="tag red">${h(s.tag)}</span>` : ""}<span class="blk">${h(s.blocker)}</span></span>` : "";
+      else notes = riskDots(stageRisks(s));
       html += `<tr class="stage dimmable${p.sample ? " mock" : ""}" data-row="${h(p.id)}"${p.sample ? ' title="Mock step"' : ""}>
         <td class="sticky${sc}"><span class="sn" ${ed ? `contenteditable="true" data-edit="${k}:name"` : ""}>${h(s.name)}</span></td>
-        <td></td><td></td><td class="nt${sc}">${dates}</td><td class="ctr${sc}">${stt}</td><td class="${sc.trim()}">${notes}</td>
+        <td></td><td></td><td class="nt${sc}">${dates}</td><td class="ctr${sc}">${stt}</td><td class="${ed ? "" : "ctr"}${sc}">${notes}</td>
         <td class="fu ctr">${s.blocker ? `<button class="btn xs" data-act="follow" data-ref="blk:${h(p.id)}:${i}">Follow up</button>` : ""}</td><td>${bars(ax, [s], null, false)}</td></tr>`;
     });
   });
@@ -1167,8 +1184,8 @@ function clearFocus(silent){
 function placeCallouts(n){
   const layer = $("#callouts"); layer.innerHTML = "";
   const vw = document.documentElement.clientWidth, vh = window.innerHeight;
-  document.querySelectorAll(`td[data-esc="${n}"]`).forEach(td => {
-    const tgt = td.querySelector(".dot,.vt,.dotbtn,.tag") || td, r = tgt.getBoundingClientRect();
+  document.querySelectorAll(`[data-esc="${n}"]`).forEach(td => {
+    const tgt = td.matches(".dot") ? td : td.querySelector(".dot,.vt,.dotbtn,.tag") || td, r = tgt.getBoundingClientRect();
     if(r.bottom < 0 || r.top > vh || r.width === 0) return;
     const texts = (td.dataset.cotext || "").split("||");
     let edge = null, below = r.top - 60 * texts.length < 8;
@@ -1311,7 +1328,7 @@ function refContext(ref){
     const v = variance(d, r), shown = fmtV(r, val(d, r, r.field)), plan = fmtV(r, val(d, r, "plan")), o = ownerOf(r);
     const notes = COLS.filter(([c]) => r.risk[c] && r.risk[c] !== "green").map(([c, l]) => `${l}: ${(r.tips[c] || {}).text || STATUS[r.risk[c]]}`);
     const rec = r.owners.map(x => (x.unreliable || r.ownerWarn) ? ownerRec(r, x) : "").filter(Boolean);
-    return { ref, label: r.metric, issue: `${r.metric} is ${shown ? shown + (r.perMonth ? " a month" : r.annualOf ? " a year" : "") : "not reported"}${plan ? ` against a plan of ${plan}` : ""}${v ? ` (${v.main} vs plan)` : ""}.${notes.length ? " " + notes.join(". ") + "." : ""}`,
+    return { ref, label: r.metric, issue: `${r.metric} is ${shown ? shown + (r.perMonth ? " a month" : r.annualOf ? " a year" : "") : "not reported"}${plan ? ` against a plan of ${plan}` : ""}${v ? ` (${v.main} vs plan)` : ""}.`,
       impact: rec.length ? rec.join(" ") : "", next: `Confirm the latest figure${o ? ` from ${o.source}` : ""} and what will close any gap to plan`, facts: factsFor(d, [r.id]) };
   }
   if(ref.startsWith("iss")){
@@ -1323,11 +1340,33 @@ function refContext(ref){
     const s = si != null ? p.stages[+si] : null, cd = countdown(p);
     const notes = ["reporting","staffing"].filter(c => p.risk[c] && p.risk[c] !== "green").map(c => `${cap(c)}: ${(p.tips[c] || {}).text || STATUS[p.risk[c]]}`);
     return { ref, label: s ? `${p.name}: ${s.name}` : p.name,
-      issue: s ? `${s.tag ? s.tag + " blocker: " : ""}${s.blocker} (${s.name}, due ${fmtLong(s.end || s.start)}).` : `${p.name} is ${projStatus(p).label.toLowerCase()}${notes.length ? ". " + notes.join(". ") : ""}.`,
+      issue: s ? `${s.tag ? s.tag + " blocker: " : ""}${s.blocker} (${s.name}, due ${fmtLong(s.end || s.start)}).` : `${p.name} is ${projStatus(p).label.toLowerCase()}${p.owner ? "" : " and has no owner"}.`,
       impact: p.deadline ? `The ${fmtLong(p.deadline)} deadline${cd ? ` (${cd.t})` : ""} is at risk.` : "",
       next: s ? `Clear the blocker or give a new date for ${s.name}.` : "Send an updated plan with an owner and a date for each step.", facts: factsFor(d, [p.id]) };
   }
   return null;
+}
+function rowRisks(d, r, prefix){
+  const cost = d.cost.some(sc => sc.rows.includes(r));
+  return riskSlots(d, r, cost).filter(x => x.st !== "nodata" || !cost || x.key !== "overspend").map(x => ({ st: x.st, label: (prefix ? r.metric + " · " : "") + x.label, text: x.text, esc: x.esc }));
+}
+function ctxRisks(d, ref){
+  if(ref.startsWith("row:")){ const r = findRow(d, ref.slice(4)); return r ? rowRisks(d, r) : []; }
+  if(ref.startsWith("blk:")){ const [, pid, si] = ref.split(":"), p = findProj(d, pid), s = p && p.stages[+si]; return s ? stageRisks(s) : []; }
+  if(ref.startsWith("proj:")){ const p = findProj(d, ref.slice(5)); if(!p) return [];
+    return [...projRisks(p), ...p.stages.flatMap(s => stageRisks(s).map(x => Object.assign(x, { label: `${s.name} · ${x.label}` })))]; }
+  if(ref.startsWith("esc")){ const n = +ref.slice(3), ids = linkedRows(n), out = [];
+    ids.forEach(id => { const r = findRow(d, id); if(r) out.push(...rowRisks(d, r, true).filter(x => x.st !== "nodata" && x.st !== "green"));
+      const p = findProj(d, id); if(p) out.push(...projRisks(p).map(x => Object.assign(x, { label: `${p.name} · ${x.label}` }))); });
+    return out; }
+  if(ref.startsWith("hl")){ const g = d.highlights.find(x => "hl" + x.id === ref), out = [];
+    (g && g.rows || []).forEach(id => { const r = findRow(d, id); if(r) out.push(...rowRisks(d, r, true).filter(x => x.st !== "nodata" && x.st !== "green")); });
+    return out; }
+  return [];
+}
+function ctxOf(m){
+  const pk = (m.ctx.risks || []).filter((x, i) => m.pick.has(i));
+  return Object.assign({}, m.ctx, { issue: m.ctx.issue + (pk.length ? `\n\nIssues to address:\n${pk.map(x => `- ${x.label}: ${x.text}`).join("\n")}` : "") });
 }
 function templateDraft(ctx, keys){
   const st = S.ops.settings, names = keys.map(k => (S.ops.directory[k] || {}).name).filter(Boolean).map(n => n.split(" ")[0]);
@@ -1337,8 +1376,10 @@ function templateDraft(ctx, keys){
 }
 function openModal(ref){
   const ctx = refContext(ref); if(!ctx) return;
-  const t = templateDraft(ctx, []);
-  S.modal = { ctx, sel: new Set(), subject: t.subject, body: t.body, edited: false, src: "template", busy: false, confirm: false, toOpen: false, contacts: false };
+  ctx.risks = ctxRisks(cur(), ref);
+  const pick = new Set(ctx.risks.map((x, i) => x.st === "red" || x.st === "amber" ? i : -1).filter(i => i >= 0));
+  const t = templateDraft(ctxOf({ ctx, pick }), []);
+  S.modal = { ctx, pick, sel: new Set(), subject: t.subject, body: t.body, edited: false, src: "template", busy: false, confirm: false, toOpen: false, contacts: false };
   renderModal();
   if(S.ai.enabled) aiDraft();
 }
@@ -1355,6 +1396,7 @@ function renderModal(){
         ${m.toOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-rc="${h(k)}" ${m.sel.has(k) ? "checked" : ""}>${h(p.name)}${p.title ? ` <span class="ttl">(${h(p.title)})</span>` : ""}<small>${h(p.email)}</small></label>`).join("")}
           ${m.contacts ? Object.entries(dir).map(([k, p]) => `<div class="ce"><input class="in" data-c="${h(k)}" data-cf="name" value="${h(p.name)}" aria-label="Name"><input class="in" type="email" data-c="${h(k)}" data-cf="email" value="${h(p.email)}" aria-label="Email"></div>`).join("") : ""}
           <button class="lnk" data-act="mcontacts">${m.contacts ? "Done" : "Edit emails"}</button></div>` : ""}</div></div>
+      ${(m.ctx.risks || []).length ? `<div class="fr fr-top"><span>Issues</span><div class="rkl">${m.ctx.risks.map((x, i) => `<label class="rk"><input type="checkbox" data-rk="${i}" ${m.pick.has(i) ? "checked" : ""}><i class="dot ${x.st === "nodata" ? "nodata nd" : x.st}"></i><span><b>${h(x.label)}</b>: ${h(x.text)}</span></label>`).join("")}</div></div>` : ""}
       <div class="fr"><span>CC</span><input class="in" id="mCc" value="${h(st.cc || "")}" placeholder="Optional"></div>
       <div class="fr"><span>Reply by</span><input class="in" id="mReply" type="date" value="${h(st.replyBy)}" style="max-width:200px"></div>
       <div class="fr"><span>Subject</span><input class="in" id="mSubject" value="${h(m.subject)}"></div>
@@ -1372,10 +1414,11 @@ function onModalInput(el){
   else if(el.id === "mCc"){ S.ops.settings.cc = el.value; saveOps(); }
   else if(el.dataset.c){ S.ops.directory[el.dataset.c][el.dataset.cf] = el.value.trim(); saveOps(); }
 }
-function retemplate(){ const m = S.modal; if(!m.edited && m.src === "template"){ const t = templateDraft(m.ctx, [...m.sel]); m.subject = t.subject; m.body = t.body; } }
+function retemplate(){ const m = S.modal; if(!m.edited && m.src === "template"){ const t = templateDraft(ctxOf(m), [...m.sel]); m.subject = t.subject; m.body = t.body; } }
 function onModalChange(el){
   const m = S.modal; if(!m) return;
   if(el.dataset.rc){ el.checked ? m.sel.add(el.dataset.rc) : m.sel.delete(el.dataset.rc); retemplate(); renderModal(); }
+  else if(el.dataset.rk){ const i = +el.dataset.rk; el.checked ? m.pick.add(i) : m.pick.delete(i); if(m.src === "ai" && !m.edited){ m.src = "template"; retemplate(); renderModal(); aiDraft(); } else { retemplate(); renderModal(); } }
   else if(el.id === "mReply"){ S.ops.settings.replyBy = el.value; saveOps(); retemplate(); renderModal(); }
   else if(el.dataset.c) renderModal();
 }
@@ -1384,7 +1427,7 @@ async function aiDraft(){
   m.busy = true;
   try{
     const st = S.ops.settings;
-    const res = await api("ai/email", { method:"POST", body: JSON.stringify({ context: m.ctx, recipients: recips().map(r => ({ name:r.name })), sender: st.senderName, replyBy: fmtDow(st.replyBy), reviewDate: fmtDow(st.reviewDate) }) });
+    const res = await api("ai/email", { method:"POST", body: JSON.stringify({ context: ctxOf(m), recipients: recips().map(r => ({ name:r.name })), sender: st.senderName, replyBy: fmtDow(st.replyBy), reviewDate: fmtDow(st.reviewDate) }) });
     if(S.modal !== m) return;
     if(!m.edited){ m.subject = res.subject; m.body = res.body; m.src = "ai"; }
   }catch(err){ /* keep the template draft */ }
