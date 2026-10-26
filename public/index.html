@@ -65,7 +65,7 @@ button.chip:hover{background:#ECEEF0}
 h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:balance}
 .lbl{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--grey-text);margin:24px 0 8px}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.card{background:var(--card-bg);padding:16px;display:flex;flex-direction:column;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s ease;position:relative}
+.card{background:var(--card-bg);padding:16px;display:grid;grid-row:span 5;grid-template-rows:subgrid;row-gap:0;align-content:start;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s ease;position:relative}
 .card:hover,.card:focus-visible{transform:translateY(-5px) scale(1.015);box-shadow:0 14px 30px rgba(5,28,44,.20),0 0 0 1px rgba(5,28,44,.25);background:#F7F7F7;z-index:2}
 .card.lit{outline:2px solid var(--deep)}
 .ct{display:flex;align-items:center;gap:10px;font:700 15px/1.25 var(--sans);text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px}
@@ -73,7 +73,7 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .kv{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px;margin-top:10px;font-size:14px}
 .kv>span:first-child{font:700 11px/1.7 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--grey-text)}
 .kv .b{font-weight:700}
-.cf{margin-top:auto;padding-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cf{padding-top:14px;align-self:end;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .muted{color:var(--grey-text);font-size:11px}
 .hint{color:var(--grey-text);font-size:11px;margin-left:auto}
 [contenteditable="true"]{outline:1px dashed #B9A85A;outline-offset:2px;border-radius:1px;cursor:text}
@@ -180,7 +180,16 @@ tr.stage .sn{padding-left:22px;display:block}
 .sc.done{background:var(--ok-bg);color:var(--ok-fg)}.sc.active{background:var(--act-bg);color:var(--act-fg)}.sc.planned{background:#fff;color:var(--grey-text);border:1px solid var(--rule)}
 .sc.blocked{background:var(--bad-bg);color:var(--bad-fg)}.sc.noupdate{background:var(--off-bg);color:var(--off-fg)}.sc.late{background:var(--warn-bg);color:var(--warn-fg)}
 .nl{display:block;font-size:12px;margin:1px 0}
-.ol{display:block;white-space:nowrap;line-height:1.5}
+.ol{display:block;line-height:1.5}
+table.fixed{table-layout:fixed}
+table.fixed td,table.fixed th{overflow-wrap:anywhere}
+table.fixed th{white-space:normal;overflow-wrap:normal;word-break:normal}
+table.fixed td.sticky{min-width:0}
+table.fixed .tl,table.fixed .tlh{min-width:0}
+tr.mock td,tr.mock .nt{color:#A3A3A3}
+tr.mock .sc,tr.mock .tag,tr.mock .btn{opacity:.5}
+tr.mock .blk{color:#C49A9A}
+tr.mock .tl,td.mockbars .tl{opacity:.45;filter:grayscale(.6)}
 tr.d2 .m{padding-left:40px;font-weight:400;font-size:12px;color:var(--grey-text)}
 tr.d2 td{font-size:12px;padding-top:4px;padding-bottom:4px}
 tr.d2 td .b{font-weight:400}
@@ -300,12 +309,12 @@ textarea.in{resize:vertical;line-height:1.5}
     <span><i class="dot green"></i>On track</span><span><i class="dot amber"></i>Needs attention</span>
     <span><i class="dot red"></i>Off track</span><span><i class="dot nodata"></i>No data</span>
   </div>
-  <div class="tt dimmable" id="sec-com"><span class="n">1</span><h2>Commercial</h2><span class="note">USD, $M</span><span id="wif"></span></div>
+  <div class="tt dimmable" id="sec-com"><span class="n">1</span><h2>Commercial</h2><span id="wif"></span></div>
   <div class="tw"><table class="tr" id="tCom"></table></div>
   <p class="foot dimmable" id="foot"></p>
-  <div class="tt dimmable" id="sec-cost"><span class="n">2</span><h2>Cost</h2><span class="note">Platform cloud run-rate</span></div>
+  <div class="tt dimmable" id="sec-cost"><span class="n">2</span><h2>Cost</h2></div>
   <div class="tw"><table class="tr" id="tCost"></table></div>
-  <div class="tt dimmable" id="sec-ops"><span class="n">3</span><h2>Operations</h2><span class="note">Delivery plan by project</span></div>
+  <div class="tt dimmable" id="sec-ops"><span class="n">3</span><h2>Operations</h2></div>
   <div class="tw"><table class="tr ops" id="tOps"></table></div>
   <div class="tlleg dimmable" id="tlleg"></div>
   <p class="foot dimmable" id="opsNote"></p>
@@ -328,10 +337,10 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 6, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 7, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
-    kicker: "Q3 2026 LEADERSHIP REVIEW · PRESIDENT'S VIEW",
+    kicker: "Platform BU Leadership Dashboard",
     title: "Q3 bookings are 32% short, the pipeline beat rests on one deal, and we can't staff that deal"
   },
   escalations: [
@@ -422,8 +431,8 @@ const DATA = {
       risk: { staffing: "amber" }, tips: { staffing: { text: "19 of 25 planned hires made by 30 Sep" } },
       keyNote: { tag: "Staffing", text: "19 of 25 hires made, 6 behind plan" }, stages: [] }
   ],
-  footnote: "Note: NorthPoint's $140M in the CRM is taken as deal value, so at 70% it adds $98M to the weighted pipeline. Source: Q3 tracker extract, 30 Sep 2026.",
-  opsNote: "Operations steps are a sample plan until project owners send theirs."
+  footnote: "",
+  opsNote: ""
 };
 
 /* Follow-up contacts and settings. Emails are placeholders until you edit them in the To list. */
@@ -443,7 +452,7 @@ const COLS = [["concentration","Concentration"],["reporting","Reporting"],["staf
 const STATUS = { green:"on track", amber:"needs attention", red:"off track", nodata:"no data" };
 const STAGE = { done:"Done", active:"In progress", planned:"Planned", late:"Late", blocked:"Blocked", noupdate:"No update" };
 const TAGS = ["Reporting","Staffing","Funding","Ownership","Dependency"];
-const TF = { all:"Both periods", cq:"Q3 2026 · current quarter", n2q:"Q4 2026–Q1 2027 · next 2 quarters" };
+const TF = { all:"All periods", cq:"Q3 2026 · current quarter", n2q:"Q4 2026–Q1 2027 · next 2 quarters" };
 const SEVDOT = { high:"red", medium:"amber", low:"nodata" };
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -493,7 +502,7 @@ function normalize(d){
   d.operations = (d.operations || []).map(normProj);
   d.meta = Object.assign({ asOf:null, currency:"USD" }, d.meta || {});
   d.costModel = d.costModel || null;
-  if(d.opsNote == null) d.opsNote = DATA.opsNote;
+  if(d.opsNote == null) d.opsNote = "";
   return d;
 }
 function sections(d){ return [...d.commercial, ...d.cost, ...(d.talent || [])]; }
@@ -580,7 +589,7 @@ function cellData(d, row){
     reporting:{ st: row.risk.reporting, tip: t("reporting").text || "", esc: t("reporting").esc || null },
     staffing:{ st: row.risk.staffing, tip: t("staffing").text || "", esc: t("staffing").esc || null },
     owner:{ t: o ? o.role : (row.model || row.derive ? "" : "None"), sub: o ? o.source : "", warn: row.ownerWarn || (!o && !row.model && !row.derive) || (o && o.unreliable) },
-    source:{ t: o ? o.source : "", bad: !!(o && o.unreliable) },
+    source:{ t: row.owners.map(x => x.source).join(", "), bad: !!(o && o.unreliable) },
     all:{ t: row.owners.map(x => `${x.role}${"value" in x ? " " + x.value : ""}${x.unreliable ? " unreliable" : ""}`).join("; ") },
     updated:{ t: fmtDate(row.updated), stale: !!row.updated && !!d.meta.asOf && row.updated < d.meta.asOf }
   };
@@ -702,13 +711,20 @@ function varCell(c, chg){
   const inner = `<span class="b${c.adverse ? " neg" : ""}">${h(c.main)}</span>${c.sub ? `<span class="sub">${h(c.sub)}</span>` : ""}`;
   return `<td class="num${chg}"${escA}>${c.tip ? `<span class="vt" tabindex="0" data-tip="${h(c.tip)}">${inner}</span>` : inner}</td>`;
 }
+function ownerOrder(r){ const main = r.owner || 0; return [main, ...r.owners.map((_, i) => i).filter(i => i !== main)]; }
 function ownerCell(r, c, chg){
-  const o = ownerOf(r), multi = r.owners.length > 1;
-  if(!o) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : nd()}</td>`;
-  const flag = editing() && multi ? `<span class="ofl"><button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${r.owner || 0}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button>${r._alt ? `<button type="button" class="flag" data-act="mainowner" data-rid="${h(r.id)}" data-i="${r.owner}" title="Use this figure in the main row">Use as main</button>` : ""}</span>` : "";
-  return `<td class="${chg}"><span class="${c.warn ? "neg b" : ""}">${h(o.role)}</span>${flag}</td>`;
+  if(!r.owners.length) return `<td class="${chg}">${c.t ? `<span class="neg b">${h(c.t)}</span>` : nd()}</td>`;
+  const multi = r.owners.length > 1, main = r.owner || 0;
+  return `<td class="${chg}">${ownerOrder(r).map(i => { const o = r.owners[i], bad = o.unreliable || (!multi && r.ownerWarn);
+    const ctrl = editing() && multi ? `<span class="ofl"><button type="button" class="flag${o.unreliable ? " on" : ""}" data-act="flag" data-rid="${h(r.id)}" data-i="${i}" aria-pressed="${!!o.unreliable}" title="Mark this source as unreliable">Unreliable</button>${i !== main ? `<button type="button" class="flag" data-act="mainowner" data-rid="${h(r.id)}" data-i="${i}" title="Show this owner's figure in the table">Use as main</button>` : ""}</span>` : "";
+    return `<span class="ol${bad ? " neg b" : ""}">${h(o.role)}${ctrl}</span>`; }).join("")}</td>`;
 }
-function sourceCell(r, c, chg){ return `<td class="srcc${chg}">${c.t ? `<span class="${c.bad ? "neg" : ""}">${h(c.t)}</span>` : nd()}</td>`; }
+function sourceCell(r, c, chg){
+  if(!r.owners.length || !c.t) return `<td class="srcc${chg}">${nd()}</td>`;
+  const main = r.owner || 0;
+  return `<td class="srcc${chg}">${ownerOrder(r).map(i => { const o = r.owners[i];
+    return `<span class="ol${o.unreliable ? " neg" : ""}">${h(o.source || "")}${i !== main && "value" in o ? ` (${blank(o.value) ? "no figure" : h(fmtV(r, o.value))})` : ""}</span>`; }).join("")}</td>`;
+}
 function updCell(key, iso, c, chg){
   if(editing()) return `<td class="${chg}"><input type="date" class="ci date" data-set="${h(key)}" data-t="date" value="${h(iso || "")}" aria-label="Last updated"></td>`;
   return `<td class="${chg}">${c.t ? `<span class="${c.stale ? "neg" : ""}">${h(c.t)}</span>` : nd()}</td>`;
@@ -721,8 +737,8 @@ function dealInputs(d, r){
 const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
   const d = cur();
-  const cols = kind === "com" ? ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","source","updated"]
-    : ["metric","plan","actual","forecast","varA","varF","reporting","owner","source","updated"];
+  const cols = ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","source","updated"];
+  const W = { metric:21, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, concentration:8.5, reporting:6.5, staffing:6, owner:9.5, source:10, updated:6 };
   const N = cols.length;
   const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
     annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting</th>', staffing:'<th class="c g">Staffing</th>',
@@ -732,7 +748,7 @@ function finTable(el, secs, kind){
     const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
-  let html = `<thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
+  let html = `<colgroup>${cols.map(c => `<col style="width:${W[c]}%">`).join("")}</colgroup><thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
   secs.forEach(sec => {
     const collapsed = !!S.collapsed[sec.id];
     let rows = sec.rows;
@@ -744,9 +760,7 @@ function finTable(el, secs, kind){
     html += `<tr class="sh dimmable"><th colspan="${N}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}${offSel}</div></th></tr>`;
     if(collapsed) return;
     if(sec.pending && !rows.length){ html += `<tr class="dimmable"><td colspan="${N}" class="pend">${h(sec.pending)}</td></tr>`; return; }
-    const expanded = [];
-    rows.forEach(r => { const main = r.owner || 0; expanded.push(r); r.owners.forEach((o, i) => { if(i !== main) expanded.push(Object.assign({}, r, { owner:i, risk:{}, tips:{}, varTip:null, _alt:true })); }); });
-    expanded.forEach(r => {
+    rows.forEach(r => {
       const c = cellData(d, r), ch = changedMap(d, r), C = k => ch[k] || "", o = ownerOf(r);
       const cls = `dimmable${r.child ? " child" : ""}${r.depth === 2 ? " d2" : ""}${r._alt ? " alt" : ""}${o && o.unreliable ? " unrel" : ""}`;
       let tr = `<tr data-row="${h(r.id)}" class="${cls}">`;
@@ -767,7 +781,7 @@ function finTable(el, secs, kind){
     });
   });
   el.innerHTML = html + "</tbody>";
-  el.style.minWidth = kind === "com" ? "1220px" : "1000px";
+  el.style.minWidth = "1120px"; el.classList.add("fixed");
 }
 
 /* ---------- operations ---------- */
@@ -833,7 +847,7 @@ function projNotesOld(p, ed){
 function opsTable(el){
   const d = cur(), ax = axis(d), ed = editing(), now = todayISO();
   const roles = uniq(["Head of Delivery","Head of Product","Head of Sales","Head of Platform","Head of Talent","Finance BP", ...d.operations.map(p => p.owner).filter(Boolean)]);
-  let html = `<thead><tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner</th><th>Last updated</th><th>Deadline</th><th>Status</th><th>Notes</th><th class="fu">Follow up</th>
+  let html = `<colgroup>${[21, 9.5, 7, 8, 8.5, 18, 6.5, 21.5].map(w => `<col style="width:${w}%">`).join("")}</colgroup><thead><tr class="cols dimmable"><th class="sticky">Project / step</th><th>Owner</th><th>Last updated</th><th>Deadline</th><th>Status</th><th>Notes</th><th class="fu">Follow up</th>
     <th><div class="tlh">${ax.months.map(m => `<i style="left:${ax.pct(m)}%"></i><span style="left:${ax.pct(m)}%">${MON[pd(m).m - 1]}${pd(m).m === 1 ? " " + String(pd(m).y).slice(2) : ""}</span>`).join("")}${now >= ax.start && now <= ax.end ? `<span class="td" style="left:${ax.pct(now)}%">Today</span>` : ""}</div></th></tr></thead><tbody>`;
   let lastSec = null;
   d.operations.forEach(p => {
@@ -856,7 +870,7 @@ function opsTable(el){
       <td><span class="sc ${st.k}">${h(st.label)}</span></td>
       <td class="${chg("keyNote").trim()}"${escTip ? ` data-esc="${escTip.esc}" data-cotext="${h(escTip.text)}"` : ""}>${projNotes(p, ed)}</td>
       <td class="fu"><button class="btn xs" data-act="follow" data-ref="proj:${h(p.id)}">Follow up</button></td>
-      <td>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
+      <td${p.sample ? ' class="mockbars" title="Steps are a mock plan"' : ""}>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
     if(!open) return;
     p.stages.forEach((s, i) => {
       const k = `stage:${p.id}:${i}`, ls = lp && lp.stages[i], sc = ed && JSON.stringify(ls) !== JSON.stringify(s) ? " chg" : "";
@@ -866,14 +880,14 @@ function opsTable(el){
       let notes;
       if(ed) notes = `<select class="ssel" data-set="${k}:tag" data-t="text" aria-label="Issue type"><option value="">No tag</option>${TAGS.map(t => `<option${t === s.tag ? " selected" : ""}>${t}</option>`).join("")}</select> <span class="blk" contenteditable="true" data-edit="${k}:blocker" aria-label="Blocker">${h(s.blocker || "")}</span>`;
       else notes = s.blocker ? `<span class="nl">${s.tag ? `<span class="tag red">${h(s.tag)}</span>` : ""}<span class="blk">${h(s.blocker)}</span></span>` : "";
-      html += `<tr class="stage dimmable" data-row="${h(p.id)}">
+      html += `<tr class="stage dimmable${p.sample ? " mock" : ""}" data-row="${h(p.id)}"${p.sample ? ' title="Mock step"' : ""}>
         <td class="sticky${sc}"><span class="sn" ${ed ? `contenteditable="true" data-edit="${k}:name"` : ""}>${h(s.name)}</span></td>
         <td></td><td></td><td class="nt${sc}">${dates}</td><td class="${sc.trim()}">${stt}</td><td class="${sc.trim()}">${notes}</td>
         <td class="fu">${s.blocker ? `<button class="btn xs" data-act="follow" data-ref="blk:${h(p.id)}:${i}">Follow up</button>` : ""}</td><td>${bars(ax, [s], null, false)}</td></tr>`;
     });
   });
   el.innerHTML = html + "</tbody>";
-  el.style.minWidth = "1240px";
+  el.style.minWidth = "1120px"; el.classList.add("fixed");
   $("#tlleg").innerHTML = Object.entries(STAGE).map(([k, l]) => `<span><i class="lsw seg ${k}"></i>${l}</span>`).join("") +
     `<span><i class="lsw" style="width:0;height:12px;border-left:2px solid var(--deep);border-radius:0"></i>Deadline</span><span><i class="lsw" style="width:0;height:12px;border-left:1.5px dashed var(--neg);border-radius:0"></i>Today</span>`;
 }
@@ -969,12 +983,12 @@ function renderDashboard(){
   document.body.classList.toggle("edit", editing());
   renderDraftbar(); renderCards(d); renderIssues();
   finTable($("#tCom"), d.commercial, "com");
-  $("#foot").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:footnote">${h(d.footnote)}</span>` : h(d.footnote);
+  $("#foot").innerHTML = d.footnote ? h(d.footnote) : ""; $("#foot").hidden = !d.footnote;
   finTable($("#tCost"), d.cost, "cost");
   const wis = Object.entries(S.whatIf).filter(([id, x]) => findRow(S.live, id) && x && Object.keys(x).length);
   $("#wif").innerHTML = !editing() && wis.length ? `<span class="wifbar">What-if, not saved: ${wis.map(([id, x]) => `${h(findRow(S.live, id).metric)}${"dv" in x ? ` deal ${blank(x.dv) ? "N/A" : money(x.dv)}` : ""}${"w" in x ? ` at ${blank(x.w) ? "N/A" : x.w + "%"}` : ""}`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
   opsTable($("#tOps"));
-  $("#opsNote").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:opsNote">${h(d.opsNote || "")}</span>` : h(d.opsNote || "");
+  $("#opsNote").innerHTML = d.opsNote ? h(d.opsNote) : ""; $("#opsNote").hidden = !d.opsNote;
   if(keep) setFocus(keep.startsWith("esc") ? "esc" : "iss", +keep.slice(3), false);
 }
 function renderAll(){ renderBar(); renderDashboard(); if(S.modal) renderModal(); }
