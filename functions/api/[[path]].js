@@ -41,10 +41,20 @@ async function issuesState(env, which, data) {
   return { ...c, stale: c.hash !== (await hashOf(data)) };
 }
 
+// Clean up a pasted key: stray spaces, line breaks, quotes or a "Bearer " prefix are common copy-paste leftovers.
+const cleanKey = (env) => String(env.ANTHROPIC_API_KEY || "").replace(/\s+/g, "").replace(/^["']+|["']+$/g, "").replace(/^Bearer/i, "");
+function aiHeaders(env) {
+  const key = cleanKey(env);
+  const h = { "anthropic-version": "2023-06-01", "content-type": "application/json" };
+  if (key.startsWith("sk-ant-oat")) { h.authorization = "Bearer " + key; h["anthropic-beta"] = "oauth-2025-04-20"; } // OAuth-style token
+  else h["x-api-key"] = key;
+  return h;
+}
+
 async function claude(env, system, user, maxTokens) {
   const r = await fetch(env.AI_BASE_URL || "https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    headers: aiHeaders(env),
     body: JSON.stringify({ model: env.AI_MODEL || DEFAULT_MODEL, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] }),
   });
   if (!r.ok) throw new Error(`AI service returned ${r.status}: ${(await r.text()).slice(0, 200)}`);
@@ -102,6 +112,19 @@ export async function onRequest({ request, env, params }) {
     const [draft, ops, history] = await Promise.all([read(env, "draft"), read(env, "ops"), read(env, "history")]);
     const draftIssues = valid(draft) ? await issuesState(env, "draft", draft) : null;
     return J({ me, mail, ai, live, draft, ops, history: histMeta(history, live), issues: { live: liveIssues, draft: draftIssues } });
+  }
+
+  if (path === "ai/check" && method === "GET") {
+    // Diagnostics without revealing the key: what Cloudflare passed in and what the AI service answers.
+    const raw = String(env.ANTHROPIC_API_KEY || ""), key = cleanKey(env);
+    const out = { keyPresent: !!raw, keyLength: key.length, keyStart: key.slice(0, 10), hadSpacesOrQuotes: raw !== key, keyType: key.startsWith("sk-ant-oat") ? "oauth token" : key.startsWith("sk-ant-api") ? "API key" : "unrecognised format", model: env.AI_MODEL || DEFAULT_MODEL, endpoint: env.AI_BASE_URL || "https://api.anthropic.com/v1/messages" };
+    if (!raw) return J({ ...out, result: "No ANTHROPIC_API_KEY reaches the site. Add it under Settings > Variables and Secrets for Production, then redeploy." });
+    try {
+      const r = await fetch(out.endpoint, { method: "POST", headers: aiHeaders(env), body: JSON.stringify({ model: out.model, max_tokens: 5, messages: [{ role: "user", content: "Say ok" }] }) });
+      out.status = r.status; out.answer = (await r.text()).slice(0, 300);
+      out.result = r.ok ? "AI works." : r.status === 401 ? "The AI service rejected the key." : r.status === 404 ? "Key accepted, but the model name wasn't found; set AI_MODEL." : "See status and answer.";
+    } catch (e) { out.result = "Couldn't reach the AI service: " + String(e.message || e); }
+    return J(out);
   }
 
   if (path === "ai/issues" && method === "POST") {
