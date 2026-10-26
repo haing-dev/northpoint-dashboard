@@ -73,7 +73,23 @@ Reply with JSON only, no prose, in this shape:
 Return 3 to 6 issues, most severe first.`;
 
 const EMAIL_SYSTEM = `You draft follow-up emails for the Value Capture Office. The emails go to senior leaders who own figures or projects on the President's dashboard.
-Write plainly and politely, in short paragraphs, with the specific figures given. Say what is needed, from whom, and by when. No filler, no exaggeration, nothing beyond the facts given. Address recipients by first name. Sign off with the sender's name.
+Use exactly this structure, in plain text:
+Dear <first names of the recipients> and <team> team,
+
+Ahead of the next leadership review on <review date>, we would like to flag the following issues:
+(If the topic is a data submission rather than a leadership-review item, adapt this line, for example: "As part of the data collection for the <cut-off> reporting cut-off, we would like to flag the following:")
+
+1. <Issue 1, one line with the key figure>
+   1. <clarification question or point>
+   2. <clarification question or point>
+2. <Issue 2>
+   1. <clarification question or point>
+
+Please let us know your latest update by <reply-by date>. Please reach out to us if there's any question.
+
+Best,
+<sender>
+Rules: one numbered issue per issue given; 1 to 3 short clarification points under each, asking for exactly what is needed; use only the facts and figures given; no filler.
 Reply with JSON only: {"subject":"...","body":"..."} where body is plain text with \\n line breaks.`;
 
 const SUGGEST_SYSTEM = `You keep the wording on the President's dashboard in line with the latest figures, for the Value Capture Office.
@@ -246,6 +262,8 @@ export async function onRequest({ request, env, params }) {
       c.next ? `What is needed: ${c.next}` : "",
       (c.facts || []).length ? `Figures:\n- ${c.facts.join("\n- ")}` : "",
       `Recipients: ${(b.recipients || []).map((r) => [r.name, r.role].filter(Boolean).join(", ")).join("; ") || "data owners"}`,
+      c.owner ? `Data owner role (team): ${c.owner}` : "",
+      String(c.ref || "").startsWith("sub:") ? "This is a data submission follow-up, not a leadership-review item." : "",
       `Sender: ${b.sender || "Value Capture Office"}`,
       `Leadership review: ${b.reviewDate || ""}. Reply needed by: ${b.replyBy || ""}.`,
       b.current ? `Current draft to revise:\nSubject: ${b.current.subject}\n${b.current.body}` : "",

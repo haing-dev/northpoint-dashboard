@@ -965,11 +965,11 @@ function countdown(p){
 }
 function projRisks(p){
   const out = [], kn = p.keyNote || {}, kt = (kn.tag || "").toLowerCase();
-  if(kn.text) out.push({ label: kn.tag || "Issue", st: p.risk[kt] && p.risk[kt] !== "green" ? p.risk[kt] : "red", text: kn.text });
-  ["reporting","staffing"].forEach(c => { const st = p.risk[c]; if(!st || st === "green" || c === kt) return; out.push({ label: cap(c), st, text: (p.tips[c] || {}).text || cap(STATUS[st]) }); });
+  if(kn.text) out.push({ label: kn.tag || "Issue", st: p.risk[kt] && p.risk[kt] !== "green" ? p.risk[kt] : "red", text: kn.text, esc: (p.tips[kt] || {}).esc || null, kind: "status" });
+  ["reporting","staffing"].forEach(c => { const st = p.risk[c]; if(!st || st === "green" || c === kt) return; out.push({ label: cap(c), st, text: (p.tips[c] || {}).text || cap(STATUS[st]), esc: (p.tips[c] || {}).esc || null, kind: "status" }); });
   return out;
 }
-function stageRisks(s){ return s.blocker ? [{ label: s.tag || "Blocker", st: s.status === "blocked" ? "red" : "amber", text: s.blocker }] : []; }
+function stageRisks(s){ return s.blocker ? [{ label: s.tag || "Blocker", st: s.status === "blocked" ? "red" : "amber", text: s.blocker, kind: "status" }] : []; }
 function riskDots(items){ return items.length ? `<span class="xr">${items.map(x => riskDot(x)).join("")}</span>` : ""; }
 function projNotes(p, ed){
   const kn = p.keyNote || {};
@@ -1422,7 +1422,7 @@ function factsFor(d, ids){
     const r = findRow(d, id);
     if(r){ const isCost = d.cost.some(sc => sc.rows.includes(r)), per = r.perMonth ? " a month" : r.annualOf ? " a year" : "";
       const parts = (isCost ? [["plan","plan"],["actual","run rate"]] : [["plan","plan"],["actual","actual"],["forecast","forecast"]]).map(([f, l]) => { const v = val(d, r, f); return blank(v) ? null : `${l} ${fmtV(r, v)}${per}`; }).filter(Boolean), v = variance(d, r);
-      out.push(`${r.metric}: ${parts.join(", ")}${v ? `, ${v.main} vs plan` : ""}`); return; }
+      out.push(`${r.metric}: ${parts.join(", ")}${v && v.pct ? `, ${Math.abs(v.pct)}% ${(r.better === "lower" ? v.pct > 0 : v.pct < 0) ? (v.pct < 0 ? "below" : "above") : (v.pct < 0 ? "below" : "above")} plan` : ""}`); return; }
     const p = findProj(d, id);
     if(p){ const cd = countdown(p), bl = p.stages.filter(s => s.blocker).map(s => s.blocker);
       out.push(`${p.name}: deadline ${fmtLong(p.deadline)}${cd ? ` (${cd.t})` : ""}${p.kpi ? `, ${p.kpi.label.toLowerCase()} ${p.kpi.actual} of ${p.kpi.plan}` : ""}${bl.length ? `; blockers: ${bl.join("; ")}` : ""}${p.owner ? "" : "; no owner"}`); }
@@ -1454,8 +1454,8 @@ function refContext(ref){
     const v = variance(d, r), shown = fmtV(r, val(d, r, r.field)), plan = fmtV(r, val(d, r, "plan")), o = ownerOf(r);
     const notes = COLS.filter(([c]) => r.risk[c] && r.risk[c] !== "green").map(([c, l]) => `${l}: ${(r.tips[c] || {}).text || STATUS[r.risk[c]]}`);
     const rec = r.owners.map(x => (x.unreliable || r.ownerWarn) ? ownerRec(r, x) : "").filter(Boolean);
-    return { ref, owner: ownerRole(r), label: r.metric, issue: `${r.metric} is ${shown ? shown + (r.perMonth ? " a month" : r.annualOf ? " a year" : "") : "not reported"}${plan ? ` against a plan of ${plan}` : ""}${v ? ` (${v.main} vs plan)` : ""}.`,
-      impact: rec.length ? rec.join(" ") : "", next: `Confirm the latest figure${o ? ` from ${o.source}` : ""} and what will close any gap to plan`, facts: factsFor(d, [r.id]) };
+    return { ref, owner: ownerRole(r), label: r.metric, issue: `${r.metric} is ${shown ? shown + (r.perMonth ? " a month" : r.annualOf ? " a year" : "") : "not reported"}${plan ? ` against a plan of ${plan}` : ""}${v && v.pct ? `, ${Math.abs(v.pct)}% ${v.pct < 0 ? "below" : "above"} plan` : ""}.`,
+      impact: "", rec: rec.join(" "), next: `Confirm the latest figure${o ? ` from ${o.source}` : ""} and what will close any gap to plan`, facts: factsFor(d, [r.id]) };
   }
   if(ref.startsWith("iss")){
     const it = currentIssues().items[+ref.slice(3)]; if(!it) return null;
@@ -1495,20 +1495,45 @@ function ctxRisks(d, ref){
 }
 function ctxOf(m){
   const pk = (m.ctx.risks || []).filter((x, i) => m.pick.has(i));
-  return Object.assign({}, m.ctx, { issue: m.ctx.issue + (pk.length ? `\n\nIssues to address:\n${pk.map(x => `- ${x.label}: ${x.text}`).join("\n")}` : "") });
+  return Object.assign({}, m.ctx, { base: m.ctx.issue, picked: pk, issue: m.ctx.issue + (pk.length ? `\n\nIssues to address:\n${pk.map(x => `- ${x.label}: ${x.text}`).join("\n")}` : "") });
+}
+const teamOf = role => { const r = String(role || "").replace(/^(Head|Director|VP|Chief) of /i, "").replace(/\s+BP$/i, "").trim(); return /^staff$/i.test(r) ? "" : r; };
+function askFor(x){
+  const l = String(x.label).toLowerCase(), tx = String(x.text || "").toLowerCase();
+  if(tx.includes("no owner") || tx.includes("owner to confirm")) return ["Who owns this, and when can they confirm the timeline?"];
+  if(x.kind === "status" && (l.includes("reporting") || l.includes("blocker"))) return ["What is the latest status, and on what date was it taken?", "When is the next update due?"];
+  if(l.includes("concentration")) return ["What share of the pipeline does this deal represent today?", "Is there a plan to reduce the dependency on a single deal?"];
+  if(l.includes("staffing")) return ["How many people are in place versus needed, and by when?", "What is the plan and timing to close the gap?"];
+  if(l.includes("overspend")) return ["What is driving the cost above plan?", "What actions will bring it back to plan, and by when?"];
+  if(l.includes("ownership")) return ["Who owns this, and can they confirm the date?"];
+  if(l.includes("funding")) return ["When is the funding decision expected, and who makes it?"];
+  if(l.includes("submission")) return ["Please send the data with its source and the date it was taken."];
+  if(l.includes("reporting")) return ["Can you confirm the latest figure and its source?", "When was it last updated, and when is the next update due?"];
+  return ["What is the latest status, and when do you expect it to be resolved?"];
 }
 function templateDraft(ctx, keys){
-  const st = S.ops.settings, names = keys.map(k => (S.ops.directory[k] || {}).name).filter(Boolean).map(n => n.split(" ")[0]);
-  const greet = !names.length ? "all" : names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
-  const body = `Hi ${greet},\n\nAhead of the leadership review on ${fmtDow(st.reviewDate)}, the President's dashboard flags this:\n\n${ctx.issue}${ctx.impact ? `\n\nWhy it matters: ${ctx.impact}` : ""}${ctx.facts.length ? `\n\nWhere the numbers stand:\n${ctx.facts.map(f => "- " + f).join("\n")}` : ""}\n\n${ctx.next ? `What we need: ${ctx.next.replace(/\.$/, "")}.` : "Could you confirm the correct figures and who owns them?"} Please reply by ${fmtDow(st.replyBy)}.\n\nThanks,\n${st.senderName}`;
-  return { subject: `Follow-up: ${ctx.label} (reply by ${fmtDow(st.replyBy)})`, body };
+  const st = S.ops.settings, people = keys.map(k => S.ops.directory[k]).filter(Boolean);
+  const names = people.map(p => p.name.split(" ")[0]);
+  const team = teamOf(ctx.owner) || (people[0] ? teamOf(people[0].title) : "");
+  const nm = !names.length ? "" : names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+  const greet = `Dear ${nm ? nm + (team ? ` and ${team} team` : "") : (team ? `${team} team` : "all")},`;
+  const isData = String(ctx.ref || "").startsWith("sub:");
+  const intro = isData ? `As part of the data collection for the ${fmtLong(cur().meta.asOf)} reporting cut-off, we would like to flag the following:` : `Ahead of the next leadership review on ${fmtDow(st.reviewDate)}, we would like to flag the following issues:`;
+  const issues = [];
+  const first = [ctx.impact ? `Why it matters: ${ctx.impact.replace(/\.$/, "")}.` : "", ctx.rec || "", ...(ctx.facts || []).map(f => `Where it stands: ${f}.`), ctx.next ? `${ctx.next.replace(/\.$/, "")}?`.replace(/^(\w)/, c => c.toUpperCase()).replace(/\?$/, ".") : ""].filter(Boolean);
+  issues.push({ t: (ctx.base || ctx.issue).replace(/\.$/, ""), b: first.slice(0, 3) });
+  (ctx.picked || []).forEach(x => issues.push({ t: `${x.label}: ${x.text}`, b: askFor(x) }));
+  const list = issues.map((it, i) => `${i + 1}. ${it.t}${it.b.map((q, j) => `\n   ${j + 1}. ${q}`).join("")}`).join("\n");
+  const body = `${greet}\n\n${intro}\n\n${list}\n\nPlease let us know your latest update by ${fmtDow(st.replyBy)}. Please reach out to us if there's any question.\n\nBest,\n${st.senderName}`;
+  return { subject: `Follow-up: ${ctx.label} (update by ${fmtDow(st.replyBy)})`, body };
 }
 function openModal(ref){
   const ctx = refContext(ref); if(!ctx) return;
   ctx.risks = ctxRisks(cur(), ref);
-  const pick = new Set(ctx.risks.map((x, i) => x.st === "red" || x.st === "amber" ? i : -1).filter(i => i >= 0));
+  const escN = /^esc\d/.test(ref) ? +ref.slice(3) : null, hasEsc = escN != null && ctx.risks.some(x => x.esc === escN);
+  const pick = new Set(ctx.risks.map((x, i) => (hasEsc ? x.esc === escN : x.st === "red" || x.st === "amber") ? i : -1).filter(i => i >= 0));
   const t = templateDraft(ctxOf({ ctx, pick }), []);
-  const sel = new Set(Object.keys(S.ops.directory).filter(k => ctx.owner && (S.ops.directory[k].title || "").toLowerCase() === ctx.owner.toLowerCase()));
+  const sel = new Set(Object.keys(S.ops.directory).filter(k => { const t = (S.ops.directory[k].title || "").toLowerCase(), o = String(ctx.owner || "").toLowerCase(); return o && (t === o || (teamOf(t) && teamOf(t).toLowerCase() === teamOf(o).toLowerCase())); }));
   if(sel.size){ const t2 = templateDraft(ctxOf({ ctx, pick }), [...sel]); t.subject = t2.subject; t.body = t2.body; }
   S.modal = { ctx, pick, cc: new Set(), ccOpen: false, sel, subject: t.subject, body: t.body, edited: false, src: "template", busy: false, confirm: false, toOpen: false, contacts: false };
   renderModal();
@@ -1563,7 +1588,7 @@ async function aiDraft(){
   m.busy = true;
   try{
     const st = S.ops.settings;
-    const res = await api("ai/email", { method:"POST", body: JSON.stringify({ context: ctxOf(m), recipients: recips().map(r => ({ name:r.name })), sender: st.senderName, replyBy: fmtDow(st.replyBy), reviewDate: fmtDow(st.reviewDate) }) });
+    const res = await api("ai/email", { method:"POST", body: JSON.stringify({ context: ctxOf(m), recipients: recips().map(r => ({ name:r.name, role:r.title || "" })), sender: st.senderName, replyBy: fmtDow(st.replyBy), reviewDate: fmtDow(st.reviewDate) }) });
     if(S.modal !== m) return;
     if(!m.edited){ m.subject = res.subject; m.body = res.body; m.src = "ai"; }
   }catch(err){ /* keep the template draft */ }
