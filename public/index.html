@@ -74,6 +74,15 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .kv>span:first-child{font:700 11px/1.7 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--grey-text)}
 .kv .b{font-weight:700}
 .cf{padding-top:14px;align-self:start;cursor:default}
+#hlwrap{margin-bottom:4px}
+.hlc{background:var(--ok-bg);border-left:4px solid var(--dot-green, #2E8540);padding:16px}
+.hlc .ct{margin-bottom:2px}
+.cb.ok{background:var(--ok-fg)}
+.hlg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.hlg .kv{grid-template-columns:minmax(0,1fr);gap:2px}
+.ttl{color:var(--grey-text);font-weight:400}
+.tog.rt{padding:0 4px 0 0;margin-left:-2px}
+tr.ph td.sticky .m{color:var(--grey-text)}
 .cfr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .fus{display:inline-flex;align-items:center;gap:5px;font-size:12px}
 .fus.bad{color:var(--neg);font-weight:700}.fus.ok{color:var(--ok-fg)}
@@ -214,10 +223,13 @@ tr.unrel td{color:var(--neg)}
 tr.unrel td .sub{color:var(--neg)}
 .mw{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dg{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-.mn{display:inline-flex;align-items:center;white-space:nowrap}
-.wsel{font:12px var(--sans);padding:2px 4px;border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink)}
+.mn{display:inline-flex;align-items:center}
+.mn .dtick + .m{padding-left:0}
+.child .mn .dtick{margin-left:4px}
+.tr td.fu{padding-left:2px;padding-right:2px}
+.wsel{font:12px var(--sans);padding:2px 1px;width:52px;border:1px solid var(--rule-strong);border-radius:2px;background:#fff;color:var(--ink)}
 .dealin{display:inline-flex;align-items:center;gap:1px;font-size:12px;color:var(--grey-text);border:1px solid var(--rule-strong);border-radius:2px;padding:1px 5px;background:#fff}
-.dealin .ci{width:34px;border:0;font-weight:400;text-align:right;padding:1px 0}
+.dealin .ci{width:28px;border:0;font-weight:400;text-align:right;padding:1px 0}
 .dealin.wif,.wsel.wif{border-color:var(--dot-amber);background:var(--chg)}
 .dot.nd{cursor:default}
 .wsel.wif{border-color:var(--dot-amber);background:var(--chg)}
@@ -295,7 +307,7 @@ textarea.in{resize:vertical;line-height:1.5}
 .ddm .lnk{margin:6px 10px}
 .mf{padding:12px 20px;border-top:1px solid var(--rule);display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
 
-@media (max-width:1100px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} .il{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:1100px){ .hlg{grid-template-columns:minmax(0,1fr);gap:4px} .cards{grid-template-columns:repeat(2,minmax(0,1fr))} .il{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:700px){
   .bar,.page{padding-left:0;padding-right:0}
   .cards{grid-template-columns:minmax(0,1fr)}
@@ -319,6 +331,7 @@ textarea.in{resize:vertical;line-height:1.5}
   <header class="dimmable" id="hdr">
     <div class="kicker" id="kicker"></div>
   </header>
+  <div id="hlwrap" class="dimmable"><div class="lbl">What's going well</div><section id="hl" aria-label="What's going well"></section></div>
   <div class="lbl dimmable">Escalations to the President</div>
   <section class="cards" id="cards" aria-label="Escalations to the President"></section>
   <section class="issues dimmable" id="issues" aria-label="Other issues"></section>
@@ -354,12 +367,18 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 8, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 9, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Platform BU Leadership Dashboard",
     title: "Q3 bookings are 32% short, the pipeline beat rests on one deal, and we can't staff that deal"
   },
+  highlights: [
+    { id: 1, title: "PIPELINE AHEAD OF PLAN",
+      good: "Q4 2026–Q1 2027 booking pipeline is $245M weighted, 17% above the $210M plan",
+      risk: "NorthPoint is $98M (40%) of it and can't be staffed yet; Other deals ($147M) have no deal value or weight specified",
+      next: "Push NorthPoint with Head of Delivery; push Other deals with Head of Sales" }
+  ],
   escalations: [
     { id: 1, title: "NORTHPOINT EXECUTION RISK",
       issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
@@ -401,13 +420,22 @@ const DATA = {
     ]}
   ],
   cost: [
-    { id: "cloud", name: "Cloud (Platform, monthly run-rate)", rows: [
-      { id: "cloud", metric: "Cloud run-rate (per month)", perMonth: true, plan: 1.1, field: "actual", better: "lower",
+    { id: "cost-m", name: "Monthly", rows: [
+      { id: "cloud", metric: "Platform Cloud Cost", perMonth: true, plan: 1.1, field: "actual", better: "lower", toggle: true,
         owners: [ { role: "Head of Platform", source: "Cloud billing", value: 1.4 } ], owner: 0,
         risk: { reporting: "green" }, tips: { reporting: { text: "From cloud billing, 30 Sep" } }, updated: "2026-09-30" },
-      { id: "cloud-unit", metric: "Cost per active account (per month)", child: true, parent: "cloud", fmt: "unit", plan: 0.04, field: "actual", better: "lower",
+      { id: "cloud-unit", metric: "Cost per active account", child: true, parent: "cloud", fmt: "unit", plan: 0.04, field: "actual", better: "lower",
         owners: [ { role: "Head of Platform", source: "Deal model: 2026 estimate + 20% cloud premium", value: 0.048 } ], owner: 0,
-        risk: { reporting: "amber" }, tips: { reporting: { text: "Unit cost from the deal model, not yet confirmed by billing" } }, updated: "2026-09-30" }
+        risk: { reporting: "amber" }, tips: { reporting: { text: "Unit cost from the deal model, not yet confirmed by billing" } }, updated: "2026-09-30" },
+      { id: "env", metric: "Platform Environment Cost", placeholder: true },
+      { id: "lic", metric: "Third Party Software Licensing Cost", placeholder: true },
+      { id: "cse", metric: "Client Support Engineer Cost", placeholder: true }
+    ]},
+    { id: "cost-a", name: "Annual", rows: [
+      { id: "cloud-a", metric: "Platform Cloud Cost", annualOf: "cloud", field: "actual", better: "lower" },
+      { id: "env-a", metric: "Platform Environment Cost", placeholder: true },
+      { id: "lic-a", metric: "Third Party Software Licensing Cost", placeholder: true },
+      { id: "cse-a", metric: "Client Support Engineer Cost", placeholder: true }
     ]}
   ],
   operations: [
@@ -454,10 +482,13 @@ const DATA = {
 
 /* Follow-up contacts and settings. Emails are placeholders until you edit them in the To list. */
 const OPS_DEFAULT = {
-  dirV: 2,
+  dirV: 3,
   directory: {
-    "Balazs Nagy":    { name: "Balazs Nagy",    email: "balazs.nagy@northpoint.example" },
-    "Piotr Diazdosz": { name: "Piotr Diazdosz", email: "piotr.diazdosz@northpoint.example" }
+    "Balazs Nagy":      { name: "Balazs Nagy",      title: "Chief of Staff",   email: "balazs.nagy@northpoint.example" },
+    "Piotr Dziadosz":   { name: "Piotr Dziadosz",   title: "Director of Ops",  email: "piotr.dziadosz@northpoint.example" },
+    "Zain Shaikh":      { name: "Zain Shaikh",      title: "Head of Sales",    email: "zain.shaikh@northpoint.example" },
+    "Al Karim Somji":   { name: "Al Karim Somji",   title: "President",        email: "alkarim.somji@northpoint.example" },
+    "Dominic Varrasso": { name: "Dominic Varrasso", title: "Finance",          email: "dominic.varrasso@northpoint.example" }
   },
   settings: { senderName: "Programme Management Office", senderEmail: "pmo@northpoint.example", cc: "", replyBy: "2026-10-28", reviewDate: "2026-10-30" },
   outbox: []
@@ -519,6 +550,7 @@ function normalize(d){
   d.operations = (d.operations || []).map(normProj);
   d.meta = Object.assign({ asOf:null, currency:"USD" }, d.meta || {});
   d.costModel = d.costModel || null;
+  d.highlights = d.highlights || [];
   if(d.opsNote == null) d.opsNote = "";
   return d;
 }
@@ -534,6 +566,8 @@ function wOf(d, row){ const x = wi(d, row); return x && "w" in x ? x.w : row.wei
 function dvOf(d, row){ const x = wi(d, row); return x && "dv" in x ? x.dv : row.dealValue; }
 function offOf(d, row){ const x = wi(d, row); return x && "off" in x ? !!x.off : !!row.off; }
 function val(d, row, f){
+  if(row.placeholder) return null;
+  if(row.annualOf){ const s = findRow(d, row.annualOf), v = s ? val(d, s, f) : null; return blank(v) ? null : Math.round(v * 12 * 100) / 100; }
   if(row.model) return modelVal(d, row, f);
   if(row.derive){ const a = findRow(d, row.derive.num), b = findRow(d, row.derive.den); if(!a || !b) return null; const x = val(d, a, f), y = val(d, b, f); return blank(x) || blank(y) || !+y ? null : x / y; }
   const w = wOf(d, row), dv = dvOf(d, row);
@@ -645,7 +679,7 @@ function covered(d, id, name, col, parent){
 function ruleIssues(d){
   const out = [], rb = fmtDow(S.ops.settings.replyBy);
   allRows(d).forEach(r => {
-    if(r.model || r.derive) return;
+    if(r.model || r.derive || r.placeholder || r.annualOf) return;
     const reasons = []; let sev = "medium", topic = r.fmt === "count" ? "Talent" : "Data reporting", impact = "";
     const shown = fmtV(r, val(d, r, r.field));
     const vals = r.owners.filter(x => "value" in x && !blank(x.value)), empty = r.owners.filter(x => "value" in x && blank(x.value));
@@ -711,7 +745,7 @@ function valCell(d, r, f, chg){
   if(editing()){
     if(r.model){
       if(f === "plan" && r.model.key) return `<td class="num${chg}">${numInput(`cm:${r.model.key}`, d.costModel[r.model.key], "plain")}</td>`;
-    } else if(!r.derive){
+    } else if(!r.derive && !r.annualOf && !r.placeholder){
       if(f === "plan" && !r._alt && !(r.child && r.fmt === "usd" && r.parent)) return `<td class="num${chg}">${numInput(`row:${r.id}:plan`, r.plan, "plain")}</td>`;
       if(f === r.field){
         const o = ownerOf(r);
@@ -771,16 +805,17 @@ function dealInputs(d, r){
 const VAR_HEAD = { varA:'<th class="r g">Actual</th>', varF:'<th class="r g">Forecast</th>' };
 function finTable(el, secs, kind){
   const d = cur();
-  const cols = ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","source","updated"];
-  const W = { metric:21, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, concentration:8.5, reporting:6.5, staffing:6, owner:9.5, source:10, updated:6 };
+  const cols = ["metric","plan","actual","forecast","varA","varF","concentration","reporting","staffing","owner","source","updated","fu"];
+  const W = { metric:19, plan:6.5, actual:6.5, forecast:6.5, varA:6.5, varF:6.5, concentration:7, reporting:6.5, staffing:6, owner:9, source:9, updated:5, fu:6 };
+  const cost = kind === "cost";
   const N = cols.length;
   const head = Object.assign({ metric:'<th class="sticky">Metric</th>', plan:'<th class="r">Plan</th>', actual:'<th class="r">Actual</th>', forecast:'<th class="r">Forecast</th>',
     annual:'<th class="r g">A year at this rate</th>', concentration:'<th class="c g">Concentration</th>', reporting:'<th class="c g">Reporting quality</th>', staffing:'<th class="c g">Staffing</th>',
-    owner:"<th>Data owner</th>", source:"<th>Data source</th>", updated:"<th>Last updated</th>" }, VAR_HEAD);
-  if(kind === "cost"){ head.concentration = "<th></th>"; head.staffing = "<th></th>"; }
+    owner:"<th>Data owner</th>", source:"<th>Data source</th>", updated:"<th>Last updated</th>", fu:'<th class="fu c">Follow up</th>' }, VAR_HEAD);
+  if(cost) Object.assign(head, { actual:'<th class="r">Current</th>', forecast:'<th class="r">Run rate</th>', varA:'<th class="r g">Run rate</th>', varF:"<th></th>", concentration:"<th></th>", staffing:"<th></th>" });
   const grp = [];
   cols.forEach(c => {
-    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : kind !== "cost" && ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
+    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : !cost && ["concentration","reporting","staffing"].includes(c) ? "RISK ASSESSMENT" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
   let html = `<colgroup>${cols.map(c => `<col style="width:${W[c]}%">`).join("")}</colgroup><thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
@@ -788,8 +823,9 @@ function finTable(el, secs, kind){
     const collapsed = !!S.collapsed[sec.id];
     let rows = sec.rows;
     if(sec.timeframe && S.tf !== "all") rows = rows.filter(r => r.period === S.tf);
+    rows = rows.filter(r => !(r.parent && S.collapsed["r:" + r.parent]));
     let summary = "";
-    if(collapsed && rows.length) summary = `<span class="csum">${rows.filter(r => !r.child).map(r => { const c = cellData(d, r), v = c.varA.main ? c.varA : c.varF; return `${h(r.metric)}: <b>${h(c[r.field].t || "—")}</b>${v.main ? ` <span class="${v.adverse ? "neg" : ""}">${h(v.main)}</span>` : ""} ${r.risk.reporting && r.risk.reporting !== "green" ? `<i class="dot ${r.risk.reporting}"></i>` : ""}`; }).join(" · ")}</span>`;
+    if(collapsed && rows.length) summary = `<span class="csum">${rows.filter(r => !r.child && !r.placeholder).map(r => { const c = cellData(d, r), v = c.varA.main ? c.varA : c.varF; return `${h(r.metric)}: <b>${h(c[r.field].t || "—")}</b>${v.main ? ` <span class="${v.adverse ? "neg" : ""}">${h(v.main)}</span>` : ""} ${r.risk.reporting && r.risk.reporting !== "green" ? `<i class="dot ${r.risk.reporting}"></i>` : ""}`; }).join(" · ")}</span>`;
     const tfSel = sec.timeframe ? `<label class="csum">Period <select class="tf" data-act="tf" aria-label="Booking period">${Object.entries(TF).map(([k, l]) => `<option value="${k}"${S.tf === k ? " selected" : ""}>${h(l)}</option>`).join("")}</select></label>` : "";
     const offSel = sec.offerSelect ? `<label class="csum">Margin for <select class="tf" data-act="offer" aria-label="Offer">${Object.entries(d.costModel.offers).map(([k, o]) => `<option value="${k}"${S.offer === k ? " selected" : ""}>${h(o.name)}</option>`).join("")}</select></label>` : "";
     html += `<tr class="sh dimmable"><th colspan="${N}"><div class="shi"><button class="tog" data-act="sec" data-sec="${h(sec.id)}" aria-expanded="${!collapsed}"><span class="cv">▾</span>${h(sec.name)}</button>${summary}${tfSel}${offSel}</div></th></tr>`;
@@ -797,14 +833,21 @@ function finTable(el, secs, kind){
     if(sec.pending && !rows.length){ html += `<tr class="dimmable"><td colspan="${N}" class="pend">${h(sec.pending)}</td></tr>`; return; }
     rows.forEach(r => {
       const c = cellData(d, r), ch = changedMap(d, r), C = k => ch[k] || "", o = ownerOf(r);
-      const cls = `dimmable${r.weighted && offOf(d, r) ? " off" : ""}${r.child ? " child" : ""}${r.depth === 2 ? " d2" : ""}${r._alt ? " alt" : ""}${o && o.unreliable ? " unrel" : ""}`;
+      const cls = `dimmable${r.placeholder ? " ph" : ""}${r.toggle ? " par" : ""}${r.weighted && offOf(d, r) ? " off" : ""}${r.child ? " child" : ""}${r.depth === 2 ? " d2" : ""}${r._alt ? " alt" : ""}${o && o.unreliable ? " unrel" : ""}`;
       let tr = `<tr data-row="${h(r.id)}" class="${cls}">`;
       cols.forEach(k => {
         if(k === "metric"){
           const nm = editing() && !r._alt && !r.model ? `<span class="m" contenteditable="true" data-edit="row:${h(r.id)}:metric">${h(r.metric)}</span>` : `<span class="m">${h(r.metric)}</span>`;
           const tick = r.weighted && !r._alt ? `<input type="checkbox" class="dtick${wi(d, r) && "off" in wi(d, r) ? " wif" : ""}" data-act="dealon" data-rid="${h(r.id)}"${offOf(d, r) ? "" : " checked"} aria-label="Include ${h(r.metric)} in the pipeline" title="Include in pipeline">` : "";
-          tr += `<td class="sticky${C("metric")}${C("inc")}"><span class="mw"><span class="mn">${tick}${nm}</span>${r.weighted && !r._alt ? dealInputs(d, r) : ""}</span></td>`;
+          const kids = r.toggle && allRows(d).some(x => x.parent === r.id), rc = !!S.collapsed["r:" + r.id];
+          const rt = kids ? `<button class="tog rt" data-act="rowtog" data-rid="${h(r.id)}" aria-expanded="${!rc}" aria-label="Show or hide the rows under ${h(r.metric)}"><span class="cv">▾</span></button>` : "";
+          tr += `<td class="sticky${C("metric")}${C("inc")}"><span class="mw"><span class="mn">${rt}${tick}${nm}</span>${r.weighted && !r._alt ? dealInputs(d, r) : ""}</span></td>`;
         }
+        else if(k === "fu") tr += `<td class="fu ctr">${r._alt ? "" : `<button class="btn xs" data-act="follow" data-ref="row:${h(r.id)}">Follow up</button>`}</td>`;
+        else if(r.placeholder || (r.annualOf && !["plan","forecast","varA"].includes(k))) tr += "<td></td>";
+        else if(cost && k === "actual") tr += "<td></td>";
+        else if(cost && k === "forecast") tr += valCell(d, r, "actual", C("actual"));
+        else if(cost && k === "varF") tr += "<td></td>";
         else if(k === "plan" || k === "actual" || k === "forecast") tr += valCell(d, r, k, C(k));
         else if(k === "varA" || k === "varF") tr += varCell(c[k], C(k));
         else if(k === "annual") tr += `<td class="num${C("annual")}">${c.annual.t ? `<span class="b${c.annual.adverse ? " neg" : ""}">${h(c.annual.t)}</span><span class="sub">vs plan</span>` : na()}</td>`;
@@ -939,10 +982,10 @@ function replyState(m){
   return todayISO() > m.replyBy ? { k:"bad", t:`Reply overdue since ${fmtDow(m.replyBy)}` } : { k:"warn", t:`Awaiting reply · due ${fmtDow(m.replyBy)}` };
 }
 const DELIV = { sent:"Sent", simulated:"Logged, not delivered", logged:"Logged, not delivered", failed:"Failed" };
-function fuBlock(id){
-  const list = S.ops.outbox.filter(m => m.ref === "esc" + id), open = !!S.fuOpen[id], last = list[0];
+function fuBlock(ref){
+  const id = ref, list = S.ops.outbox.filter(m => m.ref === ref), open = !!S.fuOpen[id], last = list[0];
   const rs = last ? replyState(last) : null;
-  let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="esc${id}">Follow up</button>`;
+  let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="${ref}">Follow up</button>`;
   html += last ? `<span class="fus ${rs.k}"><i class="dot ${rs.k === "ok" ? "green" : rs.k === "bad" ? "red" : "amber"}"></i>${h(toNames(last))} · ${h(rs.t)}</span>` : `<span class="muted">No follow-up yet</span>`;
   if(list.length) html += `<button class="lnk fut" data-act="fuhist" data-id="${id}" aria-expanded="${open}">History (${list.length}) ${open ? "▲" : "▼"}</button>`;
   html += `</div>`;
@@ -951,6 +994,16 @@ function fuBlock(id){
       <div class="fuh2">${h(m.subject || "")}</div>
       <div class="fuh3"><span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${m.replied ? `<button class="lnk" data-act="fureply" data-mid="${h(m.id)}" data-v="0">Undo</button>` : `<button class="btn xs" data-act="fureply" data-mid="${h(m.id)}" data-v="1">Mark replied</button>`}</div></li>`; }).join("")}</ol>`;
   return html + `</div>`;
+}
+function renderHighlights(d){
+  const ed = editing(), E = (path, txt, cls = "") => ed ? `<span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>` : `<span class="${cls}">${h(txt)}</span>`;
+  $("#hlwrap").hidden = !d.highlights.length;
+  $("#hl").innerHTML = d.highlights.map((g, i) => `<article class="hlc">
+    <div class="ct"><span class="cb ok">✓</span>${E(`highlights.${i}.title`, g.title)}</div>
+    <div class="hlg"><div class="kv"><span>Highlight</span>${E(`highlights.${i}.good`, g.good, "b")}</div>
+      <div class="kv"><span>Risk</span>${E(`highlights.${i}.risk`, g.risk)}</div>
+      <div class="kv"><span>Next step</span>${E(`highlights.${i}.next`, g.next)}</div></div>
+    ${fuBlock("hl" + g.id)}</article>`).join("");
 }
 function renderCards(d){
   const ed = editing();
@@ -962,7 +1015,7 @@ function renderCards(d){
       <div class="kv"><span>Issue</span>${E(`escalations.${i}.issue`, e.issue, "b")}</div>
       <div class="kv"><span>Impact</span>${E(`escalations.${i}.impact`, e.impact)}</div>
       <div class="kv"><span>Next step</span>${E(`escalations.${i}.next`, e.next)}</div>
-      ${fuBlock(e.id)}</article>`;
+      ${fuBlock("esc" + e.id)}</article>`;
   }).join("");
 }
 function currentIssues(){
@@ -990,6 +1043,7 @@ function renderIssues(){
 function diffList(a, b){
   const out = [], T = (l, x, y) => { if(JSON.stringify(x ?? "") !== JSON.stringify(y ?? "")) out.push(l); };
   T("Title", a.header.title, b.header.title); T("Kicker", a.header.kicker, b.header.kicker); T("Footnote", a.footnote, b.footnote);
+  (b.highlights || []).forEach((g, i) => ["title","good","risk","next"].forEach(k => T(`Highlight ${g.id} ${k === "next" ? "next step" : k === "good" ? "highlight" : k}`, ((a.highlights || [])[i] || {})[k], g[k])));
   b.escalations.forEach((e, i) => ["title","issue","impact","next"].forEach(k => T(`Card ${e.id} ${k === "next" ? "next step" : k}`, (a.escalations[i] || {})[k], e[k])));
   allRows(b).forEach(r => { const o = findRow(a, r.id); if(!o){ out.push(r.metric); return; } const ca = cellData(a, o), cb = cellData(b, r);
     Object.keys(cb).forEach(k => { if(cellText(ca[k]) !== cellText(cb[k])) out.push(`${r.metric}: ${k === "var" ? "vs plan" : k === "deal" ? "deal value" : k === "annual" ? "a year at this rate" : k === "inc" ? "in pipeline" : k}`); }); });
@@ -1038,7 +1092,7 @@ function renderDashboard(){
   hideTip(); clearFocus(true);
   $("#kicker").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:header.kicker">${h(d.header.kicker)}</span>` : h(d.header.kicker);
   document.body.classList.toggle("edit", editing());
-  renderDraftbar(); renderCards(d); renderIssues();
+  renderDraftbar(); renderHighlights(d); renderCards(d); renderIssues();
   finTable($("#tCom"), d.commercial, "com");
   $("#foot").innerHTML = d.footnote ? h(d.footnote) : ""; $("#foot").hidden = !d.footnote;
   finTable($("#tCost"), d.cost, "cost");
@@ -1193,7 +1247,8 @@ function factsFor(d, ids){
   const out = [];
   ids.forEach(id => {
     const r = findRow(d, id);
-    if(r){ const parts = ["plan","actual","forecast"].map(f => { const v = val(d, r, f); return blank(v) ? null : `${f} ${fmtV(r, v)}`; }).filter(Boolean), v = variance(d, r);
+    if(r){ const isCost = d.cost.some(sc => sc.rows.includes(r)), per = r.perMonth ? " a month" : r.annualOf ? " a year" : "";
+      const parts = (isCost ? [["plan","plan"],["actual","run rate"]] : [["plan","plan"],["actual","actual"],["forecast","forecast"]]).map(([f, l]) => { const v = val(d, r, f); return blank(v) ? null : `${l} ${fmtV(r, v)}${per}`; }).filter(Boolean), v = variance(d, r);
       out.push(`${r.metric}: ${parts.join(", ")}${v ? `, ${v.main} vs plan` : ""}`); return; }
     const p = findProj(d, id);
     if(p){ const cd = countdown(p), bl = p.stages.filter(s => s.blocker).map(s => s.blocker);
@@ -1206,6 +1261,19 @@ function refContext(ref){
   if(ref.startsWith("esc")){
     const e = d.escalations.find(x => "esc" + x.id === ref); if(!e) return null;
     return { ref, label:`Escalation ${e.id}: ${titleCase(e.title)}`, issue:e.issue, impact:e.impact, next:e.next, facts: factsFor(d, linkedRows(e.id)) };
+  }
+  if(ref.startsWith("hl")){
+    const g = d.highlights.find(x => "hl" + x.id === ref); if(!g) return null;
+    return { ref, label: titleCase(g.title), issue: g.good, impact: g.risk ? `Risk: ${g.risk}` : "", next: g.next, facts: factsFor(d, ["pipe","np","other"].filter(id => findRow(d, id))) };
+  }
+  if(ref.startsWith("row:")){
+    const r = findRow(d, ref.slice(4)); if(!r) return null;
+    if(r.placeholder) return { ref, label: r.metric, issue: `${r.metric} has no figures on the dashboard yet.`, impact: "We can't see the full cost base without it.", next: "Send the monthly plan and current run rate, with the data owner and source", facts: [] };
+    const v = variance(d, r), shown = fmtV(r, val(d, r, r.field)), plan = fmtV(r, val(d, r, "plan")), o = ownerOf(r);
+    const notes = COLS.filter(([c]) => r.risk[c] && r.risk[c] !== "green").map(([c, l]) => `${l}: ${(r.tips[c] || {}).text || STATUS[r.risk[c]]}`);
+    const rec = r.owners.map(x => (x.unreliable || r.ownerWarn) ? ownerRec(r, x) : "").filter(Boolean);
+    return { ref, label: r.metric, issue: `${r.metric} is ${shown ? shown + (r.perMonth ? " a month" : r.annualOf ? " a year" : "") : "not reported"}${plan ? ` against a plan of ${plan}` : ""}${v ? ` (${v.main} vs plan)` : ""}.${notes.length ? " " + notes.join(". ") + "." : ""}`,
+      impact: rec.length ? rec.join(" ") : "", next: `Confirm the latest figure${o ? ` from ${o.source}` : ""} and what will close any gap to plan`, facts: factsFor(d, [r.id]) };
   }
   if(ref.startsWith("iss")){
     const it = currentIssues().items[+ref.slice(3)]; if(!it) return null;
@@ -1244,8 +1312,8 @@ function renderModal(){
   el.innerHTML = `<div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mT">
     <div class="mh"><h3 id="mT">Follow up: ${h(m.ctx.label)}</h3><span class="sp"></span><button class="lnk" data-act="mclose">Close</button></div>
     <div class="mb">
-      <div class="fr"><span>To</span><div class="dd"><button class="ddb" id="mTo" data-act="mto" aria-expanded="${m.toOpen}">${rc.length ? h(rc.map(p => p.name).join(", ")) : '<span class="ph">Select recipients</span>'}</button>
-        ${m.toOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-rc="${h(k)}" ${m.sel.has(k) ? "checked" : ""}>${h(p.name)}<small>${h(p.email)}</small></label>`).join("")}
+      <div class="fr"><span>To</span><div class="dd"><button class="ddb" id="mTo" data-act="mto" aria-expanded="${m.toOpen}">${rc.length ? h(rc.map(p => p.name + (p.title ? ` (${p.title})` : "")).join(", ")) : '<span class="ph">Select recipients</span>'}</button>
+        ${m.toOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-rc="${h(k)}" ${m.sel.has(k) ? "checked" : ""}>${h(p.name)}${p.title ? ` <span class="ttl">(${h(p.title)})</span>` : ""}<small>${h(p.email)}</small></label>`).join("")}
           ${m.contacts ? Object.entries(dir).map(([k, p]) => `<div class="ce"><input class="in" data-c="${h(k)}" data-cf="name" value="${h(p.name)}" aria-label="Name"><input class="in" type="email" data-c="${h(k)}" data-cf="email" value="${h(p.email)}" aria-label="Email"></div>`).join("") : ""}
           <button class="lnk" data-act="mcontacts">${m.contacts ? "Done" : "Edit emails"}</button></div>` : ""}</div></div>
       <div class="fr"><span>CC</span><input class="in" id="mCc" value="${h(st.cc || "")}" placeholder="Optional"></div>
@@ -1288,7 +1356,7 @@ async function sendModal(){
   const email = { to: rc.map(r => r.email), cc: st.cc, subject: m.subject, body: m.body };
   let res = { status:"simulated" };
   if(S.mode === "server"){ try{ res = (await api("send", { method:"POST", body: JSON.stringify({ emails:[email], fromName: st.senderName, replyTo: st.senderEmail }) })).results[0]; }catch(e){ toast("Not sent: " + e.message); return; } }
-  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "", replyBy: st.replyBy || null });
+  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name}${r.title ? ` (${r.title})` : ""} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "", replyBy: st.replyBy || null });
   saveOps(); closeModal(); renderDashboard();
   toast(res.status === "sent" ? `Sent to ${rc.map(r => r.name).join(" and ")}.` : res.status === "failed" ? "Sending failed: " + (res.error || "unknown error") : "Logged. Nothing was delivered because email isn't connected yet.");
 }
@@ -1326,6 +1394,7 @@ document.addEventListener("click", async e => {
     case "issues": S.issuesOpen = !S.issuesOpen; savePrefs(); if(S.focus && S.focus.startsWith("iss")) clearFocus(); renderIssues(); break;
     case "ai-refresh": maybeAI(S.view === "draft" ? "draft" : "live", true); break;
     case "follow": openModal(a.dataset.ref); break;
+    case "rowtog": { const k = "r:" + a.dataset.rid; S.collapsed[k] = !S.collapsed[k]; savePrefs(); renderDashboard(); break; }
     case "fuhist": S.fuOpen[a.dataset.id] = !S.fuOpen[a.dataset.id]; renderCards(cur()); break;
     case "fureply": { const m2 = S.ops.outbox.find(x => x.id === a.dataset.mid); if(m2){ if(a.dataset.v === "1") m2.replied = { at: new Date().toISOString() }; else delete m2.replied; saveOps(); renderCards(cur()); } break; }
     case "pub": S.pubConfirm = true; renderDraftbar(); break;
@@ -1402,7 +1471,8 @@ function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = fals
 /* ---------- boot ---------- */
 function mergeOps(o){
   const d = clone(OPS_DEFAULT); if(!o) return d;
-  return { dirV: 2, directory: o.dirV === 2 && o.directory ? o.directory : d.directory, settings: Object.assign(d.settings, o.settings || {}, o.dirV === 2 ? {} : { cc: "" }), outbox: o.outbox || [] };
+  const same = o.dirV === d.dirV;
+  return { dirV: d.dirV, directory: same && o.directory ? o.directory : d.directory, settings: Object.assign(d.settings, o.settings || {}, same ? {} : { cc: "" }), outbox: o.outbox || [] };
 }
 function valid(x){ return !!(x && x.commercial && x.operations); }
 async function boot(){
@@ -1416,7 +1486,7 @@ async function boot(){
     if((!valid(st.live) || (st.live.schema || 0) < DATA.schema) && S.me.admin) Object.assign(st, await api("init", { method:"POST", body: JSON.stringify({ live: normalize(DATA), draft: normalize(DATA), ops: mergeOps(st.ops) }) }));
     if(!valid(st.live)) throw new Error("No published data yet.");
     S.live = normalize(st.live); S.draft = normalize(valid(st.draft) ? st.draft : st.live); S.ops = mergeOps(st.ops); S.issues = st.issues || S.issues; S.history = st.history || [];
-    if(st.ops && st.ops.dirV !== 2 && S.me.admin) saveOps();
+    if(st.ops && st.ops.dirV !== OPS_DEFAULT.dirV && S.me.admin) saveOps();
     renderAll();
     maybeAI("live");
   }catch(e){ if(S.mode !== "server"){ S.mode = "demo"; S.me = { admin:true, email:"", setup:false }; } renderBar(); }
