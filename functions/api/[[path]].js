@@ -122,7 +122,7 @@ export async function onRequest({ request, env, params }) {
     try {
       const r = await fetch(out.endpoint, { method: "POST", headers: aiHeaders(env), body: JSON.stringify({ model: out.model, max_tokens: 5, messages: [{ role: "user", content: "Say ok" }] }) });
       out.status = r.status; out.answer = (await r.text()).slice(0, 300);
-      out.result = r.ok ? "AI works." : r.status === 401 ? "The AI service rejected the key." : r.status === 404 ? "Key accepted, but the model name wasn't found; set AI_MODEL." : "See status and answer.";
+      out.result = r.ok ? "AI works." : r.status === 401 ? "The AI service rejected the key." : r.status === 404 ? "Key accepted, but the model name wasn't found; set AI_MODEL." : r.status === 429 ? (out.keyType === "oauth token" ? "Key accepted, but requests are refused (429). This is a sign-in token for a Claude account, not an API key; use an API key (sk-ant-api…) instead." : "Key accepted, but the rate limit is reached (429); try again later or raise the limit.") : "See status and answer.";
     } catch (e) { out.result = "Couldn't reach the AI service: " + String(e.message || e); }
     return J(out);
   }
