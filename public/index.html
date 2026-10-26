@@ -75,6 +75,14 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .kv .b{font-weight:700}
 .cf{padding-top:14px;align-self:start;cursor:default}
 #hlwrap{margin-bottom:4px}
+.subs{margin:18px 0 6px}
+.subh{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:8px}
+.subh .tog{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase}
+.warnt{color:var(--warn-fg);font-weight:700}
+.subt td{padding-top:7px;padding-bottom:7px}
+.aiw{display:block}.aix{display:block;margin-top:2px;font-size:10px;font-weight:400}
+.aist{font-size:12px;color:var(--grey-text)}
+.ce1{padding:6px 10px}
 .hlc{background:var(--ok-bg);border-left:4px solid var(--dot-green, #2E8540);padding:16px;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
 .hlc:hover,.hlc:focus-visible{transform:translateY(-3px);box-shadow:0 14px 30px rgba(5,28,44,.16),0 0 0 1px rgba(29,98,50,.35)}
 .hlc.lit{outline:2px solid var(--ok-fg)}
@@ -343,6 +351,7 @@ textarea.in{resize:vertical;line-height:1.5}
   <header class="dimmable" id="hdr">
     <div class="kicker" id="kicker"></div>
   </header>
+  <section class="subs dimmable" id="subs" aria-label="Data submissions"></section>
   <div id="hlwrap"><div class="lbl dimmable">On Track</div><section id="hl" aria-label="On Track"></section></div>
   <div class="lbl dimmable">Escalations to the President</div>
   <section class="cards" id="cards" aria-label="Escalations to the President"></section>
@@ -495,7 +504,7 @@ const DATA = {
 
 /* Follow-up contacts and settings. Emails are placeholders until you edit them in the To list. */
 const OPS_DEFAULT = {
-  dirV: 3,
+  dirV: 4,
   directory: {
     "Balazs Nagy":      { name: "Balazs Nagy",      title: "Chief of Staff",   email: "balazs.nagy@northpoint.example" },
     "Piotr Dziadosz":   { name: "Piotr Dziadosz",   title: "Director of Ops",  email: "piotr.dziadosz@northpoint.example" },
@@ -503,7 +512,7 @@ const OPS_DEFAULT = {
     "Al Karim Somji":   { name: "Al Karim Somji",   title: "President",        email: "alkarim.somji@northpoint.example" },
     "Dominic Varrasso": { name: "Dominic Varrasso", title: "Finance",          email: "dominic.varrasso@northpoint.example" }
   },
-  settings: { senderName: "Programme Management Office", senderEmail: "pmo@northpoint.example", cc: "", replyBy: "2026-10-28", reviewDate: "2026-10-30" },
+  settings: { senderName: "Value Capture Office", senderEmail: "vco@northpoint.example", cc: "", replyBy: "2026-10-28", reviewDate: "2026-10-30" },
   outbox: []
 };
 
@@ -564,6 +573,7 @@ function normalize(d){
   d.meta = Object.assign({ asOf:null, currency:"USD" }, d.meta || {});
   d.costModel = d.costModel || null;
   d.highlights = d.highlights || [];
+  d.manual = d.manual || {};
   if(d.opsNote == null) d.opsNote = "";
   return d;
 }
@@ -1021,6 +1031,100 @@ function opsTable(el){
     `<span><i class="lsw" style="width:0;height:12px;border-left:2px solid var(--deep);border-radius:0"></i>Deadline</span><span><i class="lsw" style="width:0;height:12px;border-left:1.5px dashed var(--neg);border-radius:0"></i>Today</span>`;
 }
 
+/* ---------- suggested draft text (AI when connected, otherwise worked out from the figures) ---------- */
+const AI_KEYS = d => [
+  ...d.highlights.flatMap((g, i) => ["good","risk","next"].map(k => `d:highlights.${i}.${k}`)),
+  ...d.escalations.flatMap((e, i) => ["issue","impact","next"].map(k => `d:escalations.${i}.${k}`)),
+  ...d.operations.filter(p => p.keyNote).map(p => `proj:${p.id}:keyNote.text`)];
+function getVal(d, key){ const ps = key.split(":"); if(ps[0] === "d") return getP(d, ps[1]); if(ps[0] === "proj"){ const p = findProj(d, ps[1]); return p ? getP(p, ps.slice(2).join(":")) : undefined; } }
+function ruleSuggest(d){
+  const out = {}, P = x => Math.abs(Math.round(x));
+  const pipe = findRow(d, "pipe"), np = findRow(d, "np"), oth = findRow(d, "other"), q3 = findRow(d, "book-q3"), npx = findProj(d, "npexec"), hires = findProj(d, "hires");
+  const pf = pipe ? val(d, pipe, "forecast") : null, pp = pipe ? val(d, pipe, "plan") : null;
+  const npOn = np && !offOf(d, np), nv = npOn ? val(d, np, "forecast") : null, share = !blank(nv) && +pf ? Math.round(nv / pf * 100) : null;
+  const hi = d.highlights.findIndex(g => (g.rows || []).includes("pipe"));
+  if(hi >= 0 && !blank(pf) && +pp){
+    const per = ((pipe.metric.match(/^(.*?)\s+Booking/i) || [])[1] || "Booking").replace(/(\d{4})-(Q\d)/, "$1–$2"), v = (pf - pp) / pp * 100;
+    out[`d:highlights.${hi}.good`] = v >= 0 ? `${per} weighted booking pipeline of ${money(pf)} exceeds ${money(pp)} plan by ${P(v)}%` : `${per} weighted booking pipeline of ${money(pf)} is ${P(v)}% below ${money(pp)} plan`;
+    const parts = [];
+    if(share != null) parts.push(`NorthPoint accounts for ${money(nv)} (${share}%) of weighted pipeline${np.risk.staffing && np.risk.staffing !== "green" ? " but is at risk of understaffing for client deployed engineers" : ""}`);
+    if(oth && !offOf(d, oth) && (blank(oth.dealValue) || blank(oth.weight))){ const ov = val(d, oth, "forecast"); if(!blank(ov)) parts.push(`other deals (${money(ov)}) lack defined value or weighting`); }
+    if(parts.length) out[`d:highlights.${hi}.risk`] = parts.join("; ");
+  }
+  const qi = d.escalations.findIndex(e => /booking/i.test(e.title));
+  if(qi >= 0 && q3){ const a = val(d, q3, "actual"), p = val(d, q3, "plan");
+    if(!blank(a) && +p){ const diff = r1(a - p), pc = P(diff / p * 100); out[`d:escalations.${qi}.issue`] = diff < 0 ? `Q3 bookings are ${pc}% (${money(-diff)}) below plan` : `Q3 bookings are ${pc}% (${money(diff)}) above plan`; } }
+  const ni = d.escalations.findIndex(e => e.jump === "np" || /northpoint/i.test(e.title));
+  if(ni >= 0){
+    if(npx && npx.kpi && +npx.kpi.plan) out[`d:escalations.${ni}.issue`] = +npx.kpi.actual < +npx.kpi.plan ? `NorthPoint project is at risk of understaffing, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1/27` : `NorthPoint project is fully staffed, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1/27`;
+    if(share != null) out[`d:escalations.${ni}.impact`] = `NorthPoint failure would jeopardize ${share}% of pipeline`;
+  }
+  if(npx && npx.kpi && npx.keyNote) out[`proj:npexec:keyNote.text`] = `${npx.kpi.actual}/${npx.kpi.plan} engineers available for Jan 2027 execution`;
+  if(hires && hires.kpi && hires.keyNote){ const a = +hires.kpi.actual, p = +hires.kpi.plan; out[`proj:hires:keyNote.text`] = a < p ? `${a} of ${p} hires made, ${p - a} behind plan` : `${a} of ${p} hires made, on plan`; }
+  return out;
+}
+function applySuggest(map, src){
+  let n = 0; const man = S.draft.manual || (S.draft.manual = {});
+  Object.entries(map).forEach(([k, v]) => { if(!v || man[k]) return; const cur0 = getVal(S.draft, k); if(cur0 === undefined || cur0 === v) return; setVal(k, v); n++; });
+  if(n || !S.draft.aiMeta || src === "ai") S.draft.aiMeta = { src, at: new Date().toISOString() };
+  return n;
+}
+let sugT = null, aiSugT = null;
+function scheduleSuggest(){ clearTimeout(sugT); sugT = setTimeout(() => suggestNow(false), 700); }
+function suggestNow(force){
+  if(!S.draft || !S.me.admin) return;
+  const n = applySuggest(ruleSuggest(S.draft), S.draft.aiMeta && S.draft.aiMeta.src === "ai" ? "ai" : "rules");
+  if(n){ renderDashboard(); renderBar(); saveDraft(); }
+  if(S.mode === "server" && S.ai.enabled){ clearTimeout(aiSugT); aiSugT = setTimeout(() => aiSuggest(force), force ? 0 : 4000); }
+  else renderDraftbar();
+}
+async function aiSuggest(force){
+  S.sugBusy = true; renderDraftbar();
+  try{
+    const res = await api("ai/draft", { method:"POST", body: JSON.stringify({ draft: S.draft, force: !!force }) });
+    const map = {};
+    (res.highlights || []).forEach(g => { const i = S.draft.highlights.findIndex(x => x.id === g.id); if(i >= 0) ["good","risk","next"].forEach(k => { if(g[k]) map[`d:highlights.${i}.${k}`] = g[k]; }); });
+    (res.escalations || []).forEach(e => { const i = S.draft.escalations.findIndex(x => x.id === e.id); if(i >= 0) ["issue","impact","next"].forEach(k => { if(e[k]) map[`d:escalations.${i}.${k}`] = e[k]; }); });
+    (res.keyNotes || []).forEach(x => { if(findProj(S.draft, x.id) && x.text) map[`proj:${x.id}:keyNote.text`] = x.text; });
+    const n = applySuggest(map, "ai");
+    if(n){ renderDashboard(); renderBar(); saveDraft(); }
+    S.sugErr = "";
+  }catch(e){ S.sugErr = e.message; }
+  S.sugBusy = false; renderDraftbar();
+}
+
+/* ---------- data submissions tracker ---------- */
+function dirPerson(role){ const p = Object.values(S.ops.directory || {}).find(x => x.title && role && x.title.toLowerCase() === role.toLowerCase()); return p || null; }
+function submissions(d){
+  const due = d.meta.asOf, out = [];
+  [...d.commercial, ...d.cost].forEach(sec => sec.rows.forEach(r => {
+    if(r.annualOf || r.rollup || r.model || r.derive || (r.placeholder && sec.id === "cost-a")) return;
+    if(r.placeholder){ out.push({ key:r.id, rid:r.id, type:r.metric, owner:"", source:"", updated:null, risk:null, tip:"" }); return; }
+    r.owners.forEach((o, i) => out.push({ key:`${r.id}:${i}`, rid:r.id, type: r.metric + (r.weighted ? " pipeline" : "") + (r.owners.length > 1 ? ` (${o.source})` : ""), owner:o.role, source:o.source || "", updated:r.updated,
+      risk: o.unreliable ? "red" : r.risk.reporting, tip: o.unreliable ? `${o.source} is marked unreliable` : (r.tips.reporting || {}).text || "" }));
+  }));
+  d.operations.forEach(p => out.push({ key:"p:" + p.id, pid:p.id, type:`${p.name} status`, owner:p.owner, source:p.source || "", updated:p.updated, risk:p.risk.reporting, tip:(p.tips.reporting || {}).text || "" }));
+  out.forEach(x => { x.st = !x.updated ? "missing" : due && x.updated < due ? "late" : "ok"; });
+  return out;
+}
+const SUBST = { ok:["done","Submitted"], late:["late","Late"], missing:["blocked","Not submitted"] };
+function renderSubs(d){
+  const L = submissions(d), open = !S.collapsed.subs, c = k => L.filter(x => x.st === k).length;
+  let html = `<div class="subh"><button class="tog" data-act="sec" data-sec="subs" aria-expanded="${open}"><span class="cv">▾</span>Data submissions</button>
+    <span class="csum">Due ${h(fmtDate(d.meta.asOf) || "")} · <b>${c("ok")} of ${L.length}</b> submitted${c("late") ? ` · <span class="warnt">${c("late")} late</span>` : ""}${c("missing") ? ` · <span class="neg">${c("missing")} not submitted</span>` : ""}</span></div>`;
+  if(open) html += `<div class="tw"><table class="tr fixed subt"><colgroup>${[27, 17, 17, 9, 11, 8, 11].map(w => `<col style="width:${w}%">`).join("")}</colgroup>
+    <thead><tr class="cols"><th>Data</th><th>Owner</th><th>Source</th><th>Last updated</th><th class="c">Status</th><th class="c">Risk</th><th class="fu c">Follow up</th></tr></thead><tbody>${L.map(x => {
+      const pr = dirPerson(x.owner), st = SUBST[x.st];
+      return `<tr data-sub="${h(x.key)}"><td>${h(x.type)}</td>
+        <td>${x.owner ? `${h(x.owner)}${pr ? `<span class="sub">${h(pr.name)}</span>` : ""}` : '<span class="neg b">None</span>'}</td>
+        <td>${x.source ? h(x.source) : nd()}</td>
+        <td>${x.updated ? `<span class="${x.st === "late" ? "neg" : ""}">${h(fmtDate(x.updated))}</span>` : nd()}</td>
+        <td class="ctr"><span class="sc ${st[0]}">${st[1]}</span></td>
+        <td class="ctr">${riskDot({ label:"Reporting quality", st: x.risk || "nodata", text: x.tip || (x.risk ? cap(STATUS[x.risk]) : "No data") })}</td>
+        <td class="fu ctr"><button class="btn xs" data-act="follow" data-ref="sub:${h(x.key)}">Follow up</button></td></tr>`; }).join("")}</tbody></table></div>`;
+  $("#subs").innerHTML = html;
+}
+
 /* ---------- cards + issues ---------- */
 function lastFollow(ref){ return S.ops.outbox.find(m => m.ref === ref); }
 const toNames = m => (m.to || []).map(x => String(x).replace(/\s*<.*>$/, "")).join(", ");
@@ -1044,7 +1148,7 @@ function fuBlock(ref){
   return html + `</div>`;
 }
 function renderHighlights(d){
-  const ed = editing(), E = (path, txt, cls = "") => ed ? `<span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>` : `<span class="${cls}">${h(txt)}</span>`;
+  const ed = editing(), E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" title="Your edit is kept when the figures change. Click to go back to the suggested text.">Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
   $("#hlwrap").hidden = !d.highlights.length;
   $("#hl").innerHTML = d.highlights.map((g, i) => `<article class="hlc dimmable${S.focus === "hl" + g.id ? " lit" : ""}" tabindex="0" role="button" data-hl="${g.id}" aria-label="${h(titleCase(g.title))}. Show in the tables">
     <div class="ct"><span class="cb ok">✓</span>${E(`highlights.${i}.title`, g.title)}</div>
@@ -1055,7 +1159,7 @@ function renderHighlights(d){
 }
 function renderCards(d){
   const ed = editing();
-  const E = (path, txt, cls = "") => ed ? `<span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>` : `<span class="${cls}">${h(txt)}</span>`;
+  const E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" title="Your edit is kept when the figures change. Click to go back to the suggested text.">Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
   $("#cards").innerHTML = d.escalations.map((e, i) => {
     const lf = lastFollow("esc" + e.id), lit = S.focus === "esc" + e.id;
     return `<article class="card dimmable${lit ? " lit" : ""}" tabindex="0" role="button" aria-pressed="${lit}" data-card="${e.id}" aria-label="Escalation ${e.id}: ${h(titleCase(e.title))}. Show in the tables">
@@ -1109,7 +1213,7 @@ function renderBar(){
   const chip = `<i class="dot green"></i>Live v${L.version} · published ${h(fmtLong(L.publishedAt))}`;
   let html = `<span class="brand">NorthPoint · Q3 tracker</span>${S.me.admin ? `<button class="chip" data-act="versions" aria-expanded="${S.vmenu}" title="Earlier versions">${chip} ▾</button>` : `<span class="chip">${chip}</span>`}`;
   if(S.mode === "demo") html += `<span class="chip">Preview: changes stay in this browser</span>`;
-  else if(S.me.setup) html += `<span class="chip warn">Access: anyone with the link</span>`;
+  else if(S.me.setup) html += `<span class="chip">Access: link + password</span>`;
   html += `<span class="sp"></span>`;
   if(S.me.admin) html += `<div class="segv" role="group" aria-label="Version shown"><button data-act="view" data-v="live" aria-pressed="${S.view === "live"}">Live</button><button data-act="view" data-v="draft" aria-pressed="${S.view === "draft"}">Draft${n ? ` · ${n}` : ""}</button></div>`;
   $("#bar").innerHTML = html;
@@ -1127,7 +1231,10 @@ function renderDraftbar(){
   const el = $("#draftbar");
   if(!editing()){ el.innerHTML = ""; return; }
   const ch = diffList(S.live, S.draft);
-  let html = `<div class="draftbar"><b>Editing the draft.</b><span>Click a figure, owner, date, dot or tag to change it. Titles and card text are editable too.</span><span class="sp"></span><span class="save" id="saveSt"></span>
+  const am = S.draft.aiMeta, nMan = Object.keys(S.draft.manual || {}).filter(k => AI_KEYS(S.draft).includes(k)).length;
+  const sug = S.sugBusy ? "AI is updating the text…" : S.mode === "server" && S.ai.enabled ? (S.sugErr ? "AI text update failed; text follows the figures" : `Text suggested by AI${am && am.src === "ai" ? ` · ${ago(am.at)}` : ""}`) : "Text updates with the figures (AI not connected)";
+  let html = `<div class="draftbar"><b>Editing the draft.</b><span>Change any figure, owner, date, dot or tag; card text updates to match. Text you edit yourself is kept.</span><span class="sp"></span>
+    <span class="aist">${h(sug)}${nMan ? ` · ${nMan} kept as you edited` : ""} <button class="lnk" data-act="suggest">Refresh text</button></span><span class="save" id="saveSt"></span>
     <span><b id="chgN">${ch.length}</b> change${ch.length === 1 ? "" : "s"} vs live</span>`;
   if(S.discardConfirm) html += `<button class="btn sm primary" data-act="discard-go">Discard all changes</button><button class="btn sm ghost" data-act="cancel">Cancel</button>`;
   else if(S.pubConfirm) html += `<button class="btn sm primary" data-act="pub-go">Confirm: publish to the President</button><button class="btn sm ghost" data-act="cancel">Cancel</button>`;
@@ -1140,7 +1247,7 @@ function renderDashboard(){
   hideTip(); clearFocus(true);
   $("#kicker").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:header.kicker">${h(d.header.kicker)}</span>` : h(d.header.kicker);
   document.body.classList.toggle("edit", editing());
-  renderDraftbar(); renderHighlights(d); renderCards(d); renderIssues();
+  renderDraftbar(); renderSubs(d); renderHighlights(d); renderCards(d); renderIssues();
   finTable($("#tCom"), d.commercial, "com");
   $("#foot").innerHTML = d.footnote ? h(d.footnote) : ""; $("#foot").hidden = !d.footnote;
   finTable($("#tCost"), d.cost, "cost");
@@ -1239,7 +1346,7 @@ function setVal(key, v){
 }
 document.addEventListener("input", e => {
   const el = e.target;
-  if(el.isContentEditable && el.dataset.edit){ setVal(el.dataset.edit, el.innerText.replace(/\s+/g, " ").trim()); dirty(false); return; }
+  if(el.isContentEditable && el.dataset.edit){ setVal(el.dataset.edit, el.innerText.replace(/\s+/g, " ").trim()); if(S.draft){ S.draft.manual = S.draft.manual || {}; S.draft.manual[el.dataset.edit] = true; } dirty(false); return; }
   if(el.closest("#pop")) return onPopInput(el);
   if(el.closest("#modal")) return onModalInput(el);
 });
@@ -1322,13 +1429,22 @@ function refContext(ref){
     const g = d.highlights.find(x => "hl" + x.id === ref); if(!g) return null;
     return { ref, label: titleCase(g.title), issue: g.good, impact: g.risk ? `Risk: ${g.risk}` : "", next: g.next, facts: factsFor(d, ["pipe","np","other"].filter(id => findRow(d, id))) };
   }
+  if(ref.startsWith("sub:")){
+    const x = submissions(d).find(s => "sub:" + s.key === ref); if(!x) return null;
+    const due = fmtLong(d.meta.asOf);
+    return { ref, owner: x.owner, label: `${x.type} data`,
+      issue: x.st === "missing" ? `We haven't received ${x.type} data${x.source ? ` from ${x.source}` : ""} for the ${due} cut-off.` : x.st === "late" ? `The latest ${x.type} data we have is from ${fmtLong(x.updated)}, before the ${due} cut-off.` : `${x.type} data was received on ${fmtLong(x.updated)}.`,
+      impact: x.owner ? "" : "No one is named as the owner of this data.",
+      next: x.st === "ok" ? "Confirm the figure and its source" : "Send the updated figures with their source and the date they were taken",
+      facts: factsFor(d, [x.rid || x.pid].filter(Boolean)) };
+  }
   if(ref.startsWith("row:")){
     const r = findRow(d, ref.slice(4)); if(!r) return null;
     if(r.placeholder) return { ref, label: r.metric, issue: `${r.metric} has no figures on the dashboard yet.`, impact: "We can't see the full cost base without it.", next: "Send the monthly plan and current run rate, with the data owner and source", facts: [] };
     const v = variance(d, r), shown = fmtV(r, val(d, r, r.field)), plan = fmtV(r, val(d, r, "plan")), o = ownerOf(r);
     const notes = COLS.filter(([c]) => r.risk[c] && r.risk[c] !== "green").map(([c, l]) => `${l}: ${(r.tips[c] || {}).text || STATUS[r.risk[c]]}`);
     const rec = r.owners.map(x => (x.unreliable || r.ownerWarn) ? ownerRec(r, x) : "").filter(Boolean);
-    return { ref, label: r.metric, issue: `${r.metric} is ${shown ? shown + (r.perMonth ? " a month" : r.annualOf ? " a year" : "") : "not reported"}${plan ? ` against a plan of ${plan}` : ""}${v ? ` (${v.main} vs plan)` : ""}.`,
+    return { ref, owner: ownerRole(r), label: r.metric, issue: `${r.metric} is ${shown ? shown + (r.perMonth ? " a month" : r.annualOf ? " a year" : "") : "not reported"}${plan ? ` against a plan of ${plan}` : ""}${v ? ` (${v.main} vs plan)` : ""}.`,
       impact: rec.length ? rec.join(" ") : "", next: `Confirm the latest figure${o ? ` from ${o.source}` : ""} and what will close any gap to plan`, facts: factsFor(d, [r.id]) };
   }
   if(ref.startsWith("iss")){
@@ -1339,7 +1455,7 @@ function refContext(ref){
     const [, pid, si] = ref.split(":"), p = findProj(d, pid); if(!p) return null;
     const s = si != null ? p.stages[+si] : null, cd = countdown(p);
     const notes = ["reporting","staffing"].filter(c => p.risk[c] && p.risk[c] !== "green").map(c => `${cap(c)}: ${(p.tips[c] || {}).text || STATUS[p.risk[c]]}`);
-    return { ref, label: s ? `${p.name}: ${s.name}` : p.name,
+    return { ref, owner: p.owner, label: s ? `${p.name}: ${s.name}` : p.name,
       issue: s ? `${s.tag ? s.tag + " blocker: " : ""}${s.blocker} (${s.name}, due ${fmtLong(s.end || s.start)}).` : `${p.name} is ${projStatus(p).label.toLowerCase()}${p.owner ? "" : " and has no owner"}.`,
       impact: p.deadline ? `The ${fmtLong(p.deadline)} deadline${cd ? ` (${cd.t})` : ""} is at risk.` : "",
       next: s ? `Clear the blocker or give a new date for ${s.name}.` : "Send an updated plan with an owner and a date for each step.", facts: factsFor(d, [p.id]) };
@@ -1351,6 +1467,9 @@ function rowRisks(d, r, prefix){
   return riskSlots(d, r, cost).filter(x => x.st !== "nodata" || !cost || x.key !== "overspend").map(x => ({ st: x.st, label: (prefix ? r.metric + " · " : "") + x.label, text: x.text, esc: x.esc }));
 }
 function ctxRisks(d, ref){
+  if(ref.startsWith("sub:")){ const x = submissions(d).find(s => "sub:" + s.key === ref); if(!x) return [];
+    const out = []; if(x.st !== "ok") out.push({ st: x.st === "missing" ? "red" : "amber", label: "Submission", text: x.st === "missing" ? "Not submitted" : `Late; last update ${fmtDate(x.updated)}` });
+    out.push({ st: x.risk || "nodata", label: "Reporting quality", text: x.tip || (x.risk ? cap(STATUS[x.risk]) : "No data") }); return out; }
   if(ref.startsWith("row:")){ const r = findRow(d, ref.slice(4)); return r ? rowRisks(d, r) : []; }
   if(ref.startsWith("blk:")){ const [, pid, si] = ref.split(":"), p = findProj(d, pid), s = p && p.stages[+si]; return s ? stageRisks(s) : []; }
   if(ref.startsWith("proj:")){ const p = findProj(d, ref.slice(5)); if(!p) return [];
@@ -1379,11 +1498,15 @@ function openModal(ref){
   ctx.risks = ctxRisks(cur(), ref);
   const pick = new Set(ctx.risks.map((x, i) => x.st === "red" || x.st === "amber" ? i : -1).filter(i => i >= 0));
   const t = templateDraft(ctxOf({ ctx, pick }), []);
-  S.modal = { ctx, pick, sel: new Set(), subject: t.subject, body: t.body, edited: false, src: "template", busy: false, confirm: false, toOpen: false, contacts: false };
+  const sel = new Set(Object.keys(S.ops.directory).filter(k => ctx.owner && (S.ops.directory[k].title || "").toLowerCase() === ctx.owner.toLowerCase()));
+  if(sel.size){ const t2 = templateDraft(ctxOf({ ctx, pick }), [...sel]); t.subject = t2.subject; t.body = t2.body; }
+  S.modal = { ctx, pick, cc: new Set(), ccOpen: false, sel, subject: t.subject, body: t.body, edited: false, src: "template", busy: false, confirm: false, toOpen: false, contacts: false };
   renderModal();
   if(S.ai.enabled) aiDraft();
 }
 function closeModal(){ S.modal = null; $("#modal").hidden = true; $("#modal").innerHTML = ""; }
+function ccLabel(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).name).filter(Boolean), ...(S.ops.settings.cc ? [S.ops.settings.cc] : [])].join(", "); }
+function ccEmails(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).email).filter(Boolean), ...String(S.ops.settings.cc || "").split(/[\s,;]+/).filter(Boolean)]; }
 function recips(){ return [...S.modal.sel].map(k => S.ops.directory[k]).filter(p => p && p.email); }
 function renderModal(){
   const m = S.modal, el = $("#modal"); if(!m){ el.hidden = true; return; }
@@ -1397,7 +1520,9 @@ function renderModal(){
           ${m.contacts ? Object.entries(dir).map(([k, p]) => `<div class="ce"><input class="in" data-c="${h(k)}" data-cf="name" value="${h(p.name)}" aria-label="Name"><input class="in" type="email" data-c="${h(k)}" data-cf="email" value="${h(p.email)}" aria-label="Email"></div>`).join("") : ""}
           <button class="lnk" data-act="mcontacts">${m.contacts ? "Done" : "Edit emails"}</button></div>` : ""}</div></div>
       ${(m.ctx.risks || []).length ? `<div class="fr fr-top"><span>Issues</span><div class="rkl">${m.ctx.risks.map((x, i) => `<label class="rk"><input type="checkbox" data-rk="${i}" ${m.pick.has(i) ? "checked" : ""}><i class="dot ${x.st === "nodata" ? "nodata nd" : x.st}"></i><span><b>${h(x.label)}</b>: ${h(x.text)}</span></label>`).join("")}</div></div>` : ""}
-      <div class="fr"><span>CC</span><input class="in" id="mCc" value="${h(st.cc || "")}" placeholder="Optional"></div>
+      <div class="fr"><span>CC</span><div class="dd"><button class="ddb" id="mCcB" data-act="mcc" aria-expanded="${m.ccOpen}">${ccLabel(m) ? h(ccLabel(m)) : '<span class="ph">Optional</span>'}</button>
+        ${m.ccOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-ccp="${h(k)}" ${m.cc.has(k) ? "checked" : ""}>${h(p.name)}${p.title ? ` <span class="ttl">(${h(p.title)})</span>` : ""}<small>${h(p.email)}</small></label>`).join("")}
+          <div class="ce1"><input class="in" id="mCc" value="${h(st.cc || "")}" placeholder="Other emails, comma separated"></div></div>` : ""}</div></div>
       <div class="fr"><span>Reply by</span><input class="in" id="mReply" type="date" value="${h(st.replyBy)}" style="max-width:200px"></div>
       <div class="fr"><span>Subject</span><input class="in" id="mSubject" value="${h(m.subject)}"></div>
       <textarea class="in" id="mBody" rows="15" aria-label="Message" ${m.busy ? 'aria-busy="true"' : ""}>${h(m.body)}</textarea>
@@ -1418,6 +1543,7 @@ function retemplate(){ const m = S.modal; if(!m.edited && m.src === "template"){
 function onModalChange(el){
   const m = S.modal; if(!m) return;
   if(el.dataset.rc){ el.checked ? m.sel.add(el.dataset.rc) : m.sel.delete(el.dataset.rc); retemplate(); renderModal(); }
+  else if(el.dataset.ccp){ el.checked ? m.cc.add(el.dataset.ccp) : m.cc.delete(el.dataset.ccp); renderModal(); }
   else if(el.dataset.rk){ const i = +el.dataset.rk; el.checked ? m.pick.add(i) : m.pick.delete(i); if(m.src === "ai" && !m.edited){ m.src = "template"; retemplate(); renderModal(); aiDraft(); } else { retemplate(); renderModal(); } }
   else if(el.id === "mReply"){ S.ops.settings.replyBy = el.value; saveOps(); retemplate(); renderModal(); }
   else if(el.dataset.c) renderModal();
@@ -1435,10 +1561,10 @@ async function aiDraft(){
 }
 async function sendModal(){
   const m = S.modal, st = S.ops.settings, rc = recips(); if(!rc.length) return;
-  const email = { to: rc.map(r => r.email), cc: st.cc, subject: m.subject, body: m.body };
+  const email = { to: rc.map(r => r.email), cc: ccEmails(m).join(", "), subject: m.subject, body: m.body };
   let res = { status:"simulated" };
   if(S.mode === "server"){ try{ res = (await api("send", { method:"POST", body: JSON.stringify({ emails:[email], fromName: st.senderName, replyTo: st.senderEmail }) })).results[0]; }catch(e){ toast("Not sent: " + e.message); return; } }
-  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name}${r.title ? ` (${r.title})` : ""} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "", replyBy: st.replyBy || null });
+  S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name}${r.title ? ` (${r.title})` : ""} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "", replyBy: st.replyBy || null, cc: ccEmails(m) });
   saveOps(); closeModal(); renderDashboard();
   toast(res.status === "sent" ? `Sent to ${rc.map(r => r.name).join(" and ")}.` : res.status === "failed" ? "Sending failed: " + (res.error || "unknown error") : "Logged. Nothing was delivered because email isn't connected yet.");
 }
@@ -1451,7 +1577,7 @@ document.addEventListener("click", async e => {
   const ps = e.target.closest("[data-popst]"); if(ps){ const { r, col } = popTarget(); r.risk[col] = ps.dataset.popst || null; dirty(false); document.querySelectorAll("#pop [data-popst]").forEach(b => b.setAttribute("aria-pressed", b === ps)); return; }
   if(S.vmenu && !e.target.closest("#vmenu") && !e.target.closest('[data-act="versions"]')){ S.vmenu = false; S.restoreAsk = null; renderVMenu(); }
   if(e.target.id === "modal"){ closeModal(); return; }
-  if(S.modal && S.modal.toOpen && !e.target.closest(".dd")){ S.modal.toOpen = false; renderModal(); }
+  if(S.modal && (S.modal.toOpen || S.modal.ccOpen) && !e.target.closest(".dd")){ S.modal.toOpen = S.modal.ccOpen = false; renderModal(); }
   const a = e.target.closest("[data-act]");
   if(!a){
     if(e.target.isContentEditable || e.target.closest("input,select,textarea,a")) return;
@@ -1464,7 +1590,9 @@ document.addEventListener("click", async e => {
   }
   const m = S.modal;
   switch(a.dataset.act){
-    case "view": S.view = a.dataset.v; S.pubConfirm = S.discardConfirm = false; S.focus = null; renderBar(); renderDashboard(); if(S.view === "draft") maybeAI("draft"); break;
+    case "view": S.view = a.dataset.v; S.pubConfirm = S.discardConfirm = false; S.focus = null; renderBar(); renderDashboard(); if(S.view === "draft"){ maybeAI("draft"); suggestNow(false); } break;
+    case "unlock": { delete S.draft.manual[a.dataset.key]; suggestNow(true); renderDashboard(); saveDraft(); break; }
+    case "suggest": suggestNow(true); break;
     case "versions": S.vmenu = !S.vmenu; S.restoreAsk = null; renderBar(); if(!S.vmenu) renderVMenu(); break;
     case "restore": S.restoreAsk = +a.dataset.v; renderVMenu(); break;
     case "restore-no": S.restoreAsk = null; renderVMenu(); break;
@@ -1486,7 +1614,8 @@ document.addEventListener("click", async e => {
     case "pub-go": await publish(); break;
     case "discard-go": S.draft = clone(S.live); S.discardConfirm = false; renderAll(); saveDraft(); toast("Draft reset to what the President sees."); break;
     case "mclose": closeModal(); break;
-    case "mto": m.toOpen = !m.toOpen; renderModal(); break;
+    case "mto": m.toOpen = !m.toOpen; m.ccOpen = false; renderModal(); break;
+    case "mcc": m.ccOpen = !m.ccOpen; m.toOpen = false; renderModal(); break;
     case "mcontacts": m.contacts = !m.contacts; renderModal(); break;
     case "msend": m.confirm = true; m.toOpen = false; renderModal(); break;
     case "mcancel": m.confirm = false; renderModal(); break;
@@ -1497,7 +1626,7 @@ document.addEventListener("click", async e => {
 /* ---------- persistence, versions, AI ---------- */
 let saveT = null, opsT = null, aiT = null;
 function setSaved(t){ const e = $("#saveSt"); if(e) e.textContent = t; }
-function dirty(rerender){ if(rerender){ renderDashboard(); renderBar(); } else { const b = $("#chgN"); if(b) b.textContent = diffCount(); } saveDraft(); }
+function dirty(rerender){ if(rerender){ renderDashboard(); renderBar(); } else { const b = $("#chgN"); if(b) b.textContent = diffCount(); } saveDraft(); scheduleSuggest(); }
 function saveLocal(){ try{ localStorage.setItem(LSKEY, JSON.stringify({ live:S.live, draft:S.draft, ops:S.ops, history:S.history })); }catch(e){} }
 function saveDraft(){
   setSaved("Saving…"); clearTimeout(saveT);
@@ -1544,6 +1673,7 @@ async function restoreVersion(v){
 }
 async function api(path, opts = {}){
   const r = await fetch("/api/" + path, Object.assign({ headers:{ "content-type":"application/json" }, credentials:"same-origin" }, opts));
+  if(r.status === 401 && r.headers.get("x-login") === "1"){ location.reload(); throw new Error("Please sign in again."); }
   let j = null; try{ j = await r.json(); }catch(e){ throw new Error("No dashboard server here"); }
   if(!r.ok) throw new Error((j && j.error) || r.statusText);
   return j;
@@ -1555,7 +1685,7 @@ function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = fals
 function mergeOps(o){
   const d = clone(OPS_DEFAULT); if(!o) return d;
   const same = o.dirV === d.dirV;
-  return { dirV: d.dirV, directory: same && o.directory ? o.directory : d.directory, settings: Object.assign(d.settings, o.settings || {}, same ? {} : { cc: "" }), outbox: o.outbox || [] };
+  return { dirV: d.dirV, directory: same && o.directory ? o.directory : d.directory, settings: Object.assign(d.settings, o.settings || {}, same ? {} : { cc: "", senderName: d.settings.senderName, senderEmail: d.settings.senderEmail }), outbox: o.outbox || [] };
 }
 function valid(x){ return !!(x && x.commercial && x.operations); }
 async function boot(){

@@ -55,20 +55,33 @@ async function claude(env, system, user, maxTokens) {
   return JSON.parse(text.slice(a, z + 1));
 }
 
-const ISSUES_SYSTEM = `You support the programme management office of a platform business. You review the data behind the President's dashboard and list the issues the President should know about beyond the escalation cards already shown.
+const ISSUES_SYSTEM = `You support the Value Capture Office of a platform business. You review the data behind the President's dashboard and list the issues the President should know about beyond the escalation cards already shown.
 Focus on: figures that disagree between sources or owners, missing or shared owners, stale updates, totals or weights that don't add up or rest on unchecked assumptions, cost trends and cost to serve versus the margin target (costModel holds the NorthPoint deal-model drivers and the revenue per account for each offer), delivery steps that are blocked or have no update, deadlines at risk, and headline text that the figures no longer support.
 Rules: use only the data given; cite the actual figures and dates; leave out anything the escalation cards already cover (same topic, project or figure), even if you would phrase it differently; be concise and specific; no speculation.
 Reply with JSON only, no prose, in this shape:
 {"issues":[{"title":"max 8 words","issue":"what is wrong, max 30 words, with figures","impact":"why it matters, max 25 words","next":"who should do what by when, max 25 words","severity":"high|medium|low","category":"Data reporting|Commercial|Cost|Delivery|Ownership","rowIds":["ids of rows or projects from the data; use cm-margin for the deal margin"],"owners":["role names that appear in the data"]}]}
 Return 3 to 6 issues, most severe first.`;
 
-const EMAIL_SYSTEM = `You draft follow-up emails for a programme management office. The emails go to senior leaders who own figures or projects on the President's dashboard.
+const EMAIL_SYSTEM = `You draft follow-up emails for the Value Capture Office. The emails go to senior leaders who own figures or projects on the President's dashboard.
 Write plainly and politely, in short paragraphs, with the specific figures given. Say what is needed, from whom, and by when. No filler, no exaggeration, nothing beyond the facts given. Address recipients by first name. Sign off with the sender's name.
 Reply with JSON only: {"subject":"...","body":"..."} where body is plain text with \\n line breaks.`;
 
+const SUGGEST_SYSTEM = `You keep the wording on the President's dashboard in line with the latest figures, for the Value Capture Office.
+You get the dashboard data and the current text of the On Track box (highlights), the escalation cards and each project's key blocker (keyNote).
+Rewrite each text so every figure, percentage, date and claim matches the data exactly. Keep the same topic, order, tone and length (each field under 30 words). If a statement is no longer true, change it to what the data now shows. Don't invent facts, names or dates that aren't in the data.
+Reply with JSON only, no prose, in this shape:
+{"highlights":[{"id":1,"good":"...","risk":"...","next":"..."}],"escalations":[{"id":1,"issue":"...","impact":"...","next":"..."}],"keyNotes":[{"id":"project id","text":"..."}]}`;
+
+async function numHash(d) {
+  // Hash of the figures only, so rewriting the text doesn't trigger another rewrite.
+  const ops = (d.operations || []).map(({ keyNote, ...p }) => p);
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify({ c: d.commercial, k: d.cost, o: ops, m: d.meta, e: (d.escalations || []).map((e) => e.id), h: (d.highlights || []).map((g) => g.id) })));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+}
+
 function compact(d) {
   // Keep the payload small and readable for the model.
-  return JSON.stringify({ asOf: d.meta && d.meta.asOf, header: d.header, escalations: d.escalations, commercial: d.commercial, cost: d.cost, costModel: d.costModel, operations: d.operations, footnote: d.footnote, today: new Date().toISOString().slice(0, 10) });
+  return JSON.stringify({ asOf: d.meta && d.meta.asOf, header: d.header, highlights: d.highlights, escalations: d.escalations, commercial: d.commercial, cost: d.cost, costModel: d.costModel, operations: d.operations, footnote: d.footnote, today: new Date().toISOString().slice(0, 10) });
 }
 
 export async function onRequest({ request, env, params }) {
@@ -176,6 +189,29 @@ export async function onRequest({ request, env, params }) {
     return J({ live, history: histMeta(kept, live) });
   }
 
+  if (path === "ai/draft" && method === "POST") {
+    if (!ai.enabled) return J({ error: "AI isn't connected." }, 501);
+    const b = await body();
+    if (!valid(b.draft)) return J({ error: "Missing draft." }, 400);
+    const hash = await numHash(b.draft);
+    const cached = await read(env, "suggest:draft");
+    if (cached && cached.hash === hash && !b.force) return J(cached);
+    try {
+      const out = await claude(env, SUGGEST_SYSTEM, "Dashboard data:\n" + compact(b.draft), 1600);
+      const t = (x) => String(x || "").slice(0, 400);
+      const res = {
+        hash, at: new Date().toISOString(),
+        highlights: (out.highlights || []).slice(0, 6).map((g) => ({ id: +g.id, good: t(g.good), risk: t(g.risk), next: t(g.next) })),
+        escalations: (out.escalations || []).slice(0, 6).map((e) => ({ id: +e.id, issue: t(e.issue), impact: t(e.impact), next: t(e.next) })),
+        keyNotes: (out.keyNotes || []).slice(0, 20).map((k) => ({ id: String(k.id || ""), text: t(k.text) })),
+      };
+      await write(env, "suggest:draft", res);
+      return J(res);
+    } catch (e) {
+      return J({ error: String(e.message || e) }, 502);
+    }
+  }
+
   if (path === "ai/email" && method === "POST") {
     if (!ai.enabled) return J({ error: "AI isn't connected." }, 501);
     const b = await body();
@@ -187,7 +223,7 @@ export async function onRequest({ request, env, params }) {
       c.next ? `What is needed: ${c.next}` : "",
       (c.facts || []).length ? `Figures:\n- ${c.facts.join("\n- ")}` : "",
       `Recipients: ${(b.recipients || []).map((r) => [r.name, r.role].filter(Boolean).join(", ")).join("; ") || "data owners"}`,
-      `Sender: ${b.sender || "Programme Management Office"}`,
+      `Sender: ${b.sender || "Value Capture Office"}`,
       `Leadership review: ${b.reviewDate || ""}. Reply needed by: ${b.replyBy || ""}.`,
       b.current ? `Current draft to revise:\nSubject: ${b.current.subject}\n${b.current.body}` : "",
       b.instruction ? `Change requested by the sender: ${b.instruction}` : "",
