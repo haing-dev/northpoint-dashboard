@@ -862,7 +862,7 @@ function finTable(el, secs, kind){
   if(cost) Object.assign(head, { actual:'<th class="r">Current</th>', forecast:'<th class="r">Run rate</th>', varA:'<th class="r g">Run rate</th>' });
   const grp = [];
   cols.forEach(c => {
-    const g = ["varA","varF"].includes(c) ? "VARIANCE VS PLAN" : "";
+    const g = ["varA","varF"].includes(c) ? "VARIANCE" : "";
     if(grp.length && grp[grp.length - 1].g === g) grp[grp.length - 1].n++; else grp.push({ g, n:1 });
   });
   let html = `<colgroup>${cols.map(c => `<col style="width:${W[c]}%">`).join("")}</colgroup><thead><tr class="grp dimmable">${grp.map(x => `<th colspan="${x.n}">${x.g ? `<span>${x.g}</span>` : ""}</th>`).join("")}</tr><tr class="cols dimmable">${cols.map(c => head[c]).join("")}</tr></thead><tbody>`;
