@@ -21,6 +21,10 @@ A white dotted dot means an input is missing; a dash means a calculation has not
 
 **Suggested text in Draft**: when figures change in Draft, the card text (On Track, escalations, project key blockers) is rewritten to match: by AI when the key is set, otherwise worked out from the figures. Text you edit yourself is kept; "Use suggested text" switches it back.
 
+**House style rules** (enforced in code; `node tools/check-design.mjs` checks the source before each push):
+- Dates are written Mon-DD, e.g. Oct-23 (no weekday, no year). Typed or AI text such as "23 Oct", "Wed 28 Oct" or "October 23, 2026" is corrected automatically.
+- Font sizes only come from the `--fs-*` type-scale tokens; buttons and toggles use the shared `.btn` styles, so controls that sit together always match.
+
 **Period style rule**: quarters are always written Q3/26 and ranges Q4/26-Q1/27. Other spellings (Q3 2026, Q3-2026, Q4 2026–Q1 2027, Q426-Q127, Q4 FY26, a bare Q3 for the current quarter…) are corrected when you leave an edited field, on publish (server side), in AI text and in emails.
 
 **Live / Draft**: the President sees Live. Switch to Draft to edit in place: figures, data owner (switching owner switches to their number), dots, dates, step status, blockers and any text. Shaded cells differ from Live. **Publish** sends the draft live. The Live chip in the top bar lists earlier versions; **Restore** makes one live again.

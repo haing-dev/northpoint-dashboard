@@ -115,13 +115,28 @@ async function numHash(d) {
 
 // Keep the wording people wrote when the page format is upgraded: the On Track box and escalation cards
 // (and which of their fields were edited by hand) are carried over from the previous live version.
-// House style for quarters: Q3/26 for one quarter, Q4/26-Q1/27 for a range. Applied on publish, to AI text and to emails.
+// House style (applied on edit, on load, on publish, to AI text and to emails):
+//   quarters  Q3/26, ranges Q4/26-Q1/27;  dates  Oct-23 (month-day, no weekday, no year).
+const MON3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONRE = "(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)";
+const DOWRE = "(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\\s+)?";
+const monOf = m => MON3.find(x => m.startsWith(x)) || m.slice(0, 3);
+const DATE_A = new RegExp("\\b" + DOWRE + "(\\d{1,2})(?:st|nd|rd|th)?\\s+" + MONRE + "\\.?(?:,?\\s+20\\d{2})?\\b", "g");
+const DATE_B = new RegExp("\\b" + DOWRE + MONRE + "\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?:,?\\s+20\\d{2})?", "g");
+function normDates(s){
+  if(typeof s !== "string" || !/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(s)) return s;
+  return s.replace(DATE_A, (m, d, mon) => `${monOf(mon)}-${String(d).padStart(2, "0")}`)
+          .replace(DATE_B, (m, mon, d) => +d >= 1 && +d <= 31 ? `${monOf(mon)}-${String(d).padStart(2, "0")}` : m);
+}
 function normPeriods(t, cur){
-  if(typeof t !== "string" || !/q\s*[1-4]/i.test(t)) return t;
-  let s = t.replace(/\b[Qq]\s*([1-4])(?:\s*[-\/'’]\s*(?:FY)?|\s+(?=20\d{2}\b)|\s*FY\s?|(?=\d{2}\b))(?:20)?(\d{2})\b/g, "Q$1/$2");
-  s = s.replace(/(Q[1-4]\/\d{2})\s*(?:–|—|-|to|until|through)\s*(Q[1-4]\/\d{2})/gi, "$1-$2");
-  if(cur) s = s.replace(new RegExp("\\bQ" + cur.q + "\\b(?![\\/\\d'’-])", "g"), `Q${cur.q}/${cur.y}`); // a bare current quarter gets its year
-  return s;
+  if(typeof t !== "string") return t;
+  let s = t;
+  if(/q\s*[1-4]/i.test(s)){
+    s = s.replace(/\b[Qq]\s*([1-4])(?:\s*[-\/'’]\s*(?:FY)?|\s+(?=20\d{2}\b)|\s*FY\s?|(?=\d{2}\b))(?:20)?(\d{2})\b/g, "Q$1/$2");
+    s = s.replace(/(Q[1-4]\/\d{2})\s*(?:–|—|-|to|until|through)\s*(Q[1-4]\/\d{2})/gi, "$1-$2");
+    if(cur) s = s.replace(new RegExp("\\bQ" + cur.q + "\\b(?![\\/\\d'’-])", "g"), `Q${cur.q}/${cur.y}`); // a bare current quarter gets its year
+  }
+  return normDates(s);
 }
 function curQuarter(d){ const m = String((d && d.meta && d.meta.asOf) || "").match(/^(\d{4})-(\d{2})/); return m ? { q: Math.ceil(+m[2] / 3), y: m[1].slice(2) } : null; }
 function normDeep(x, cur){ if(typeof x === "string") return normPeriods(x, cur); if(Array.isArray(x)) return x.map(v => normDeep(v, cur)); if(x && typeof x === "object"){ const o = {}; for(const k in x) o[k] = normDeep(x[k], cur); return o; } return x; }
