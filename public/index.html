@@ -401,7 +401,7 @@ const DATA = {
   },
   highlights: [
     { id: 1, title: "PIPELINE AHEAD OF PLAN",
-      good: "Q4 2026–Q1 2027 weighted booking pipeline of $245M exceeds $210M plan by 17%",
+      good: "Q4/26-Q1/27 weighted booking pipeline of $245M exceeds $210M plan by 17%",
       risk: "NorthPoint accounts for $98M (40%) of weighted pipeline but is at risk of understaffing for client deployed engineers; other deals ($147M) lack defined value or weighting",
       next: "Follow up NorthPoint deal with Head of Delivery; other deals with Head of Sales",
       rows: ["pipe", "np", "other"], jump: "pipe" }
@@ -409,14 +409,14 @@ const DATA = {
   escalations: [
     { id: 1, title: "Q3 BOOKING SHORTAGE",
       issue: "Q3 bookings are 32% ($19M) below plan",
-      impact: "The Q4 2026–Q1 2027 pipeline must cover the shortfall, and NorthPoint delivery is key",
+      impact: "The Q4/26-Q1/27 pipeline must cover the shortfall, and NorthPoint delivery is key",
       next: "Ask Head of Sales for a recovery plan by the next review" },
     { id: 2, title: "DELIVERY REPORTING",
       issue: "Bank A and Release 4.2 status not updated",
       impact: "We can't confirm Bank A's 1 Nov go-live or that Release 4.2 shipped",
       next: "Ask Head of Delivery and Head of Product to report every project with an owner and date" },
     { id: 3, title: "NORTHPOINT EXECUTION RISK",
-      issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1 2027",
+      issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
       impact: "NorthPoint failure would jeopardize 40% of pipeline",
       next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date", jump: "np" }
   ],
@@ -427,12 +427,12 @@ const DATA = {
         risk: { reporting: "red" }, tips: { reporting: { text: "Head of Sales spreadsheet; no Finance figure" } }, updated: "2026-09-30" }
     ]},
     { id: "bookings", name: "Bookings & pipeline", timeframe: true, rows: [
-      { id: "book-q3", period: "cq", metric: "Q3-2026 Booking revenue", plan: 60, field: "actual",
+      { id: "book-q3", period: "cq", metric: "Q3/26 Booking revenue", plan: 60, field: "actual",
         owners: [ { role: "Finance BP", source: "Finance booking log", value: 41 },
                   { role: "Head of Sales", source: "CRM", value: 48, unreliable: true } ], owner: 0,
         risk: { reporting: "amber" }, tips: { reporting: { text: "CRM shows $48M vs $41M in Finance's booking log" } },
         varTip: { text: "$19M below plan", esc: 1 }, updated: "2026-09-30" },
-      { id: "pipe", period: "n2q", metric: "Q4 2026–Q1 2027 Booking pipeline revenue", plan: 210, field: "forecast", rollup: true, varSub: false,
+      { id: "pipe", period: "n2q", metric: "Q4/26-Q1/27 Booking pipeline revenue", plan: 210, field: "forecast", rollup: true, varSub: false,
         owners: [ { role: "Head of Sales", source: "CRM, weighted" } ], owner: 0,
         risk: { concentration: "red", reporting: "amber" },
         tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 3 },
@@ -527,7 +527,7 @@ const COLS = [["concentration","Concentration"],["reporting","Reporting quality"
 const STATUS = { green:"on track", amber:"needs attention", red:"off track", nodata:"no data" };
 const STAGE = { done:"Done", active:"In progress", planned:"Planned", late:"Late", blocked:"Blocked", noupdate:"No update" };
 const TAGS = ["Reporting","Staffing","Funding","Ownership","Dependency"];
-const TF = { all:"All periods", cq:"Q3 2026 · current quarter", n2q:"Q4 2026–Q1 2027 · next 2 quarters" };
+const TF = { all:"All periods", cq:"Q3/26 · current quarter", n2q:"Q4/26-Q1/27 · next 2 quarters" };
 const SEVDOT = { high:"red", medium:"amber", low:"nodata" };
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -1067,7 +1067,7 @@ function ruleSuggest(d){
     if(!blank(a) && +p){ const diff = r1(a - p), pc = P(diff / p * 100); out[`d:escalations.${qi}.issue`] = diff < 0 ? `Q3 bookings are ${pc}% (${money(-diff)}) below plan` : `Q3 bookings are ${pc}% (${money(diff)}) above plan`; } }
   const ni = d.escalations.findIndex(e => e.jump === "np" || /northpoint/i.test(e.title));
   if(ni >= 0){
-    if(npx && npx.kpi && +npx.kpi.plan) out[`d:escalations.${ni}.issue`] = +npx.kpi.actual < +npx.kpi.plan ? `NorthPoint project is at risk of understaffing, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1 2027` : `NorthPoint project is fully staffed, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1 2027`;
+    if(npx && npx.kpi && +npx.kpi.plan) out[`d:escalations.${ni}.issue`] = +npx.kpi.actual < +npx.kpi.plan ? `NorthPoint project is at risk of understaffing, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1/27` : `NorthPoint project is fully staffed, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1/27`;
     if(share != null) out[`d:escalations.${ni}.impact`] = `NorthPoint failure would jeopardize ${share}% of pipeline`;
   }
   if(npx && npx.kpi && npx.keyNote) out[`proj:npexec:keyNote.text`] = `${npx.kpi.actual}/${npx.kpi.plan} engineers available for Jan 2027 execution`;
@@ -1228,7 +1228,7 @@ function diffList(a, b){
 const diffCount = () => diffList(S.live, S.draft).length;
 const _diffList = diffList;
 diffList = function(a, b){ S.noWhatIf = true; try{ return _diffList(a, b); } finally { S.noWhatIf = false; } };
-function dashTitle(d){ const p = pd((d && d.meta && d.meta.asOf) || todayISO()); return `Platform BU Leadership Dashboard – Q${Math.ceil(p.m / 3)} ${p.y}`; }
+function dashTitle(d){ const p = pd((d && d.meta && d.meta.asOf) || todayISO()); return `Platform BU Leadership Dashboard – Q${Math.ceil(p.m / 3)}/${String(p.y).slice(2)}`; }
 function verLabel(n){ n = Math.max(1, +n || 1); const maj = Math.floor((n - 1) / 10) + 1, min = (n - 1) % 10; return "v" + maj + (min ? "." + min : ""); }
 function renderBar(){
   document.title = dashTitle(S.live);

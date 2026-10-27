@@ -110,6 +110,43 @@ async function numHash(d) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
 }
 
+// Keep the wording people wrote when the page format is upgraded: the On Track box and escalation cards
+// (and which of their fields were edited by hand) are carried over from the previous live version.
+const PERIOD_FIX = [["Q4 2026–Q1 2027", "Q4/26-Q1/27"], ["Q4 2026-Q1 2027", "Q4/26-Q1/27"], ["Q4 2026 – Q1 2027", "Q4/26-Q1/27"], ["Q426-Q127", "Q4/26-Q1/27"], ["Q4/26–Q1/27", "Q4/26-Q1/27"],
+  ["Q3-2026", "Q3/26"], ["Q3 2026", "Q3/26"], ["Q4 2026", "Q4/26"], ["Q1 2027", "Q1/27"], ["Q1/2027", "Q1/27"]];
+function periodFix(d) { let s = JSON.stringify(d); PERIOD_FIX.forEach(([a, b]) => { s = s.split(a).join(b); }); return JSON.parse(s); }
+function carryText(old, cur, base) {
+  if (!valid(old) || !valid(cur)) return cur;
+  const out = JSON.parse(JSON.stringify(cur));
+  out.manual = out.manual || {};
+  const copy = (listName, fields) => (out[listName] || []).forEach((x, i) => {
+    const o = (old[listName] || []).find((y) => y.id === x.id); if (!o) return;
+    const b0 = base && (base[listName] || []).find((y) => y.id === x.id);
+    fields.forEach((f) => {
+      if (typeof o[f] !== "string" || !o[f]) return;
+      if (b0 && x[f] !== b0[f]) return; // changed again since the reset: keep the newer text
+      if (b0 && o[f] === b0[f]) return; // never edited: nothing to carry
+      x[f] = o[f]; out.manual[`d:${listName}.${i}.${f}`] = true;
+    });
+  });
+  copy("highlights", ["title", "good", "risk", "next"]);
+  copy("escalations", ["title", "issue", "impact", "next"]);
+  return out;
+}
+async function migrateText(env) {
+  if (await env.DASH.get("migr:text-13")) return;
+  const [arch, live, draft, history] = await Promise.all([read(env, "archive-schema-12"), read(env, "live"), read(env, "draft"), read(env, "history")]);
+  if (!arch || !valid(arch.live) || !valid(live) || (live.schema || 0) < 13) return;
+  const baseEntry = (history || []).find((x) => x.note === "Q3 tracker extract"), base = baseEntry && baseEntry.snapshot;
+  const fixedLive = periodFix(carryText(arch.live, live, base));
+  const newLive = { ...fixedLive, version: Math.max(live.version || 1, arch.live.version || 1) + 1, publishedAt: new Date().toISOString(), publishedBy: "format update" };
+  const newDraft = periodFix(carryText(arch.live, valid(draft) ? draft : live, base));
+  const h = (history || []).filter((x) => x.version !== newLive.version);
+  h.unshift({ version: newLive.version, at: newLive.publishedAt, by: "format update", note: "Card text restored after format update", snapshot: newLive });
+  if (!h.some((x) => x.version === arch.live.version)) h.push({ version: arch.live.version, at: arch.live.publishedAt, by: arch.live.publishedBy || "", note: "Before format update", snapshot: arch.live });
+  await Promise.all([write(env, "live", newLive), write(env, "draft", newDraft), write(env, "history", h.slice(0, 40)), env.DASH.put("migr:text-13", new Date().toISOString())]);
+}
+
 function compact(d) {
   // Keep the payload small and readable for the model.
   return JSON.stringify({ asOf: d.meta && d.meta.asOf, header: d.header, highlights: d.highlights, escalations: d.escalations, commercial: d.commercial, cost: d.cost, costModel: d.costModel, operations: d.operations, footnote: d.footnote, today: new Date().toISOString().slice(0, 10) });
@@ -127,6 +164,7 @@ export async function onRequest({ request, env, params }) {
   const body = async () => { try { return await request.json(); } catch { return {}; } };
 
   if (path === "state" && method === "GET") {
+    try { await migrateText(env); } catch (e) { /* keep serving even if the one-off carry-over fails */ }
     const live = await read(env, "live");
     const liveIssues = valid(live) ? await issuesState(env, "live", live) : null;
     if (!me.admin) return J({ me, ai, live, issues: { live: liveIssues, draft: null } });
@@ -180,9 +218,12 @@ export async function onRequest({ request, env, params }) {
     if (valid(existing) && (existing.schema || 0) >= ((b0.live && b0.live.schema) || 0)) return J({ error: "The dashboard is already set up." }, 409);
     const b = await body();
     if (!valid(b.live)) return J({ error: "Missing dashboard data." }, 400);
-    const draft = valid(b.draft) ? b.draft : b.live, ops = b.ops || {};
     if (existing) await write(env, "archive-schema-" + (existing.schema || 1), { live: existing, at: new Date().toISOString() }); // keep the old-format data
-    const history = [{ version: b.live.version || 1, at: b.live.publishedAt || new Date().toISOString(), by: b.live.publishedBy || "", note: "Q3 tracker extract", snapshot: b.live }];
+    const oldHist = existing ? ((await read(env, "history")) || []) : [];
+    if (valid(existing)) { b.live = periodFix(carryText(existing, b.live)); b.live.version = (existing.version || 1) + 1; b.live.publishedAt = new Date().toISOString(); b.live.publishedBy = "format update"; }
+    const draft = valid(existing) ? b.live : (valid(b.draft) ? b.draft : b.live);
+    const ops = (await read(env, "ops")) || b.ops || {};
+    const history = [{ version: b.live.version || 1, at: b.live.publishedAt || new Date().toISOString(), by: b.live.publishedBy || "", note: existing ? "Format update; card text kept" : "Q3 tracker extract", snapshot: b.live }, ...oldHist.filter((x) => x.version !== b.live.version)].slice(0, 40);
     await Promise.all([write(env, "live", b.live), write(env, "draft", draft), write(env, "ops", ops), write(env, "history", history)]);
     return J({ live: b.live, draft, ops, history: histMeta(history, b.live), issues: { live: null, draft: null } });
   }
