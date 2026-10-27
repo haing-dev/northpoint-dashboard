@@ -120,12 +120,13 @@ function carryText(old, cur, base) {
   const out = JSON.parse(JSON.stringify(cur));
   out.manual = out.manual || {};
   const copy = (listName, fields) => (out[listName] || []).forEach((x, i) => {
-    const o = (old[listName] || []).find((y) => y.id === x.id); if (!o) return;
+    const oi = (old[listName] || []).findIndex((y) => y.id === x.id), o = oi >= 0 ? old[listName][oi] : null; if (!o) return;
+    const om = old.manual || {}, hasFlags = Object.keys(om).some((k) => k.startsWith("d:highlights.") || k.startsWith("d:escalations."));
     const b0 = base && (base[listName] || []).find((y) => y.id === x.id);
     fields.forEach((f) => {
       if (typeof o[f] !== "string" || !o[f]) return;
       if (b0 && x[f] !== b0[f]) return; // changed again since the reset: keep the newer text
-      if (b0 && o[f] === b0[f]) return; // never edited: nothing to carry
+      if (hasFlags ? !om[`d:${listName}.${oi}.${f}`] : (b0 && o[f] === b0[f])) return; // only carry text someone wrote by hand
       x[f] = o[f]; out.manual[`d:${listName}.${i}.${f}`] = true;
     });
   });
