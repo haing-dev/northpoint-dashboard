@@ -751,6 +751,16 @@ function ruleIssues(d){
     const shown = fmtV(r, val(d, r, r.field));
     const vals = r.owners.filter(x => "value" in x && !blank(x.value)), empty = r.owners.filter(x => "value" in x && blank(x.value));
     const disagree = vals.length > 1 && uniq(vals.map(x => +x.value)).length > 1;
+    if(r.child && !disagree) return; // sub-rows are covered by their parent's issue
+    if(disagree){
+      const good = vals.find(x => !x.unreliable) || vals[0], bad = vals.find(x => x !== good), gap = Math.abs(+bad.value - +good.value);
+      const pl = val(d, r, "plan"), lo = Math.min(+bad.value, +good.value), hi = Math.max(+bad.value, +good.value);
+      out.push({ title: `${r.metric}: Finance and Sales figures differ`, category: "Data reporting", severity: "high", keep: true,
+        issue: `${bad.role} reports ${fmtV(r, bad.value)} (${bad.source}) while ${good.role} reports ${fmtV(r, good.value)} (${good.source}), a ${fmtV(r, gap)} difference.`,
+        impact: !blank(pl) && hi < pl ? `Until the two are reconciled, the shortfall against the ${fmtV(r, pl)} plan could be anywhere from ${fmtV(r, pl - hi)} to ${fmtV(r, pl - lo)}.` : `Until the two are reconciled, the ${r.metric} shown may not be the agreed number.`,
+        next: `Ask ${bad.role} to reconcile the ${bad.source} with the ${good.source} and agree ${good.role} as the single source by ${rb}.`, rowIds:[r.id] });
+      return;
+    }
     if(disagree) reasons.push(vals.map(x => `${x.role} reports ${fmtV(r, x.value)} (${x.source})`).join(", "));
     empty.forEach(x => reasons.push(`${x.role} has no figure (${x.source})`));
     COLS.forEach(([c]) => { const st = r.risk[c], t = r.tips[c] || {};
@@ -1256,7 +1266,10 @@ function coveredIds(d){
   allRows(d).forEach(r => { if(r.parent && ids.has(r.parent) && d.highlights.some(g => (g.rows || []).includes(r.parent))) ids.add(r.id); });
   return ids;
 }
-function notCovered(d, items){ const ids = coveredIds(d); return items.filter(it => !(it.rowIds || []).some(id => ids.has(id))); }
+function notCovered(d, items){
+  const ids = coveredIds(d), childOnly = it => (it.rowIds || []).length && it.rowIds.every(id => { const r = findRow(d, id); return r && r.child; });
+  return items.filter(it => it.keep || (!(it.rowIds || []).some(id => ids.has(id)) && !childOnly(it)));
+}
 function currentIssues(){
   const which = S.view === "draft" ? "draft" : "live", c = S.issues[which];
   if(S.ai.enabled && c && c.items) return { items: notCovered(cur(), c.items), src: "ai", at: c.at };
