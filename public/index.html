@@ -116,6 +116,7 @@ tr.ph td.sticky .m{color:var(--grey-text)}
 .fus{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-sm)}
 .fus.bad{color:var(--neg);font-weight:700}.fus.ok{color:var(--ok-fg)}
 .fut{gap:8px}.fua{font-size:var(--fs-2xs)}
+.pnm{display:inline-flex;align-items:center;gap:8px}
 .cfs{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:8px}
 .fuh{list-style:none;margin:8px 0 0;padding:0 12px;background:#fff;border:1px solid var(--rule)}.fuh li:last-child{border-bottom:0}
 .fuh li{padding:8px 0;border-bottom:1px solid var(--rule);font-size:var(--fs-md)}
@@ -1054,7 +1055,7 @@ function opsTable(el){
       : (p.updated ? `<span class="${p.updated < d.meta.asOf ? "neg" : ""}">${h(fmtDate(p.updated))}</span>` : nd());
     const dl = ed ? `<input type="date" class="ci date" data-set="proj:${h(p.id)}:deadline" data-t="date" value="${h(p.deadline || "")}" aria-label="Deadline">` : `${p.deadline ? `<span class="b">${h(fmtDate(p.deadline))}</span>` : nd()}`;
     html += `<tr class="proj dimmable" data-row="${h(p.id)}">
-      <td class="sticky${chg("name","kpi")}"><button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}"><span class="cv">▾</span><span ${ed ? `contenteditable="true" data-edit="proj:${h(p.id)}:name"` : ""}>${h(p.name)}</span></button>${subline ? `<span class="sub" style="padding-left:22px">${subline}</span>` : ""}</td>
+      <td class="sticky${chg("name","kpi")}">${ed ? `<span class="pnm"><button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}" aria-label="Show or hide steps"><span class="cv">▾</span></button><span class="b" contenteditable="true" data-edit="proj:${h(p.id)}:name">${h(p.name)}</span></span>` : `<button class="tog" data-act="sec" data-sec="p:${h(p.id)}" aria-expanded="${open}"><span class="cv">▾</span><span>${h(p.name)}</span></button>`}${subline ? `<span class="sub" style="padding-left:22px">${subline}</span>` : ""}</td>
       <td class="${chg("owner").trim()}">${ownerHtml}</td>
       <td class="${chg("updated").trim()}">${upd}</td>
       <td class="${chg("deadline").trim()}">${dl}<span class="sub${cd && cd.bad ? " neg b" : ""}">${cd ? h(cd.t) : ""}</span></td>
