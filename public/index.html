@@ -111,7 +111,8 @@ tr.ph td.sticky .m{color:var(--grey-text)}
 .cfr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .fus{display:inline-flex;align-items:center;gap:5px;font-size:12px}
 .fus.bad{color:var(--neg);font-weight:700}.fus.ok{color:var(--ok-fg)}
-.fut{margin-left:auto;font-size:12px}
+.fut{font-size:12px}
+.cfs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
 .fuh{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--rule)}
 .fuh li{padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px}
 .fuh2{color:var(--grey-text);margin-top:2px}
@@ -1182,7 +1183,7 @@ const DELIV = { sent:"Sent", simulated:"Not emailed", logged:"Not emailed", fail
 function fuBlock(ref){
   const id = ref, list = fuList(ref), open = !!S.fuOpen[id], last = list[0];
   const rs = last ? replyState(last) : null;
-  let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="${ref}">Follow up</button>`;
+  let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="${ref}">Follow up</button></div><div class="cfs">`;
   html += last ? `<span class="fus ${rs.k}"><i class="dot ${rs.k === "ok" ? "green" : rs.k === "bad" ? "red" : "amber"}"></i>${h(toNames(last))} · ${h(rs.t)}</span>` : `<span class="muted">No follow-up yet</span>`;
   if(list.length) html += `<button class="lnk fut" data-act="fuhist" data-id="${id}" aria-expanded="${open}">History (${list.length}) ${open ? "▲" : "▼"}</button>`;
   html += `</div>`;
