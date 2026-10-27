@@ -69,6 +69,7 @@ async function claude(env, system, user, maxTokens) {
 const ISSUES_SYSTEM = `You support the Value Capture Office of a platform business. You review the data behind the President's dashboard and list the issues the President should know about beyond the escalation cards already shown.
 Focus on: figures that disagree between sources or owners, missing or shared owners, stale updates, totals or weights that don't add up or rest on unchecked assumptions, cost trends and cost to serve versus the margin target (costModel holds the NorthPoint deal-model drivers and the revenue per account for each offer), delivery steps that are blocked or have no update, deadlines at risk, and headline text that the figures no longer support.
 Rules: use only the data given; cite the actual figures and dates; leave out anything the escalation cards or the On Track box (highlights) already cover (same topic, project, row or figure), even if you would phrase it differently; be concise and specific; no speculation.
+Write quarters as Q3/26 and ranges as Q4/26-Q1/27.
 Reply with JSON only, no prose, in this shape:
 {"issues":[{"title":"max 8 words","issue":"what is wrong, max 30 words, with figures","impact":"why it matters, max 25 words","next":"who should do what by when, max 25 words","severity":"high|medium|low","category":"Data reporting|Commercial|Cost|Delivery|Ownership","rowIds":["ids of rows or projects from the data; use cm-margin for the deal margin"],"owners":["role names that appear in the data"]}]}
 Return 3 to 6 issues, most severe first.`;
@@ -95,11 +96,13 @@ Please let us know your latest update by <reply-by date>. Please reach out to us
 Best,
 <sender>
 Rules: one numbered issue per distinct issue given; never repeat the same point in two issues (merge them instead); write complete, plain sentences, not fragments; use only the facts and figures given; no filler.
+Write quarters as Q3/26 and ranges as Q4/26-Q1/27.
 Reply with JSON only: {"subject":"...","body":"..."} where body is plain text with \\n line breaks.`;
 
 const SUGGEST_SYSTEM = `You keep the wording on the President's dashboard in line with the latest figures, for the Value Capture Office.
 You get the dashboard data and the current text of the On Track box (highlights), the escalation cards and each project's key blocker (keyNote).
 Rewrite each text so every figure, percentage, date and claim matches the data exactly. Keep the same topic, order, tone and length (each field under 30 words). If a statement is no longer true, change it to what the data now shows. Don't invent facts, names or dates that aren't in the data.
+Write quarters as Q3/26 and ranges as Q4/26-Q1/27.
 Reply with JSON only, no prose, in this shape:
 {"highlights":[{"id":1,"good":"...","risk":"...","next":"..."}],"escalations":[{"id":1,"issue":"...","impact":"...","next":"..."}],"keyNotes":[{"id":"project id","text":"..."}]}`;
 
@@ -112,9 +115,17 @@ async function numHash(d) {
 
 // Keep the wording people wrote when the page format is upgraded: the On Track box and escalation cards
 // (and which of their fields were edited by hand) are carried over from the previous live version.
-const PERIOD_FIX = [["Q4 2026–Q1 2027", "Q4/26-Q1/27"], ["Q4 2026-Q1 2027", "Q4/26-Q1/27"], ["Q4 2026 – Q1 2027", "Q4/26-Q1/27"], ["Q426-Q127", "Q4/26-Q1/27"], ["Q4/26–Q1/27", "Q4/26-Q1/27"],
-  ["Q3-2026", "Q3/26"], ["Q3 2026", "Q3/26"], ["Q4 2026", "Q4/26"], ["Q1 2027", "Q1/27"], ["Q1/2027", "Q1/27"]];
-function periodFix(d) { let s = JSON.stringify(d); PERIOD_FIX.forEach(([a, b]) => { s = s.split(a).join(b); }); return JSON.parse(s); }
+// House style for quarters: Q3/26 for one quarter, Q4/26-Q1/27 for a range. Applied on publish, to AI text and to emails.
+function normPeriods(t, cur){
+  if(typeof t !== "string" || !/q\s*[1-4]/i.test(t)) return t;
+  let s = t.replace(/\b[Qq]\s*([1-4])(?:\s*[-\/'’]\s*(?:FY)?|\s+(?=20\d{2}\b)|\s*FY\s?|(?=\d{2}\b))(?:20)?(\d{2})\b/g, "Q$1/$2");
+  s = s.replace(/(Q[1-4]\/\d{2})\s*(?:–|—|-|to|until|through)\s*(Q[1-4]\/\d{2})/gi, "$1-$2");
+  if(cur) s = s.replace(new RegExp("\\bQ" + cur.q + "\\b(?![\\/\\d'’-])", "g"), `Q${cur.q}/${cur.y}`); // a bare current quarter gets its year
+  return s;
+}
+function curQuarter(d){ const m = String((d && d.meta && d.meta.asOf) || "").match(/^(\d{4})-(\d{2})/); return m ? { q: Math.ceil(+m[2] / 3), y: m[1].slice(2) } : null; }
+function normDeep(x, cur){ if(typeof x === "string") return normPeriods(x, cur); if(Array.isArray(x)) return x.map(v => normDeep(v, cur)); if(x && typeof x === "object"){ const o = {}; for(const k in x) o[k] = normDeep(x[k], cur); return o; } return x; }
+function periodFix(d) { return normDeep(d, curQuarter(d)); }
 function carryText(old, cur, base) {
   if (!valid(old) || !valid(cur)) return cur;
   const out = JSON.parse(JSON.stringify(cur));
@@ -197,7 +208,7 @@ export async function onRequest({ request, env, params }) {
     const cached = await read(env, "issues:" + which);
     if (cached && cached.hash === hash && !b.force) return J({ ...cached, stale: false });
     try {
-      const out = await claude(env, ISSUES_SYSTEM, "Dashboard data:\n" + compact(data), 1800);
+      const out = normDeep(await claude(env, ISSUES_SYSTEM, "Dashboard data:\n" + compact(data), 1800), curQuarter(data));
       const items = (out.issues || []).slice(0, 8).map((x) => ({
         title: String(x.title || "").slice(0, 120), issue: String(x.issue || x.detail || "").slice(0, 400), impact: String(x.impact || "").slice(0, 300), next: String(x.next || "").slice(0, 300),
         severity: ["high", "medium", "low"].includes(x.severity) ? x.severity : "medium",
@@ -247,6 +258,7 @@ export async function onRequest({ request, env, params }) {
   if (path === "publish" && method === "POST") {
     const b = await body();
     if (!valid(b.draft)) return J({ error: "Missing draft." }, 400);
+    b.draft = periodFix(b.draft);
     const prev = await read(env, "live");
     const history = (await read(env, "history")) || [];
     if (valid(prev) && !history.some((x) => x.version === prev.version)) history.unshift({ version: prev.version, at: prev.publishedAt, by: prev.publishedBy || "", note: "", snapshot: prev });
@@ -283,7 +295,7 @@ export async function onRequest({ request, env, params }) {
     const cached = await read(env, "suggest:draft");
     if (cached && cached.hash === hash && !b.force) return J(cached);
     try {
-      const out = await claude(env, SUGGEST_SYSTEM, "Dashboard data:\n" + compact(b.draft), 1600);
+      const out = normDeep(await claude(env, SUGGEST_SYSTEM, "Dashboard data:\n" + compact(b.draft), 1600), curQuarter(b.draft));
       const t = (x) => String(x || "").slice(0, 400);
       const res = {
         hash, at: new Date().toISOString(),
@@ -317,7 +329,7 @@ export async function onRequest({ request, env, params }) {
       b.instruction ? `Change requested by the sender: ${b.instruction}` : "",
     ].filter(Boolean).join("\n\n");
     try {
-      const out = await claude(env, EMAIL_SYSTEM, user, 1200);
+      const out = normDeep(await claude(env, EMAIL_SYSTEM, user, 1200), curQuarter(await read(env, "live")));
       if (!out.subject || !out.body) throw new Error("AI reply was missing a subject or body.");
       return J({ subject: String(out.subject).slice(0, 200), body: String(out.body).slice(0, 6000) });
     } catch (e) {
@@ -340,8 +352,8 @@ export async function onRequest({ request, env, params }) {
             to: [].concat(m.to).slice(0, 20),
             cc: m.cc ? String(m.cc).split(/[\s,;]+/).filter(Boolean) : undefined,
             reply_to: b.replyTo || undefined,
-            subject: m.subject,
-            text: m.body,
+            subject: normPeriods(m.subject),
+            text: normPeriods(m.body),
           }),
         });
         results.push(r.ok ? { status: "sent" } : { status: "failed", error: `Mail service returned ${r.status}: ${(await r.text()).slice(0, 200)}` });

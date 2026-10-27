@@ -21,6 +21,8 @@ A white dotted dot means an input is missing; a dash means a calculation has not
 
 **Suggested text in Draft**: when figures change in Draft, the card text (On Track, escalations, project key blockers) is rewritten to match: by AI when the key is set, otherwise worked out from the figures. Text you edit yourself is kept; "Use suggested text" switches it back.
 
+**Period style rule**: quarters are always written Q3/26 and ranges Q4/26-Q1/27. Other spellings (Q3 2026, Q3-2026, Q4 2026–Q1 2027, Q426-Q127, Q4 FY26, a bare Q3 for the current quarter…) are corrected when you leave an edited field, on publish (server side), in AI text and in emails.
+
 **Live / Draft**: the President sees Live. Switch to Draft to edit in place: figures, data owner (switching owner switches to their number), dots, dates, step status, blockers and any text. Shaded cells differ from Live. **Publish** sends the draft live. The Live chip in the top bar lists earlier versions; **Restore** makes one live again.
 
 ## Files
