@@ -145,6 +145,24 @@ function carryText(old, cur, base) {
   copy("escalations", ["title", "issue", "impact", "next"]);
   return out;
 }
+// One-off data fix: FY-2026 recognized revenue comes from Finance, with an amber reporting flag.
+function patchRevenue(d) {
+  if (!valid(d)) return d;
+  (d.commercial || []).forEach((s) => (s.rows || []).forEach((r) => {
+    if (r.id !== "rev-fy") return;
+    const v = r.owners && r.owners[0] && "value" in r.owners[0] ? r.owners[0].value : 95;
+    r.owners = [{ role: "Finance BP", source: "Finance ledger", value: v }]; r.owner = 0; r.ownerWarn = false;
+    r.risk = { ...(r.risk || {}), reporting: "amber" };
+    r.tips = { ...(r.tips || {}), reporting: { text: "Full-year forecast from the finance ledger; not yet closed" } };
+  }));
+  return d;
+}
+async function migrateRevenue(env) {
+  if (await env.DASH.get("migr:revfy-finance")) return;
+  const [live, draft] = await Promise.all([read(env, "live"), read(env, "draft")]);
+  if (!valid(live)) return;
+  await Promise.all([write(env, "live", patchRevenue(live)), valid(draft) ? write(env, "draft", patchRevenue(draft)) : null, env.DASH.put("migr:revfy-finance", new Date().toISOString())]);
+}
 async function migrateText(env) {
   if (await env.DASH.get("migr:text-13")) return;
   const [arch, live, draft, history] = await Promise.all([read(env, "archive-schema-12"), read(env, "live"), read(env, "draft"), read(env, "history")]);
@@ -177,6 +195,7 @@ export async function onRequest({ request, env, params }) {
 
   if (path === "state" && method === "GET") {
     try { await migrateText(env); } catch (e) { /* keep serving even if the one-off carry-over fails */ }
+    try { await migrateRevenue(env); } catch (e) { /* same */ }
     const live = await read(env, "live");
     const liveIssues = valid(live) ? await issuesState(env, "live", live) : null;
     if (!me.admin) return J({ me, ai, live, issues: { live: liveIssues, draft: null } });

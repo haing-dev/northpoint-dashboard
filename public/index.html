@@ -75,9 +75,15 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .kv .b{font-weight:700}
 .cf{padding-top:14px;align-self:start;cursor:default}
 #hlwrap{margin:18px 0 4px}
-.fhl{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow:auto;border:1px solid var(--rule);padding:6px 8px;border-radius:2px}
-.fhi summary{cursor:pointer;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.fhs{font-size:12px;font-weight:700;margin:6px 0 2px}
+.fhw{margin-top:14px}
+.fht{font:700 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--grey-text);margin-bottom:6px}
+.fhl{display:flex;flex-direction:column;gap:0;max-height:260px;overflow:auto;border:1px solid var(--rule);border-radius:2px}
+.fhi{padding:10px 12px;border-bottom:1px solid var(--rule);font-size:12px}.fhi:last-child{border-bottom:0}
+.fhm{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.fhd{color:var(--grey-text);min-width:44px}
+.fhi summary{cursor:pointer;margin:4px 0 0 50px;color:var(--deep)}
+.fhi details pre{margin-left:50px}
+.fhr{margin:8px 0 0 50px;padding:8px 10px;background:var(--act-bg);border-radius:2px}.fhr .fhd{margin-right:6px}.fhr p{margin:4px 0 0}
 .fhb{white-space:pre-wrap;font:12px/1.45 var(--sans);background:#FAFAFA;border:1px solid var(--rule);padding:8px;margin:0 0 6px;max-height:220px;overflow:auto}
 .dpk{position:relative;display:inline-block;min-width:56px;border-bottom:1px dashed #B9A85A;cursor:pointer}
 .dpk .dpv{pointer-events:none}
@@ -423,8 +429,8 @@ const DATA = {
   commercial: [
     { id: "revenue", name: "Recognized revenue", rows: [
       { id: "rev-fy", metric: "FY-2026 Recognized revenue", plan: 95, field: "forecast",
-        owners: [ { role: "Head of Sales", source: "Spreadsheet (Head of Sales)", value: 95 } ], owner: 0, ownerWarn: true,
-        risk: { reporting: "red" }, tips: { reporting: { text: "Head of Sales spreadsheet; no Finance figure" } }, updated: "2026-09-30" }
+        owners: [ { role: "Finance BP", source: "Finance ledger", value: 95 } ], owner: 0,
+        risk: { reporting: "amber" }, tips: { reporting: { text: "Full-year forecast from the finance ledger; not yet closed" } }, updated: "2026-09-30" }
     ]},
     { id: "bookings", name: "Bookings & pipeline", timeframe: true, rows: [
       { id: "book-q3", period: "cq", metric: "Q3/26 Booking revenue", plan: 60, field: "actual",
@@ -1020,7 +1026,7 @@ function opsTable(el){
       <td class="ctr"><span class="sc ${st.k}">${h(st.label)}</span></td>
       <td class="${ed ? "" : "ctr"}${chg("keyNote")}">${ed ? projNotes(p, ed) : riskDots(projRisks(p)) || nd()}</td>
       <td class="fu ctr"><button class="btn xs" data-act="follow" data-ref="proj:${h(p.id)}">Follow up</button></td>
-      <td${p.sample ? ' class="mockbars" title="Steps are a mock plan"' : ""}>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
+      <td${p.sample ? ' class="mockbars"' : ""}>${bars(ax, p.stages, p.deadline, true)}</td></tr>`;
     if(!open) return;
     p.stages.forEach((s, i) => {
       const k = `stage:${p.id}:${i}`, ls = lp && lp.stages[i], sc = ed && JSON.stringify(ls) !== JSON.stringify(s) ? " chg" : "";
@@ -1030,7 +1036,7 @@ function opsTable(el){
       let notes;
       if(ed) notes = `<select class="ssel" data-set="${k}:tag" data-t="text" aria-label="Issue type"><option value="">No tag</option>${TAGS.map(t => `<option${t === s.tag ? " selected" : ""}>${t}</option>`).join("")}</select> <span class="blk" contenteditable="true" data-edit="${k}:blocker" aria-label="Blocker">${h(s.blocker || "")}</span>`;
       else notes = riskDots(stageRisks(s));
-      html += `<tr class="stage dimmable${p.sample ? " mock" : ""}" data-row="${h(p.id)}"${p.sample ? ' title="Mock step"' : ""}>
+      html += `<tr class="stage dimmable${p.sample ? " mock" : ""}" data-row="${h(p.id)}">
         <td class="sticky${sc}"><span class="sn" ${ed ? `contenteditable="true" data-edit="${k}:name"` : ""}>${h(s.name)}</span></td>
         <td></td><td></td><td class="nt${sc}">${dates}</td><td class="ctr${sc}">${stt}</td><td class="${ed ? "" : "ctr"}${sc}">${notes}</td>
         <td class="fu ctr">${s.blocker ? `<button class="btn xs" data-act="follow" data-ref="blk:${h(p.id)}:${i}">Follow up</button>` : ""}</td><td>${bars(ax, [s], null, false)}</td></tr>`;
@@ -1139,28 +1145,52 @@ function renderSubs(d){
 
 /* ---------- cards + issues ---------- */
 function lastFollow(ref){ return S.ops.outbox.find(m => m.ref === ref); }
-const toNames = m => (m.to || []).map(x => String(x).replace(/\s*<.*>$/, "")).join(", ");
+const toNames = m => m.toLabel || (m.to || []).map(x => String(x).replace(/\s*<.*>$/, "")).join(", ");
 function replyState(m){
   if(m.replied) return { k:"ok", t:`Replied ${fmtDate(m.replied.at.slice(0, 10))}` };
   if(!m.replyBy) return { k:"warn", t:"Awaiting reply" };
   return todayISO() > m.replyBy ? { k:"bad", t:`Reply overdue since ${fmtDow(m.replyBy)}` } : { k:"warn", t:`Awaiting reply · due ${fmtDow(m.replyBy)}` };
 }
-const DELIV = { sent:"Sent", simulated:"Logged, not delivered", logged:"Logged, not delivered", failed:"Failed" };
+/* Earlier follow-ups on the cards (sample history, written by team rather than by name). */
+const MOCK_FU = [
+  { id:"m1", ref:"esc1", at:"2026-10-02T09:00:00Z", toLabel:"Sales team", status:"sent", replyBy:"2026-10-06", subject:"Q3/26 bookings below plan",
+    body:"Dear Sales team,\n\nQ3/26 bookings closed at $41M against a plan of $60M. Could you explain which deals slipped and when you expect them to sign?\n\nBest,\nValue Capture Office",
+    replied:{ at:"2026-10-05T15:20:00Z", from:"Sales team", text:"Two deals worth about $12M slipped into October. We expect both to sign in Q4/26 and will send a recovery plan by mid-October." } },
+  { id:"m2", ref:"esc1", at:"2026-10-16T09:00:00Z", toLabel:"Sales team", status:"sent", replyBy:"2026-10-21", subject:"Recovery plan for the Q3/26 shortfall",
+    body:"Dear Sales team,\n\nAhead of the leadership review, please share the recovery plan for the $19M Q3/26 gap, with the deals and dates behind it.\n\nBest,\nValue Capture Office",
+    replied:{ at:"2026-10-20T11:05:00Z", from:"Sales team", text:"Plan attached: about $8M of the gap is covered by Q4/26 deals already in late stage. The remaining $11M depends on the NorthPoint timing." } },
+  { id:"m3", ref:"esc2", at:"2026-10-05T09:00:00Z", toLabel:"Delivery team", status:"sent", replyBy:"2026-10-09", subject:"Bank A go-live: owner and status",
+    body:"Dear Delivery team,\n\nBank A has no named owner and no test report since 30 Sep. Could you confirm who owns the go-live and the current status?\n\nBest,\nValue Capture Office",
+    replied:{ at:"2026-10-09T16:40:00Z", from:"Delivery team", text:"An owner will be named at the next steering meeting. Testing has continued, but the written report is not ready yet." } },
+  { id:"m4", ref:"esc2", at:"2026-10-19T09:00:00Z", toLabel:"Delivery and Product teams", status:"sent", replyBy:"2026-10-23", subject:"Status updates for Bank A and Release 4.2",
+    body:"Dear Delivery and Product teams,\n\nWe still have no dated status for Bank A (go-live 1 Nov) or Release 4.2 (last update 12 Aug). Please send an update with an owner and date for each step.\n\nBest,\nValue Capture Office" },
+  { id:"m5", ref:"esc3", at:"2026-10-01T09:00:00Z", toLabel:"Delivery and Talent teams", status:"sent", replyBy:"2026-10-06", subject:"NorthPoint staffing for Jan 2027",
+    body:"Dear Delivery and Talent teams,\n\nNorthPoint needs 24 engineers from January and 4 are available today. What options do we have to close the gap in time?\n\nBest,\nValue Capture Office",
+    replied:{ at:"2026-10-06T10:15:00Z", from:"Talent team", text:"We can bring in about 8 contractors in November if funding is approved. Permanent hires take 10 to 12 weeks." } },
+  { id:"m6", ref:"esc3", at:"2026-10-14T09:00:00Z", toLabel:"Finance team", status:"sent", replyBy:"2026-10-21", subject:"Funding decision for 20 engineers",
+    body:"Dear Finance team,\n\nHiring for NorthPoint is on hold until funding for 20 engineers is approved. When will the decision be made?\n\nBest,\nValue Capture Office",
+    replied:{ at:"2026-10-21T14:30:00Z", from:"Finance team", text:"The funding request is on the agenda for the 30 Oct leadership review." } },
+  { id:"m7", ref:"hl1", at:"2026-10-08T09:00:00Z", toLabel:"Sales team", status:"sent", replyBy:"2026-10-13", subject:"Deal values for other deals",
+    body:"Dear Sales team,\n\nOther deals ($147M) have no deal values or weights behind them. Could you add them in the CRM?\n\nBest,\nValue Capture Office",
+    replied:{ at:"2026-10-13T12:00:00Z", from:"Sales team", text:"We are adding deal values and weights in the CRM and expect to finish by the end of October." } }
+];
+function fuList(ref){ return [...S.ops.outbox.filter(m => m.ref === ref), ...MOCK_FU.filter(m => m.ref === ref)].sort((a, b) => b.at < a.at ? -1 : 1); }
+const DELIV = { sent:"Sent", simulated:"Not emailed", logged:"Not emailed", failed:"Not sent" };
 function fuBlock(ref){
-  const id = ref, list = S.ops.outbox.filter(m => m.ref === ref), open = !!S.fuOpen[id], last = list[0];
+  const id = ref, list = fuList(ref), open = !!S.fuOpen[id], last = list[0];
   const rs = last ? replyState(last) : null;
   let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="${ref}">Follow up</button>`;
   html += last ? `<span class="fus ${rs.k}"><i class="dot ${rs.k === "ok" ? "green" : rs.k === "bad" ? "red" : "amber"}"></i>${h(toNames(last))} · ${h(rs.t)}</span>` : `<span class="muted">No follow-up yet</span>`;
   if(list.length) html += `<button class="lnk fut" data-act="fuhist" data-id="${id}" aria-expanded="${open}">History (${list.length}) ${open ? "▲" : "▼"}</button>`;
   html += `</div>`;
   if(open && list.length) html += `<ol class="fuh">${list.map(m => { const r = replyState(m);
-    return `<li><div class="fuh1"><b>${h(fmtDate(m.at.slice(0, 10)))}</b> to ${h(toNames(m))}<span class="muted"> · ${h(DELIV[m.status] || m.status || "")}</span></div>
+    return `<li><div class="fuh1"><b>${h(fmtDate(m.at.slice(0, 10)))}</b> to ${h(toNames(m))}${m.status === "sent" ? "" : `<span class="muted"> · ${h(DELIV[m.status] || m.status || "")}</span>`}</div>
       <div class="fuh2">${h(m.subject || "")}</div>
-      <div class="fuh3"><span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${m.replied ? `<button class="lnk" data-act="fureply" data-mid="${h(m.id)}" data-v="0">Undo</button>` : `<button class="btn xs" data-act="fureply" data-mid="${h(m.id)}" data-v="1">Mark replied</button>`}</div></li>`; }).join("")}</ol>`;
+      <div class="fuh3"><span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${m.id.startsWith("m") && MOCK_FU.includes(m) ? "" : m.replied ? `<button class="lnk" data-act="fureply" data-mid="${h(m.id)}" data-v="0">Undo</button>` : `<button class="btn xs" data-act="fureply" data-mid="${h(m.id)}" data-v="1">Mark replied</button>`}</div></li>`; }).join("")}</ol>`;
   return html + `</div>`;
 }
 function renderHighlights(d){
-  const ed = editing(), E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" title="Your edit is kept when the figures change. Click to go back to the suggested text.">Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
+  const ed = editing(), E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" >Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
   $("#hlwrap").hidden = !d.highlights.length;
   $("#hl").innerHTML = d.highlights.map((g, i) => `<article class="hlc dimmable${S.focus === "hl" + g.id ? " lit" : ""}" tabindex="0" role="button" data-hl="${g.id}" aria-label="${h(titleCase(g.title))}. Show in the tables">
     <div class="ct"><span class="cb ok">✓</span>${E(`highlights.${i}.title`, g.title)}</div>
@@ -1171,7 +1201,7 @@ function renderHighlights(d){
 }
 function renderCards(d){
   const ed = editing();
-  const E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" title="Your edit is kept when the figures change. Click to go back to the suggested text.">Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
+  const E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" >Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
   $("#cards").innerHTML = d.escalations.map((e, i) => {
     const lf = lastFollow("esc" + e.id), lit = S.focus === "esc" + e.id;
     return `<article class="card dimmable${lit ? " lit" : ""}" tabindex="0" role="button" aria-pressed="${lit}" data-card="${e.id}" aria-label="Escalation ${e.id}: ${h(titleCase(e.title))}. Show in the tables">
@@ -1197,16 +1227,14 @@ function currentIssues(){
 }
 function renderIssues(){
   const I = currentIssues(), n = I.items.length;
-  const src = I.src === "ai" ? `Suggested by AI · updated ${ago(I.at)}${S.aiBusy ? " · refreshing…" : ""}` : (S.aiBusy ? "Asking AI…" : "Automatic checks");
-  let html = `<button class="ih" data-act="issues" aria-expanded="${S.issuesOpen}"><b>Other issues</b><span class="cnt">${n}</span><span class="src">${h(src)}</span><span class="chev">${S.issuesOpen ? "▲" : "▼"}</span></button>`;
+  let html = `<button class="ih" data-act="issues" aria-expanded="${S.issuesOpen}"><b>Other issues</b><span class="cnt">${n}</span><span class="chev">${S.issuesOpen ? "▲" : "▼"}</span></button>`;
   if(S.issuesOpen){
     html += `<ol class="il">${I.items.map((it, i) => `<li data-issue="${i}" tabindex="0" role="button" class="${S.focus === "iss" + i ? "lit" : ""}"><i class="dot ${SEVDOT[it.severity] || "amber"}" role="img" aria-label="${h(it.severity)} priority"></i>
       <div><div class="t">${it.category ? `<span class="tag">${h(it.category)}</span>` : ""}${h(it.title)}</div>
         <div class="kv"><span>Issue</span><span>${h(it.issue || it.detail || "")}</span></div>
         <div class="kv"><span>Impact</span><span>${h(it.impact || "—")}</span></div>
         <div class="kv"><span>Next step</span><span>${h(it.next || "—")}</span></div></div>
-      <div class="act"><button class="btn xs" data-act="follow" data-ref="iss${i}">Follow up</button></div></li>`).join("") || '<li><span></span><div>Nothing else stands out beyond the escalations.</div></li>'}</ol>
-      <div class="ifoot"><span>${I.src === "ai" ? "Written by AI from the figures below, leaving out what the escalations already cover. It refreshes when the data changes; check before acting." : S.mode === "server" ? "Rule-based checks, leaving out what the escalations already cover. Add an AI key to get AI suggestions that update with the data." : "Rule-based checks in this preview."}</span>${I.src === "ai" ? '<button class="lnk" data-act="ai-refresh">Refresh now</button>' : ""}</div>`;
+      <div class="act"><button class="btn xs" data-act="follow" data-ref="iss${i}">Follow up</button></div></li>`).join("") || '<li><span></span><div>Nothing else stands out beyond the escalations.</div></li>'}</ol>`;
   }
   $("#issues").innerHTML = html;
 }
@@ -1245,8 +1273,6 @@ function renderBar(){
   const L = S.live, n = S.me.admin ? diffCount() : 0;
   const chip = `<i class="dot green"></i>Live ${verLabel(L.version)} · published ${h(fmtLong(L.publishedAt))}`;
   let html = `<span class="brand">${h(dashTitle(S.live))}</span>${S.me.admin ? `<button class="chip" data-act="versions" aria-expanded="${S.vmenu}" title="Earlier versions">${chip} ▾</button>` : `<span class="chip">${chip}</span>`}`;
-  if(S.mode === "demo") html += `<span class="chip">Preview: changes stay in this browser</span>`;
-  else if(S.me.setup) html += `<span class="chip">Access: link + password</span>`;
   html += `<span class="sp"></span>`;
   if(S.me.admin) html += `<div class="segv" role="group" aria-label="Version shown"><button data-act="view" data-v="live" aria-pressed="${S.view === "live"}">Live</button><button data-act="view" data-v="draft" aria-pressed="${S.view === "draft"}">Draft${n ? ` · ${n}` : ""}</button></div>`;
   $("#bar").innerHTML = html;
@@ -1266,8 +1292,8 @@ function renderDraftbar(){
   const ch = diffList(S.live, S.draft);
   const am = S.draft.aiMeta, nMan = Object.keys(S.draft.manual || {}).filter(k => AI_KEYS(S.draft).includes(k)).length;
   const sug = S.sugBusy ? "AI is updating the text…" : S.mode === "server" && S.ai.enabled ? (S.sugErr ? "AI text update failed; text follows the figures" : `Text suggested by AI${am && am.src === "ai" ? ` · ${ago(am.at)}` : ""}`) : "Text updates with the figures (AI not connected)";
-  let html = `<div class="draftbar"><b>Editing the draft.</b><span>Card text follows the figures; your own edits are kept.</span><span class="sp"></span>
-    <span class="aist">${h(sug)}${nMan ? ` · ${nMan} kept as you edited` : ""} <button class="lnk" data-act="suggest">Refresh text</button></span><span class="save" id="saveSt"></span>
+  let html = `<div class="draftbar"><b>Draft</b><span class="sp"></span>
+    <span class="aist">${S.sugBusy ? "Updating text…" : ""} <button class="lnk" data-act="suggest">Refresh text</button></span><span class="save" id="saveSt"></span>
     <span><b id="chgN">${ch.length}</b> change${ch.length === 1 ? "" : "s"} vs live</span>`;
   if(S.discardConfirm) html += `<button class="btn sm primary" data-act="discard-go">Discard all changes</button><button class="btn sm ghost" data-act="cancel">Cancel</button>`;
   else if(S.pubConfirm) html += `<button class="btn sm primary" data-act="pub-go">Confirm: publish to the President</button><button class="btn sm ghost" data-act="cancel">Cancel</button>`;
@@ -1657,12 +1683,13 @@ function ccLabel(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).na
 function ccEmails(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).email).filter(Boolean), ...String(S.ops.settings.cc || "").split(/[\s,;]+/).filter(Boolean)]; }
 function recips(){ return [...S.modal.sel].map(k => S.ops.directory[k]).filter(p => p && p.email); }
 function fuHistory(m){
-  const list = S.ops.outbox.filter(x => x.ref === m.ctx.ref);
-  if(!list.length) return `<div class="fr"><span>History</span><span class="muted">No earlier follow-ups on this issue.</span></div>`;
-  return `<div class="fr fr-top"><span>History</span><div class="fhl">${list.map(x => { const r = replyState(x);
-    return `<details class="fhi"><summary><b>${h(fmtDate(x.at.slice(0, 10)))}</b> to ${h(toNames(x))}${(x.cc || []).length ? `<span class="muted"> · cc ${h(x.cc.join(", "))}</span>` : ""}<span class="muted"> · ${h(DELIV[x.status] || x.status || "")}</span>
-      <span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${x.replied ? "" : `<button class="lnk" data-act="fureply" data-mid="${h(x.id)}" data-v="1">Mark replied</button>`}</summary>
-      <div class="fhs">${h(x.subject || "")}</div><pre class="fhb">${h(x.body || "")}</pre></details>`; }).join("")}</div></div>`;
+  const list = fuList(m.ctx.ref);
+  if(!list.length) return "";
+  return `<div class="fhw"><div class="fht">Earlier follow-ups</div><div class="fhl">${list.map(x => { const r = replyState(x), mock = MOCK_FU.includes(x);
+    return `<div class="fhi"><div class="fhm"><span class="fhd">${h(fmtDate(x.at.slice(0, 10)))}</span><b>Value Capture Office</b> to ${h(toNames(x))}${(x.cc || []).length ? `<span class="muted"> · cc ${h(x.cc.join(", "))}</span>` : ""}
+        <span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${x.replied || mock ? "" : `<button class="lnk" data-act="fureply" data-mid="${h(x.id)}" data-v="1">Mark replied</button>`}</div>
+      <details><summary>${h(x.subject || "")}</summary><pre class="fhb">${h(x.body || "")}</pre></details>
+      ${x.replied && x.replied.text ? `<div class="fhr"><span class="fhd">${h(fmtDate(x.replied.at.slice(0, 10)))}</span><b>${h(x.replied.from || "Reply")}</b><p>${h(x.replied.text)}</p></div>` : ""}</div>`; }).join("")}</div></div>`;
 }
 function renderModal(){
   const m = S.modal, el = $("#modal"); if(!m){ el.hidden = true; return; }
@@ -1675,7 +1702,6 @@ function renderModal(){
         ${m.toOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-rc="${h(k)}" ${m.sel.has(k) ? "checked" : ""}>${h(p.name)}${p.title ? ` <span class="ttl">(${h(p.title)})</span>` : ""}<small>${h(p.email)}</small></label>`).join("")}
           ${m.contacts ? Object.entries(dir).map(([k, p]) => `<div class="ce"><input class="in" data-c="${h(k)}" data-cf="name" value="${h(p.name)}" aria-label="Name"><input class="in" type="email" data-c="${h(k)}" data-cf="email" value="${h(p.email)}" aria-label="Email"></div>`).join("") : ""}
           <button class="lnk" data-act="mcontacts">${m.contacts ? "Done" : "Edit emails"}</button></div>` : ""}</div></div>
-      ${fuHistory(m)}
       ${(m.ctx.risks || []).length ? `<div class="fr fr-top"><span>Issues</span><div class="rkl">${m.ctx.risks.map((x, i) => `<label class="rk"><input type="checkbox" data-rk="${i}" ${m.pick.has(i) ? "checked" : ""}><i class="dot ${x.st === "nodata" ? "nodata nd" : x.st}"></i><span><b>${h(x.label)}</b>: ${h(x.text)}</span></label>`).join("")}</div></div>` : ""}
       <div class="fr"><span>CC</span><div class="dd"><button class="ddb" id="mCcB" data-act="mcc" aria-expanded="${m.ccOpen}">${ccLabel(m) ? h(ccLabel(m)) : '<span class="ph">Optional</span>'}</button>
         ${m.ccOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-ccp="${h(k)}" ${m.cc.has(k) ? "checked" : ""}>${h(p.name)}${p.title ? ` <span class="ttl">(${h(p.title)})</span>` : ""}<small>${h(p.email)}</small></label>`).join("")}
@@ -1683,6 +1709,7 @@ function renderModal(){
       <div class="fr"><span>Reply by</span><input class="in" id="mReply" type="date" value="${h(st.replyBy)}" style="max-width:200px"></div>
       <div class="fr"><span>Subject</span><input class="in" id="mSubject" value="${h(m.subject)}"></div>
       <textarea class="in" id="mBody" rows="15" aria-label="Message" ${m.busy ? 'aria-busy="true"' : ""}>${h(m.body)}</textarea>
+      ${fuHistory(m)}
     </div>
     <div class="mf">${m.confirm ? `<span class="muted" style="margin-right:auto">Send to ${h(rc.map(p => p.name).join(", "))}?</span><button class="btn ghost" data-act="mcancel">Cancel</button><button class="btn primary" data-act="msend-go">Confirm send</button>`
       : `<button class="btn ghost" data-act="mclose">Cancel</button><button class="btn primary" data-act="msend" ${rc.length ? "" : "disabled"}>Send</button>`}</div></div>`;
@@ -1724,7 +1751,7 @@ async function sendModal(){
   if(S.mode === "server"){ try{ res = (await api("send", { method:"POST", body: JSON.stringify({ emails:[email], fromName: st.senderName, replyTo: st.senderEmail }) })).results[0]; }catch(e){ toast("Not sent: " + e.message); return; } }
   S.ops.outbox.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), ref: m.ctx.ref, label: m.ctx.label, to: rc.map(r => `${r.name}${r.title ? ` (${r.title})` : ""} <${r.email}>`), subject: m.subject, body: m.body, status: res.status, error: res.error || "", replyBy: st.replyBy || null, cc: ccEmails(m) });
   saveOps(); closeModal(); renderDashboard();
-  toast(res.status === "sent" ? `Sent to ${rc.map(r => r.name).join(" and ")}.` : res.status === "failed" ? "Sending failed: " + (res.error || "unknown error") : "Logged. Nothing was delivered because email isn't connected yet.");
+  toast(res.status === "sent" ? `Sent to ${rc.map(r => r.name).join(" and ")}.` : res.status === "failed" ? "Not sent: " + (res.error || "unknown error") : "Saved to the follow-up history; not emailed.");
 }
 
 /* ---------- clicks ---------- */
