@@ -429,8 +429,8 @@ const DATA = {
   commercial: [
     { id: "revenue", name: "Recognized revenue", rows: [
       { id: "rev-fy", metric: "FY-2026 Recognized revenue", plan: 95, field: "forecast",
-        owners: [ { role: "Finance BP", source: "Finance ledger", value: 95 } ], owner: 0,
-        risk: { reporting: "amber" }, tips: { reporting: { text: "Full-year forecast from the finance ledger; not yet closed" } }, updated: "2026-09-30" }
+        owners: [ { role: "Head of Sales", source: "Spreadsheet (Head of Sales)", value: 95 } ], owner: 0, ownerWarn: true,
+        risk: { reporting: "amber" }, tips: { reporting: { text: "Reported by Head of Sales from a spreadsheet; Finance should own this figure" } }, updated: "2026-09-30" }
     ]},
     { id: "bookings", name: "Bookings & pipeline", timeframe: true, rows: [
       { id: "book-q3", period: "cq", metric: "Q3/26 Booking revenue", plan: 60, field: "actual",
@@ -724,18 +724,21 @@ function ruleIssues(d){
       if(!st || st === "green" || t.esc || covered(d, r.id, r.metric, c, r.parent)) return;
       if(t.text && !reasons.some(x => x.includes(t.text))) reasons.push(t.text); if(st === "red") sev = "high"; });
     if(r.weighted && blank(r.dealValue) && !blank(val(d, r, "forecast"))) reasons.push("no deal value or weight behind the weighted figure");
+    const mo = ownerOf(r), warnOwn = r.ownerWarn && mo && !covered(d, r.id, r.metric, "reporting", r.parent);
+    if(warnOwn){ reasons.splice(0, reasons.length, `${r.metric} is reported by ${mo.role} from ${/^spreadsheet/i.test(mo.source) ? "a spreadsheet" : mo.source}, not by Finance`); topic = "Ownership"; }
     const v = varOf(d, r, "actual");
     if(r.perMonth && v && v.adverse && Math.abs(v.pct) >= 10){ reasons.unshift(`running ${v.main} over plan`); topic = "Cost"; impact = `At this rate it adds ${smoney(v.diff * 12)} a year over plan.`; sev = Math.abs(v.pct) >= 20 ? "high" : "medium"; }
     if(r.fmt === "count" && v && v.adverse && !reasons.length) reasons.push(`${fmtV(r, val(d, r, "actual"))} against a plan of ${fmtV(r, val(d, r, "plan"))} (${v.sub})`);
     if(!reasons.length) return;
     if(!impact){
-      if(disagree || empty.length) impact = `The ${shown || "figure"} on the President's page may not be the agreed number.`;
+      if(warnOwn) impact = `The ${shown || "figure"} shown has not been checked or reported by Finance.`;
+      else if(disagree || empty.length) impact = `The ${shown || "figure"} on the President's page may not be the agreed number.`;
       else if(r.weighted){ const par = findRow(d, r.parent), tot = par ? val(d, par, "forecast") : null, w = val(d, r, "forecast"); impact = tot && w ? `${Math.round(w / tot * 100)}% of the weighted pipeline (${shown}) hasn't been checked.` : `The ${shown} in the pipeline hasn't been checked.`; }
       else if(r.fmt === "count") impact = "Fewer engineers than planned for the projects starting in 2027.";
       else impact = `The ${shown || "figure"} shown may be out of date or unverified.`;
     }
     const owners = uniq(r.owners.map(x => x.role));
-    const next = topic === "Cost" ? `Ask ${owners.join(" and ")} to explain the gap and how much is price versus volume, by ${rb}.`
+    const next = warnOwn ? `Move ownership to Finance BP and report the figure from the finance ledger by ${rb}.` : topic === "Cost" ? `Ask ${owners.join(" and ")} to explain the gap and how much is price versus volume, by ${rb}.`
       : r.fmt === "count" ? `Ask ${owners.join(" and ")} for a hiring plan that closes the gap, by ${rb}.`
       : `Ask ${owners.join(" and ")} to confirm the figure${disagree ? " and agree one owner" : ""} by ${rb}.`;
     out.push({ title: r.metric, category: topic, severity: sev, issue: cap(reasons.join("; ")) + ".", impact, next, rowIds:[r.id] });
@@ -829,7 +832,7 @@ function ownerRec(r, o){
     const gap = "value" in o && "value" in good && !blank(o.value) && !blank(good.value) ? Math.abs(+o.value - +good.value) : null;
     return `Recommend ${good.role} as the only data owner, using ${good.source}${"value" in good && !blank(good.value) ? ` (${fmtV(r, good.value)})` : ""}. Ask ${o.role} to reconcile ${o.source}${gap ? ` (${fmtV(r, gap)} gap)` : ""} with ${good.role} by ${fmtDow(S.ops.settings.replyBy)}.`;
   }
-  if(!multi && r.ownerWarn) return `Recommend Finance BP as data owner, using the finance ledger. The ${o.source.toLowerCase().startsWith("spreadsheet") ? o.role + " spreadsheet" : o.source} isn't an audited source for ${r.metric.replace(/^FY-\d+ /, "").toLowerCase()}.`;
+  if(!multi && r.ownerWarn) return `Finance should own this figure. Recommend Finance BP as data owner, reporting from the finance ledger: the ${o.source.toLowerCase().startsWith("spreadsheet") ? o.role + " spreadsheet" : o.source} isn't an audited source for ${r.metric.replace(/^FY-\d+ /, "").toLowerCase()}.`;
   return "";
 }
 function recTip(t){ return t ? ` data-tip="${h(t)}" tabindex="0"` : ""; }
