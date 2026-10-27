@@ -117,6 +117,12 @@ tr.ph td.sticky .m{color:var(--grey-text)}
 .fus.bad{color:var(--neg);font-weight:700}.fus.ok{color:var(--ok-fg)}
 .fut{gap:8px}.fua{font-size:var(--fs-2xs)}
 .pnm{display:inline-flex;align-items:center;gap:8px}
+.cbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-top:14px;align-self:end;cursor:default}
+.cbar .cf{padding-top:0}
+.nb{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none}
+.ntx{margin:4px 0 0 50px;white-space:pre-wrap}
+.il li .cbar{padding-top:10px}
+.rl li{cursor:default}
 .cfs{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:8px}
 .fuh{list-style:none;margin:8px 0 0;padding:0 12px;background:#fff;border:1px solid var(--rule)}.fuh li:last-child{border-bottom:0}
 .fuh li{padding:8px 0;border-bottom:1px solid var(--rule);font-size:var(--fs-md)}
@@ -148,6 +154,7 @@ tr.off td.sticky .m{text-decoration:line-through;color:var(--grey-text)}
 .il .kv{grid-template-columns:78px minmax(0,1fr);margin-top:6px;font-size:var(--fs-base);gap:8px}
 .il .kv>span:first-child{font-size:var(--fs-xs)}
 .il .act{grid-column:2;margin-top:8px}
+#resolved{margin-top:12px}
 .tag{display:inline-block;font:700 var(--fs-2xs)/1.4 var(--sans);text-transform:uppercase;letter-spacing:.05em;color:var(--grey-text);border:1px solid var(--rule-strong);padding:0 4px;border-radius:2px;margin-right:6px;vertical-align:1px;white-space:nowrap}
 .ifoot{padding:8px 14px;border-top:1px solid var(--rule);font-size:var(--fs-sm);color:var(--grey-text);display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
 
@@ -372,6 +379,7 @@ textarea.in{resize:vertical;line-height:1.5}
   <div class="lbl dimmable">Escalation</div>
   <section class="cards" id="cards" aria-label="Escalation"></section>
   <section class="issues dimmable" id="issues" aria-label="Other issues"></section>
+  <section class="issues dimmable" id="resolved" aria-label="Resolved" hidden></section>
   <div class="legend dimmable" aria-label="Legend">
     <span><i class="dot green"></i>On track</span><span><i class="dot amber"></i>Needs attention</span>
     <span><i class="dot red"></i>Off track</span><span><i class="dot nodata"></i>No data</span>
@@ -570,7 +578,7 @@ const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MINUS = "−";
 const S = { mode:"demo", me:{ admin:false, email:"", setup:false }, ai:{ enabled:false }, mail:{ enabled:false, from:"" },
-  live:null, draft:null, ops:null, history:[], view:"live", tf:"all", offer:"sales", collapsed:{}, issuesOpen:false, issues:{ live:null, draft:null }, aiBusy:false,
+  live:null, draft:null, ops:null, history:[], view:"live", tf:"all", offer:"sales", collapsed:{}, issuesOpen:false, resolvedOpen:false, notes:{}, resolved:{}, nmodal:null, issues:{ live:null, draft:null }, aiBusy:false,
   pubConfirm:false, discardConfirm:false, modal:null, pop:null, focus:null, vmenu:false, restoreAsk:null, whatIf:{}, noWhatIf:false, fuOpen:{} };
 
 /* ---------- helpers ---------- */
@@ -1223,10 +1231,10 @@ const MOCK_FU = [
 MOCK_FU.forEach(m => { m.body = normPeriods(m.body); m.subject = normPeriods(m.subject); if(m.replied) m.replied.text = normPeriods(m.replied.text); });
 function fuList(ref){ return [...S.ops.outbox.filter(m => m.ref === ref), ...MOCK_FU.filter(m => m.ref === ref)].sort((a, b) => b.at < a.at ? -1 : 1); }
 const DELIV = { sent:"Sent", simulated:"Not emailed", logged:"Not emailed", failed:"Not sent" };
-function fuBlock(ref){
+function fuBlock(ref, openRef, noFollow){
   const id = ref, list = fuList(ref), open = !!S.fuOpen[id], last = list[0];
   const rs = last ? replyState(last) : null;
-  let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="${ref}">Follow up</button></div><div class="cfs">`;
+  let html = `<div class="cf">${noFollow ? "" : `<div class="cfr"><button class="btn sm" data-act="follow" data-ref="${openRef || ref}">Follow up</button></div>`}<div class="cfs">`;
   if(list.length) html += `<button class="btn sm fut" data-act="fuhist" data-id="${id}" aria-expanded="${open}">History (${list.length})<span class="fua">${open ? "▲" : "▼"}</span></button>`;
   html += last ? `<span class="fus ${rs.k}"><i class="dot ${rs.k === "ok" ? "green" : rs.k === "bad" ? "red" : "amber"}"></i>${h(toNames(last))} · ${h(rs.t)}</span>` : `<span class="muted">No follow-up yet</span>`;
   html += `</div>`;
@@ -1236,28 +1244,105 @@ function fuBlock(ref){
       <div class="fuh3"><span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${m.id.startsWith("m") && MOCK_FU.includes(m) ? "" : m.replied ? `<button class="lnk" data-act="fureply" data-mid="${h(m.id)}" data-v="0">Undo</button>` : `<button class="btn xs" data-act="fureply" data-mid="${h(m.id)}" data-v="1">Mark replied</button>`}</div></li>`; }).join("")}</ol>`;
   return html + `</div>`;
 }
+/* ---------- team notes and resolved items ---------- */
+const MOCK_NOTES = {
+  esc1: [{ id:"n1", at:"2026-10-23T10:00:00Z", by:"Leadership review", text:"Agreed to use the Finance booking log ($41M) as the reference figure. Sales to bring the recovery plan to the Oct-30 review." }],
+  esc2: [{ id:"n2", at:"2026-10-23T10:00:00Z", by:"Leadership review", text:"Delivery to name a Bank A owner this week. Product to confirm whether Release 4.2 shipped." }],
+  esc3: [{ id:"n4", at:"2026-10-24T09:30:00Z", by:"Value Capture Office", text:"Finance confirmed the funding request is on the Oct-30 agenda." },
+         { id:"n3", at:"2026-10-23T10:00:00Z", by:"Leadership review", text:"Funding for 20 engineers to be decided at the Oct-30 review. Talent to line up contractors in case it is approved." }],
+  hl1: [{ id:"n5", at:"2026-10-23T10:00:00Z", by:"Leadership review", text:"Pipeline beat noted. Leadership wants deal values for Other deals before counting them in the forecast." }]
+};
+function notesOf(ref){ return [...(S.notes[ref] || []), ...(MOCK_NOTES[ref] || [])].sort((a, b) => b.at < a.at ? -1 : 1); }
+function refInfo(ref){
+  const d = cur();
+  if(/^esc\d/.test(ref)){ const e = d.escalations.find(x => "esc" + x.id === ref); return e ? { type:"Escalation", label:`Escalation ${e.id}: ${titleCase(e.title)}`, title: titleCase(e.title), text: e.issue } : null; }
+  if(/^hl\d/.test(ref)){ const g = d.highlights.find(x => "hl" + x.id === ref); return g ? { type:"On track", label: titleCase(g.title), title: titleCase(g.title), text: g.good } : null; }
+  if(ref.startsWith("iss:")){ const it = allIssues().find(x => "iss:" + x.title === ref); return it ? { type:"Other issue", label: it.title, title: it.title, text: it.issue || "" } : { type:"Other issue", label: ref.slice(4), title: ref.slice(4), text:"" }; }
+  return null;
+}
+function noteBlock(ref, resolved){
+  const n = notesOf(ref).length;
+  return `<div class="nb"><button class="btn sm nbt" data-act="notes" data-ref="${h(ref)}">Team's internal notes${n ? ` (${n})` : ""}</button>${resolved ? `<button class="btn sm nbt" data-act="reopen" data-ref="${h(ref)}">Reopen</button>` : `<button class="btn sm nbt" data-act="resolve" data-ref="${h(ref)}">Mark as resolved</button>`}</div>`;
+}
+const cardBar = (ref, openRef) => `<div class="cbar">${fuBlock(ref, openRef)}${noteBlock(ref)}</div>`;
+async function sharedPost(path, body){
+  if(S.mode === "server"){ try{ const r = await api(path, { method:"POST", body: JSON.stringify(body) }); S.notes = r.notes || S.notes; S.resolved = r.resolved || S.resolved; }catch(e){ toast("Not saved: " + e.message); return false; } }
+  else saveLocal();
+  return true;
+}
+async function resolveRef(ref){
+  const info = refInfo(ref) || { type:"", label: ref, title: ref, text:"" };
+  S.resolved[ref] = { at: new Date().toISOString(), by: noteBy() || "", type: info.type, title: info.title, text: info.text };
+  if(S.focus) clearFocus();
+  renderDashboard(); await sharedPost("resolve", { ref, item: S.resolved[ref] }); renderDashboard();
+  toast(`Moved to Resolved: ${info.title}`);
+}
+async function reopenRef(ref){ delete S.resolved[ref]; renderDashboard(); await sharedPost("reopen", { ref }); renderDashboard(); }
+function noteBy(){ try{ return localStorage.getItem("np_noteby") || ""; }catch(e){ return ""; } }
+function renderNotesModal(){
+  const m = S.nmodal, el = $("#modal"); if(!m){ return; }
+  const list = notesOf(m.ref), info = refInfo(m.ref) || (S.resolved[m.ref] ? { label: S.resolved[m.ref].title } : { label: m.ref });
+  el.innerHTML = `<div class="mbox" role="dialog" aria-modal="true" aria-labelledby="nT">
+    <div class="mh"><h3 id="nT">Team's internal notes: ${h(info.label)}</h3><span class="sp"></span><button class="lnk" data-act="nclose">Close</button></div>
+    <div class="mb">
+      <div class="fr fr-top"><span>New note</span><textarea class="in" id="nText" rows="4" placeholder="Alignment from the leadership review, decisions, next steps">${h(m.text || "")}</textarea></div>
+      <div class="fr"><span>Logged by</span><input class="in" id="nBy" value="${h(m.by)}" placeholder="Leadership review, Value Capture Office, a team…" style="max-width:340px"></div>
+      <div class="fr"><span></span><div><button class="btn sm primary" data-act="nsave" ${m.text && m.text.trim() ? "" : "disabled"}>Save note</button></div></div>
+      ${list.length ? `<div class="fhw"><div class="fht">Notes</div><div class="fhl">${list.map(x => `<div class="fhi"><div class="fhm"><span class="fhd">${h(fmtDate(x.at.slice(0, 10)))}</span><b>${h(x.by || "Note")}</b></div><p class="ntx">${h(x.text)}</p></div>`).join("")}</div></div>` : ""}
+    </div></div>`;
+  el.hidden = false;
+  const t = $("#nText"); if(t && m.focus){ t.focus(); t.setSelectionRange(t.value.length, t.value.length); m.focus = false; }
+}
+async function saveNote(){
+  const m = S.nmodal; if(!m || !m.text.trim()) return;
+  const note = { id: Date.now().toString(36), at: new Date().toISOString(), by: m.by.trim(), text: normPeriods(m.text.trim(), curQuarter(S.live)) };
+  try{ localStorage.setItem("np_noteby", m.by.trim()); }catch(e){}
+  (S.notes[m.ref] = S.notes[m.ref] || []).unshift(note);
+  m.text = ""; renderNotesModal(); renderDashboard();
+  await sharedPost("notes/add", { ref: m.ref, note }); renderNotesModal(); renderDashboard();
+}
+// Dates (Oct-28) must never break across lines: swap the hyphen for a non-breaking one in displayed text only.
+const DATE_TXT = /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})\b/g;
+function keepDates(root){
+  const w = document.createTreeWalker(root || $("#page"), NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement && n.parentElement.closest("[contenteditable], textarea, input, script, style") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const list = []; while(w.nextNode()) list.push(w.currentNode);
+  list.forEach(n => { if(DATE_TXT.test(n.nodeValue)){ DATE_TXT.lastIndex = 0; n.nodeValue = n.nodeValue.replace(DATE_TXT, "$1\u2011$2"); } DATE_TXT.lastIndex = 0; });
+}
+function renderResolved(){
+  const keys = Object.keys(S.resolved).sort((a, b) => S.resolved[b].at < S.resolved[a].at ? -1 : 1), n = keys.length, el = $("#resolved");
+  el.hidden = !n; if(!n){ el.innerHTML = ""; return; }
+  let html = `<button class="ih" data-act="resolvedtog" aria-expanded="${S.resolvedOpen}"><b>Resolved</b><span class="cnt">${n}</span><span class="chev">${S.resolvedOpen ? "▲" : "▼"}</span></button>`;
+  if(S.resolvedOpen) html += `<ol class="il rl">${keys.map(k => { const r = S.resolved[k];
+    return `<li><i class="dot green" role="img" aria-label="Resolved"></i><div><div class="t">${r.type ? `<span class="tag">${h(r.type)}</span>` : ""}${h(r.title || k)}</div>
+      ${r.text ? `<div class="kv"><span>Issue</span><span>${h(r.text)}</span></div>` : ""}
+      <div class="kv"><span>Resolved</span><span>${h(fmtDate(r.at.slice(0, 10)))}${r.by ? ` · ${h(r.by)}` : ""}</span></div>
+      <div class="cbar">${fuBlock(k, null, true)}${noteBlock(k, true)}</div></div></li>`; }).join("")}</ol>`;
+  el.innerHTML = html; keepDates(el);
+}
 function renderHighlights(d){
   const ed = editing(), E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" >Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
-  $("#hlwrap").hidden = !d.highlights.length;
-  $("#hl").innerHTML = d.highlights.map((g, i) => `<article class="hlc dimmable${S.focus === "hl" + g.id ? " lit" : ""}" tabindex="0" role="button" data-hl="${g.id}" aria-label="${h(titleCase(g.title))}. Show in the tables">
+  $("#hlwrap").hidden = !d.highlights.some(g => !S.resolved["hl" + g.id]);
+  $("#hl").innerHTML = d.highlights.map((g, i) => S.resolved["hl" + g.id] ? "" : `<article class="hlc dimmable${S.focus === "hl" + g.id ? " lit" : ""}" tabindex="0" role="button" data-hl="${g.id}" aria-label="${h(titleCase(g.title))}. Show in the tables">
     <div class="ct"><span class="cb ok">✓</span>${E(`highlights.${i}.title`, g.title)}</div>
     <div class="hlg"><div class="kv"><span>Highlight</span>${E(`highlights.${i}.good`, g.good, "b")}</div>
       <div class="kv"><span>Risk</span>${E(`highlights.${i}.risk`, g.risk)}</div>
       <div class="kv"><span>Next step</span>${E(`highlights.${i}.next`, g.next)}</div></div>
-    ${fuBlock("hl" + g.id)}</article>`).join("");
+    ${cardBar("hl" + g.id)}</article>`).join("");
 }
 function renderCards(d){
   const ed = editing();
   const E = (path, txt, cls = "") => ed ? `<span class="aiw"><span class="${cls}" contenteditable="true" data-edit="d:${path}">${h(txt)}</span>${S.draft.manual && S.draft.manual["d:" + path] && AI_KEYS(S.draft).includes("d:" + path) ? `<button class="lnk aix" data-act="unlock" data-key="d:${path}" >Use suggested text</button>` : ""}</span>` : `<span class="${cls}">${h(txt)}</span>`;
   $("#cards").innerHTML = d.escalations.map((e, i) => {
+    if(S.resolved["esc" + e.id]) return "";
     const lf = lastFollow("esc" + e.id), lit = S.focus === "esc" + e.id;
     return `<article class="card dimmable${lit ? " lit" : ""}" tabindex="0" role="button" aria-pressed="${lit}" data-card="${e.id}" aria-label="Escalation ${e.id}: ${h(titleCase(e.title))}. Show in the tables">
       <div class="ct"><span class="cb">${e.id}</span>${E(`escalations.${i}.title`, e.title)}</div>
       <div class="kv"><span>Issue</span>${E(`escalations.${i}.issue`, e.issue, "b")}</div>
       <div class="kv"><span>Impact</span>${E(`escalations.${i}.impact`, e.impact)}</div>
       <div class="kv"><span>Next step</span>${E(`escalations.${i}.next`, e.next)}</div>
-      ${fuBlock("esc" + e.id)}</article>`;
+      ${cardBar("esc" + e.id)}</article>`;
   }).join("");
+  keepDates($("#cards"));
 }
 function coveredIds(d){
   const ids = new Set();
@@ -1270,10 +1355,13 @@ function notCovered(d, items){
   const ids = coveredIds(d), childOnly = it => (it.rowIds || []).length && it.rowIds.every(id => { const r = findRow(d, id); return r && r.child; });
   return items.filter(it => it.keep || (!(it.rowIds || []).some(id => ids.has(id)) && !childOnly(it)));
 }
-function currentIssues(){
+function allIssues(){
   const which = S.view === "draft" ? "draft" : "live", c = S.issues[which];
-  if(S.ai.enabled && c && c.items) return { items: notCovered(cur(), c.items), src: "ai", at: c.at };
-  return { items: notCovered(cur(), ruleIssues(cur())), src: "rules" };
+  return S.ai.enabled && c && c.items ? notCovered(cur(), c.items) : notCovered(cur(), ruleIssues(cur()));
+}
+function currentIssues(){
+  const which = S.view === "draft" ? "draft" : "live", c = S.issues[which], items = allIssues().filter(it => !S.resolved["iss:" + it.title]);
+  return S.ai.enabled && c && c.items ? { items, src: "ai", at: c.at } : { items, src: "rules" };
 }
 function renderIssues(){
   const I = currentIssues(), n = I.items.length;
@@ -1283,10 +1371,10 @@ function renderIssues(){
       <div><div class="t">${it.category ? `<span class="tag">${h(it.category)}</span>` : ""}${h(it.title)}</div>
         <div class="kv"><span>Issue</span><span>${h(it.issue || it.detail || "")}</span></div>
         <div class="kv"><span>Impact</span><span>${h(it.impact || "—")}</span></div>
-        <div class="kv"><span>Next step</span><span>${h(it.next || "—")}</span></div></div>
-      <div class="act"><button class="btn xs" data-act="follow" data-ref="iss${i}">Follow up</button></div></li>`).join("") || '<li><span></span><div>Nothing else stands out beyond the escalations.</div></li>'}</ol>`;
+        <div class="kv"><span>Next step</span><span>${h(it.next || "—")}</span></div>
+      <div class="cbar">${fuBlock("iss:" + it.title, "iss" + i)}${noteBlock("iss:" + it.title)}</div></div></li>`).join("") || '<li><span></span><div>Nothing else stands out beyond the escalations.</div></li>'}</ol>`;
   }
-  $("#issues").innerHTML = html;
+  $("#issues").innerHTML = html; keepDates($("#issues"));
 }
 
 /* ---------- top bar, versions, draft bar ---------- */
@@ -1345,7 +1433,7 @@ function renderDashboard(){
   const d = cur(), keep = S.focus;
   hideTip(); clearFocus(true);
   document.body.classList.toggle("edit", editing());
-  renderDraftbar(); renderSubs(d); renderHighlights(d); renderCards(d); renderIssues();
+  renderDraftbar(); renderSubs(d); renderHighlights(d); renderCards(d); renderIssues(); renderResolved();
   finTable($("#tCom"), d.commercial, "com");
   $("#foot").innerHTML = d.footnote ? h(d.footnote) : ""; $("#foot").hidden = !d.footnote;
   finTable($("#tCost"), d.cost, "cost");
@@ -1354,6 +1442,7 @@ function renderDashboard(){
   opsTable($("#tOps"));
   $("#opsNote").innerHTML = d.opsNote ? h(d.opsNote) : ""; $("#opsNote").hidden = !d.opsNote;
   if(editing()) wrapDates();
+  keepDates($("#page"));
   if(keep){ const kk = keep.startsWith("esc") ? "esc" : keep.startsWith("hl") ? "hl" : "iss"; setFocus(kk, +keep.slice(kk.length), false); }
 }
 function wrapDates(root){
@@ -1461,6 +1550,7 @@ document.addEventListener("input", e => {
   const el = e.target;
   if(el.isContentEditable && el.dataset.edit){ setVal(el.dataset.edit, el.innerText.replace(/\s+/g, " ").trim()); if(S.draft){ S.draft.manual = S.draft.manual || {}; S.draft.manual[el.dataset.edit] = true; } dirty(false); return; }
   if(el.closest("#pop")) return onPopInput(el);
+  if(el.closest("#modal") && S.nmodal){ if(el.id === "nText"){ S.nmodal.text = el.value; const b = document.querySelector('[data-act="nsave"]'); if(b) b.disabled = !el.value.trim(); } else if(el.id === "nBy") S.nmodal.by = el.value; return; }
   if(el.closest("#modal")) return onModalInput(el);
 });
 document.addEventListener("change", e => {
@@ -1718,7 +1808,7 @@ function openModal(ref){
   renderModal();
   if(S.ai.enabled) aiDraft();
 }
-function closeModal(){ S.modal = null; $("#modal").hidden = true; $("#modal").innerHTML = ""; }
+function closeModal(){ S.modal = null; S.nmodal = null; $("#modal").hidden = true; $("#modal").innerHTML = ""; }
 function ccLabel(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).name).filter(Boolean), ...(S.ops.settings.cc ? [S.ops.settings.cc] : [])].join(", "); }
 function ccEmails(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).email).filter(Boolean), ...String(S.ops.settings.cc || "").split(/[\s,;]+/).filter(Boolean)]; }
 function recips(){ return [...S.modal.sel].map(k => S.ops.directory[k]).filter(p => p && p.email); }
@@ -1807,7 +1897,7 @@ document.addEventListener("click", async e => {
   const a = e.target.closest("[data-act]");
   if(!a){
     if(e.target.isContentEditable || e.target.closest("input,select,textarea,a")) return;
-    if(e.target.closest(".cf")) return;
+    if(e.target.closest(".cf, .nb, .cbar")) return;
     const hlc = e.target.closest(".hlc[data-hl]"); if(hlc){ const k = "hl" + hlc.dataset.hl; if(S.focus === k) clearFocus(); else setFocus("hl", +hlc.dataset.hl, true); return; }
     const card = e.target.closest(".card[data-card]"); if(card){ const k = "esc" + card.dataset.card; if(S.focus === k) clearFocus(); else setFocus("esc", +card.dataset.card, true); return; }
     const li = e.target.closest("li[data-issue]"); if(li){ const k = "iss" + li.dataset.issue; if(S.focus === k) clearFocus(); else setFocus("iss", +li.dataset.issue, true); return; }
@@ -1832,8 +1922,14 @@ document.addEventListener("click", async e => {
     case "ai-refresh": maybeAI(S.view === "draft" ? "draft" : "live", true); break;
     case "follow": openModal(a.dataset.ref); break;
     case "rowtog": { const k = "r:" + a.dataset.rid; S.collapsed[k] = !S.collapsed[k]; savePrefs(); renderDashboard(); break; }
-    case "fuhist": S.fuOpen[a.dataset.id] = !S.fuOpen[a.dataset.id]; renderCards(cur()); break;
-    case "fureply": { const m2 = S.ops.outbox.find(x => x.id === a.dataset.mid); if(m2){ if(a.dataset.v === "1") m2.replied = { at: new Date().toISOString() }; else delete m2.replied; saveOps(); renderCards(cur()); if(S.modal) renderModal(); } break; }
+    case "fuhist": S.fuOpen[a.dataset.id] = !S.fuOpen[a.dataset.id]; renderHighlights(cur()); renderCards(cur()); renderIssues(); renderResolved(); break;
+    case "notes": S.modal = null; S.nmodal = { ref: a.dataset.ref, text: "", by: noteBy(), focus: true }; renderNotesModal(); break;
+    case "nclose": closeModal(); break;
+    case "nsave": await saveNote(); break;
+    case "resolve": await resolveRef(a.dataset.ref); break;
+    case "reopen": await reopenRef(a.dataset.ref); break;
+    case "resolvedtog": S.resolvedOpen = !S.resolvedOpen; renderResolved(); break;
+    case "fureply": { const m2 = S.ops.outbox.find(x => x.id === a.dataset.mid); if(m2){ if(a.dataset.v === "1") m2.replied = { at: new Date().toISOString() }; else delete m2.replied; saveOps(); renderHighlights(cur()); renderCards(cur()); renderIssues(); renderResolved(); if(S.modal) renderModal(); } break; }
     case "pub": S.pubConfirm = true; renderDraftbar(); break;
     case "discard": S.discardConfirm = true; renderDraftbar(); break;
     case "cancel": S.pubConfirm = S.discardConfirm = false; renderDraftbar(); break;
@@ -1853,7 +1949,7 @@ document.addEventListener("click", async e => {
 let saveT = null, opsT = null, aiT = null;
 function setSaved(t){ const e = $("#saveSt"); if(e) e.textContent = t; }
 function dirty(rerender){ if(rerender){ renderDashboard(); renderBar(); } else { const b = $("#chgN"); if(b) b.textContent = diffCount(); } saveDraft(); scheduleSuggest(); }
-function saveLocal(){ try{ localStorage.setItem(LSKEY, JSON.stringify({ live:S.live, draft:S.draft, ops:S.ops, history:S.history })); }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LSKEY, JSON.stringify({ live:S.live, draft:S.draft, ops:S.ops, history:S.history, notes:S.notes, resolved:S.resolved })); }catch(e){} }
 function saveDraft(){
   setSaved("Saving…"); clearTimeout(saveT);
   saveT = setTimeout(async () => {
@@ -1918,14 +2014,14 @@ function valid(x){ return !!(x && x.commercial && x.operations); }
 async function boot(){
   loadPrefs();
   S.live = normalize(DATA); S.draft = normalize(DATA); S.ops = clone(OPS_DEFAULT); S.history = [histEntry(S.live, "Q3 tracker extract")];
-  try{ const j = JSON.parse(localStorage.getItem(LSKEY) || "null"); if(j && valid(j.live)){ S.live = normalize(j.live); S.draft = normalize(valid(j.draft) ? j.draft : j.live); S.ops = mergeOps(j.ops); S.history = j.history || S.history; } }catch(e){}
+  try{ const j = JSON.parse(localStorage.getItem(LSKEY) || "null"); if(j && valid(j.live)){ S.live = normalize(j.live); S.draft = normalize(valid(j.draft) ? j.draft : j.live); S.ops = mergeOps(j.ops); S.history = j.history || S.history; S.notes = j.notes || {}; S.resolved = j.resolved || {}; } }catch(e){}
   renderAll();
   try{
     const st = await Promise.race([api("state"), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 6000))]);
     S.mode = "server"; S.me = st.me || S.me; S.mail = st.mail || S.mail; S.ai = st.ai || S.ai;
     if((!valid(st.live) || (st.live.schema || 0) < DATA.schema) && S.me.admin) Object.assign(st, await api("init", { method:"POST", body: JSON.stringify({ live: normalize(DATA), draft: normalize(DATA), ops: mergeOps(st.ops) }) }));
     if(!valid(st.live)) throw new Error("No published data yet.");
-    S.live = normalize(st.live); S.draft = normalize(valid(st.draft) ? st.draft : st.live); S.ops = mergeOps(st.ops); S.issues = st.issues || S.issues; S.history = st.history || [];
+    S.live = normalize(st.live); S.draft = normalize(valid(st.draft) ? st.draft : st.live); S.ops = mergeOps(st.ops); S.issues = st.issues || S.issues; S.history = st.history || []; S.notes = st.notes || {}; S.resolved = st.resolved || {};
     if(st.ops && st.ops.dirV !== OPS_DEFAULT.dirV && S.me.admin) saveOps();
     renderAll();
     maybeAI("live");

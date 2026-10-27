@@ -12,6 +12,7 @@ The whole site (page and API) is password protected: anyone with the link and th
 - **On Track**: what's going well, with the risk and next step. Click it to highlight and jump to the linked rows.
 
 - **Escalations to the President**: three cards. Click one to dim the page, jump to and highlight the linked rows, and pop up the numbered call-outs. Each card has a **Follow up** button that opens an email draft (written by AI when connected).
+- **Team's internal notes / Mark as resolved**: every On Track box, escalation card and other issue has a notes log (for alignment from the leadership review; anyone with access can add a note) and a resolve button. Resolved items move to the **Resolved** list under Other issues, where they can be reopened.
 - **Other issues**: a collapsible list of further issues in the same Issue / Impact / Next step format, leaving out what the escalations cover. With an AI key it's written by AI from the current figures and refreshes when the data changes; without one it uses rule-based checks. Each issue has its own Follow up button.
 - **1 Commercial**: Recognized revenue (collapsible) and Bookings & pipeline with a period selector, deal value and weight inputs next to each deal (a what-if in Live, saved in Draft), variance vs plan for actual and forecast, separate data owner and data source. Data points with two owners show as two rows, the unreliable one in red.
 - **2 Cost**: Platform cloud run-rate per month and cost per active account.

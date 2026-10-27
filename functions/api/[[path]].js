@@ -213,10 +213,11 @@ export async function onRequest({ request, env, params }) {
     try { await migrateRevenue(env); } catch (e) { /* same */ }
     const live = await read(env, "live");
     const liveIssues = valid(live) ? await issuesState(env, "live", live) : null;
-    if (!me.admin) return J({ me, ai, live, issues: { live: liveIssues, draft: null } });
+    const [notes, resolved] = await Promise.all([read(env, "notes"), read(env, "resolved")]);
+    if (!me.admin) return J({ me, ai, live, notes: notes || {}, resolved: resolved || {}, issues: { live: liveIssues, draft: null } });
     const [draft, ops, history] = await Promise.all([read(env, "draft"), read(env, "ops"), read(env, "history")]);
     const draftIssues = valid(draft) ? await issuesState(env, "draft", draft) : null;
-    return J({ me, mail, ai, live, draft, ops, history: histMeta(history, live), issues: { live: liveIssues, draft: draftIssues } });
+    return J({ me, mail, ai, live, draft, ops, notes: notes || {}, resolved: resolved || {}, history: histMeta(history, live), issues: { live: liveIssues, draft: draftIssues } });
   }
 
   if (path === "ai/check" && method === "GET") {
@@ -254,6 +255,31 @@ export async function onRequest({ request, env, params }) {
     } catch (e) {
       return J({ error: String(e.message || e) }, 502);
     }
+  }
+
+  // Team notes and resolved items: anyone who can open the page (leadership included) can log them.
+  if ((path === "notes/add" || path === "resolve" || path === "reopen") && method === "POST") {
+    const b = await body();
+    const ref = String(b.ref || "").slice(0, 200);
+    if (!ref) return J({ error: "Missing item." }, 400);
+    const [notes, resolved] = await Promise.all([read(env, "notes"), read(env, "resolved")]);
+    const N = notes || {}, Rz = resolved || {};
+    const s = (x, n) => normPeriods(String(x || "").slice(0, n));
+    if (path === "notes/add") {
+      const n = b.note || {};
+      if (!String(n.text || "").trim()) return J({ error: "The note is empty." }, 400);
+      (N[ref] = N[ref] || []).unshift({ id: String(n.id || Date.now().toString(36)).slice(0, 40), at: new Date().toISOString(), by: s(n.by, 80), text: s(n.text, 2000) });
+      N[ref] = N[ref].slice(0, 200);
+      await write(env, "notes", N);
+    } else if (path === "resolve") {
+      const it = b.item || {};
+      Rz[ref] = { at: new Date().toISOString(), by: s(it.by, 80), type: s(it.type, 40), title: s(it.title, 200), text: s(it.text, 600) };
+      await write(env, "resolved", Rz);
+    } else {
+      delete Rz[ref];
+      await write(env, "resolved", Rz);
+    }
+    return J({ notes: N, resolved: Rz });
   }
 
   if (!me.admin) return J({ error: "Only dashboard admins can make changes." }, 403);
