@@ -111,9 +111,10 @@ tr.ph td.sticky .m{color:var(--grey-text)}
 .cfr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .fus{display:inline-flex;align-items:center;gap:5px;font-size:12px}
 .fus.bad{color:var(--neg);font-weight:700}.fus.ok{color:var(--ok-fg)}
-.fut{font-size:12px}
+.fut{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--rule-strong);border-radius:2px;padding:4px 10px;font:700 12px var(--sans);color:var(--deep);cursor:pointer}
+.fut:hover{border-color:var(--deep)}.fua{font-size:10px}
 .cfs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
-.fuh{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--rule)}
+.fuh{list-style:none;margin:8px 0 0;padding:0 12px;background:#fff;border:1px solid var(--rule)}.fuh li:last-child{border-bottom:0}
 .fuh li{padding:8px 0;border-bottom:1px solid var(--rule);font-size:12px}
 .fuh2{color:var(--grey-text);margin-top:2px}
 .fuh3{display:flex;align-items:center;gap:10px;margin-top:4px}
@@ -1184,8 +1185,8 @@ function fuBlock(ref){
   const id = ref, list = fuList(ref), open = !!S.fuOpen[id], last = list[0];
   const rs = last ? replyState(last) : null;
   let html = `<div class="cf"><div class="cfr"><button class="btn sm" data-act="follow" data-ref="${ref}">Follow up</button></div><div class="cfs">`;
+  if(list.length) html += `<button class="fut" data-act="fuhist" data-id="${id}" aria-expanded="${open}">History (${list.length})<span class="fua">${open ? "▲" : "▼"}</span></button>`;
   html += last ? `<span class="fus ${rs.k}"><i class="dot ${rs.k === "ok" ? "green" : rs.k === "bad" ? "red" : "amber"}"></i>${h(toNames(last))} · ${h(rs.t)}</span>` : `<span class="muted">No follow-up yet</span>`;
-  if(list.length) html += `<button class="lnk fut" data-act="fuhist" data-id="${id}" aria-expanded="${open}">History (${list.length}) ${open ? "▲" : "▼"}</button>`;
   html += `</div>`;
   if(open && list.length) html += `<ol class="fuh">${list.map(m => { const r = replyState(m);
     return `<li><div class="fuh1"><b>${h(fmtDate(m.at.slice(0, 10)))}</b> to ${h(toNames(m))}${m.status === "sent" ? "" : `<span class="muted"> · ${h(DELIV[m.status] || m.status || "")}</span>`}</div>
