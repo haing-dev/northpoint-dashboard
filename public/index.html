@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>NorthPoint President's Dashboard</title>
+<title>Platform BU Leadership Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: slide-style page. Header → escalations → other issues → Commercial → Cost → Operations. */
@@ -74,7 +74,14 @@ h1{font:700 30px/1.2 var(--serif);margin:6px 0 0;max-width:1040px;text-wrap:bala
 .kv>span:first-child{font:700 11px/1.7 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--grey-text)}
 .kv .b{font-weight:700}
 .cf{padding-top:14px;align-self:start;cursor:default}
-#hlwrap{margin-bottom:4px}
+#hlwrap{margin:18px 0 4px}
+.fhl{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow:auto;border:1px solid var(--rule);padding:6px 8px;border-radius:2px}
+.fhi summary{cursor:pointer;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.fhs{font-size:12px;font-weight:700;margin:6px 0 2px}
+.fhb{white-space:pre-wrap;font:12px/1.45 var(--sans);background:#FAFAFA;border:1px solid var(--rule);padding:8px;margin:0 0 6px;max-height:220px;overflow:auto}
+.dpk{position:relative;display:inline-block;min-width:56px;border-bottom:1px dashed #B9A85A;cursor:pointer}
+.dpk .dpv{pointer-events:none}
+.dpk input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0}
 .subs{margin:40px 0 6px}
 .subh{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:8px}
 .subh .tog{font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase}
@@ -147,9 +154,9 @@ tr.off td.sticky .m{text-decoration:line-through;color:var(--grey-text)}
 table.tr{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
 .tr th{font:400 11px var(--sans);text-transform:uppercase;letter-spacing:.03em;color:var(--grey-text);text-align:left;padding:4px 8px;vertical-align:bottom;background:#fff;white-space:nowrap}
 .tr th.r{text-align:center}.tr th.c{text-align:center}
-.tr th.g{font-weight:700;color:var(--ink);text-transform:none;font-size:12px;letter-spacing:0}
+.tr th.g{}
 .tr tr.grp th{padding-bottom:0}
-.tr tr.grp th span{display:block;border-bottom:1px solid var(--rule-strong);padding-bottom:3px;text-align:center;font-weight:700;color:var(--ink)}
+.tr tr.grp th span{display:block;border-bottom:1px solid var(--rule-strong);padding-bottom:3px;text-align:center}
 .tr tr.cols th{border-bottom:2px solid var(--deep);padding-bottom:6px}
 .tr td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:middle;position:relative;background:#fff}
 .tr tr{scroll-margin-top:90px}
@@ -349,12 +356,9 @@ textarea.in{resize:vertical;line-height:1.5}
 <div class="bar" id="bar"></div>
 <main class="page" id="page">
   <div id="draftbar"></div>
-  <header class="dimmable" id="hdr">
-    <div class="kicker" id="kicker"></div>
-  </header>
   <div id="hlwrap"><div class="lbl dimmable">On Track</div><section id="hl" aria-label="On Track"></section></div>
-  <div class="lbl dimmable">Escalations to the President</div>
-  <section class="cards" id="cards" aria-label="Escalations to the President"></section>
+  <div class="lbl dimmable">Escalation</div>
+  <section class="cards" id="cards" aria-label="Escalation"></section>
   <section class="issues dimmable" id="issues" aria-label="Other issues"></section>
   <div class="legend dimmable" aria-label="Legend">
     <span><i class="dot green"></i>On track</span><span><i class="dot amber"></i>Needs attention</span>
@@ -389,7 +393,7 @@ textarea.in{resize:vertical;line-height:1.5}
    owners: who reports the figure and what they report; "owner" picks one.
    ===================================================================== */
 const DATA = {
-  schema: 12, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
+  schema: 13, version: 1, publishedAt: "2026-09-30", publishedBy: "Q3 tracker extract",
   meta: { asOf: "2026-09-30", currency: "USD" },
   header: {
     kicker: "Platform BU Leadership Dashboard",
@@ -405,14 +409,14 @@ const DATA = {
   escalations: [
     { id: 1, title: "Q3 BOOKING SHORTAGE",
       issue: "Q3 bookings are 32% ($19M) below plan",
-      impact: "Q426-Q127 pipeline must cover for the shortfall, and North Point delivery is key",
+      impact: "The Q4 2026–Q1 2027 pipeline must cover the shortfall, and NorthPoint delivery is key",
       next: "Ask Head of Sales for a recovery plan by the next review" },
     { id: 2, title: "DELIVERY REPORTING",
       issue: "Bank A and Release 4.2 status not updated",
       impact: "We can't confirm Bank A's 1 Nov go-live or that Release 4.2 shipped",
       next: "Ask Head of Delivery and Head of Product to report every project with an owner and date" },
     { id: 3, title: "NORTHPOINT EXECUTION RISK",
-      issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1/27",
+      issue: "NorthPoint project is at risk of understaffing, with 4/24 engineers available for Q1 2027",
       impact: "NorthPoint failure would jeopardize 40% of pipeline",
       next: "Ask Head of Delivery and Head of Talent to fund 20 engineers or move the start date", jump: "np" }
   ],
@@ -428,7 +432,7 @@ const DATA = {
                   { role: "Head of Sales", source: "CRM", value: 48, unreliable: true } ], owner: 0,
         risk: { reporting: "amber" }, tips: { reporting: { text: "CRM shows $48M vs $41M in Finance's booking log" } },
         varTip: { text: "$19M below plan", esc: 1 }, updated: "2026-09-30" },
-      { id: "pipe", period: "n2q", metric: "Q4 2026-Q1 2027 Booking pipeline revenue", plan: 210, field: "forecast", rollup: true, varSub: false,
+      { id: "pipe", period: "n2q", metric: "Q4 2026–Q1 2027 Booking pipeline revenue", plan: 210, field: "forecast", rollup: true, varSub: false,
         owners: [ { role: "Head of Sales", source: "CRM, weighted" } ], owner: 0,
         risk: { concentration: "red", reporting: "amber" },
         tips: { concentration: { text: "40% of pipeline is NorthPoint", esc: 3 },
@@ -900,6 +904,8 @@ function finTable(el, secs, kind){
         else if(k === "exec") tr += execCell(d, r, cost, C("concentration") || C("staffing") || C("reporting"));
         else if(cost && k === "reporting" && r.placeholder) tr += `<td class="ctr">${nd()}</td>`;
         else if(cost && k === "reporting" && r.annualOf){ const src = findRow(d, r.annualOf); tr += src ? dotCell(null, "Reporting quality", cellData(d, src).reporting, "") : "<td></td>"; }
+        else if(r.annualOf && ["owner","source","updated"].includes(k)){ const src = findRow(d, r.annualOf), sc = src ? cellData(d, src) : null;
+          tr += !src ? "<td></td>" : k === "owner" ? ownerCell(src, sc.owner, "") : k === "source" ? sourceCell(src, sc.source, "") : `<td>${sc.updated.t ? h(sc.updated.t) : nd()}</td>`; }
         else if(r.placeholder || (r.annualOf && !["plan","forecast","varA"].includes(k))) tr += "<td></td>";
         else if(cost && k === "actual") tr += "<td></td>";
         else if(cost && k === "forecast") tr += valCell(d, r, "actual", C("actual"));
@@ -1061,7 +1067,7 @@ function ruleSuggest(d){
     if(!blank(a) && +p){ const diff = r1(a - p), pc = P(diff / p * 100); out[`d:escalations.${qi}.issue`] = diff < 0 ? `Q3 bookings are ${pc}% (${money(-diff)}) below plan` : `Q3 bookings are ${pc}% (${money(diff)}) above plan`; } }
   const ni = d.escalations.findIndex(e => e.jump === "np" || /northpoint/i.test(e.title));
   if(ni >= 0){
-    if(npx && npx.kpi && +npx.kpi.plan) out[`d:escalations.${ni}.issue`] = +npx.kpi.actual < +npx.kpi.plan ? `NorthPoint project is at risk of understaffing, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1/27` : `NorthPoint project is fully staffed, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1/27`;
+    if(npx && npx.kpi && +npx.kpi.plan) out[`d:escalations.${ni}.issue`] = +npx.kpi.actual < +npx.kpi.plan ? `NorthPoint project is at risk of understaffing, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1 2027` : `NorthPoint project is fully staffed, with ${npx.kpi.actual}/${npx.kpi.plan} engineers available for Q1 2027`;
     if(share != null) out[`d:escalations.${ni}.impact`] = `NorthPoint failure would jeopardize ${share}% of pipeline`;
   }
   if(npx && npx.kpi && npx.keyNote) out[`proj:npexec:keyNote.text`] = `${npx.kpi.actual}/${npx.kpi.plan} engineers available for Jan 2027 execution`;
@@ -1116,8 +1122,8 @@ const SUBST = { ok:["done","Submitted"], late:["late","Late"], missing:["blocked
 function renderSubs(d){
   const box = $("#subs"); box.hidden = !editing(); if(!editing()){ box.innerHTML = ""; return; }
   const L = submissions(d), open = !S.collapsed.subs, c = k => L.filter(x => x.st === k).length;
-  let html = `<div class="subh"><button class="tog" data-act="sec" data-sec="subs" aria-expanded="${open}"><span class="cv">▾</span>Data submissions</button>
-    <span class="csum">Due ${h(fmtDate(d.meta.asOf) || "")} · <b>${c("ok")} of ${L.length}</b> submitted${c("late") ? ` · <span class="warnt">${c("late")} late</span>` : ""}${c("missing") ? ` · <span class="neg">${c("missing")} not submitted</span>` : ""}</span></div>`;
+  let html = `<div class="tt"><span class="n">4</span><h2>Data submissions</h2><button class="tog" data-act="sec" data-sec="subs" aria-expanded="${open}" aria-label="Show or hide data submissions"><span class="cv">▾</span></button>
+    <span class="note">Due ${h(fmtDate(d.meta.asOf) || "")} · <b>${c("ok")} of ${L.length}</b> submitted${c("late") ? ` · <span class="warnt">${c("late")} late</span>` : ""}${c("missing") ? ` · <span class="neg">${c("missing")} not submitted</span>` : ""}</span></div>`;
   if(open) html += `<div class="tw"><table class="tr fixed subt"><colgroup>${[27, 17, 17, 9, 11, 8, 11].map(w => `<col style="width:${w}%">`).join("")}</colgroup>
     <thead><tr class="cols"><th>Data</th><th>Owner</th><th>Source</th><th>Last updated</th><th class="c">Status</th><th class="c">Risk</th><th class="fu c">Follow up</th></tr></thead><tbody>${L.map(x => {
       const pr = dirPerson(x.owner), st = SUBST[x.st];
@@ -1176,10 +1182,18 @@ function renderCards(d){
       ${fuBlock("esc" + e.id)}</article>`;
   }).join("");
 }
+function coveredIds(d){
+  const ids = new Set();
+  d.escalations.forEach(e => { linkedRows(e.id).forEach(x => ids.add(x)); if(e.jump) ids.add(e.jump); });
+  d.highlights.forEach(g => (g.rows || []).forEach(x => ids.add(x)));
+  allRows(d).forEach(r => { if(r.parent && ids.has(r.parent) && d.highlights.some(g => (g.rows || []).includes(r.parent))) ids.add(r.id); });
+  return ids;
+}
+function notCovered(d, items){ const ids = coveredIds(d); return items.filter(it => !(it.rowIds || []).some(id => ids.has(id))); }
 function currentIssues(){
   const which = S.view === "draft" ? "draft" : "live", c = S.issues[which];
-  if(S.ai.enabled && c && c.items) return { items: c.items, src: "ai", at: c.at };
-  return { items: ruleIssues(cur()), src: "rules" };
+  if(S.ai.enabled && c && c.items) return { items: notCovered(cur(), c.items), src: "ai", at: c.at };
+  return { items: notCovered(cur(), ruleIssues(cur())), src: "rules" };
 }
 function renderIssues(){
   const I = currentIssues(), n = I.items.length;
@@ -1214,10 +1228,13 @@ function diffList(a, b){
 const diffCount = () => diffList(S.live, S.draft).length;
 const _diffList = diffList;
 diffList = function(a, b){ S.noWhatIf = true; try{ return _diffList(a, b); } finally { S.noWhatIf = false; } };
+function dashTitle(d){ const p = pd((d && d.meta && d.meta.asOf) || todayISO()); return `Platform BU Leadership Dashboard – Q${Math.ceil(p.m / 3)} ${p.y}`; }
+function verLabel(n){ n = Math.max(1, +n || 1); const maj = Math.floor((n - 1) / 10) + 1, min = (n - 1) % 10; return "v" + maj + (min ? "." + min : ""); }
 function renderBar(){
+  document.title = dashTitle(S.live);
   const L = S.live, n = S.me.admin ? diffCount() : 0;
-  const chip = `<i class="dot green"></i>Live v${L.version} · published ${h(fmtLong(L.publishedAt))}`;
-  let html = `<span class="brand">NorthPoint · Q3 tracker</span>${S.me.admin ? `<button class="chip" data-act="versions" aria-expanded="${S.vmenu}" title="Earlier versions">${chip} ▾</button>` : `<span class="chip">${chip}</span>`}`;
+  const chip = `<i class="dot green"></i>Live ${verLabel(L.version)} · published ${h(fmtLong(L.publishedAt))}`;
+  let html = `<span class="brand">${h(dashTitle(S.live))}</span>${S.me.admin ? `<button class="chip" data-act="versions" aria-expanded="${S.vmenu}" title="Earlier versions">${chip} ▾</button>` : `<span class="chip">${chip}</span>`}`;
   if(S.mode === "demo") html += `<span class="chip">Preview: changes stay in this browser</span>`;
   else if(S.me.setup) html += `<span class="chip">Access: link + password</span>`;
   html += `<span class="sp"></span>`;
@@ -1228,8 +1245,8 @@ function renderBar(){
 function renderVMenu(){
   const el = $("#vmenu"); if(!S.vmenu){ el.hidden = true; return; }
   const list = S.history.length ? S.history : [{ version:S.live.version, at:S.live.publishedAt, by:S.live.publishedBy }];
-  el.innerHTML = `<div class="vh">Versions</div>${list.map(v => `<div class="vi"><b>v${v.version}</b><span class="muted">${h(fmtTime(v.at))}${v.note ? " · " + h(v.note) : ""}</span>${v.version === S.live.version ? '<span class="sc done">Live</span>' : `<button class="btn xs" data-act="restore" data-v="${v.version}">Restore</button>`}</div>
-    ${S.restoreAsk === v.version ? `<div class="vc"><span>Make v${v.version} live again? It becomes v${S.live.version + 1}.</span><button class="btn xs primary" data-act="restore-go" data-v="${v.version}">Restore</button><button class="lnk" data-act="restore-no">Cancel</button></div>` : ""}`).join("")}`;
+  el.innerHTML = `<div class="vh">Versions</div>${list.map(v => `<div class="vi"><b>${verLabel(v.version)}</b><span class="muted">${h(fmtTime(v.at))}${v.note ? " · " + h(v.note) : ""}</span>${v.version === S.live.version ? '<span class="sc done">Live</span>' : `<button class="btn xs" data-act="restore" data-v="${v.version}">Restore</button>`}</div>
+    ${S.restoreAsk === v.version ? `<div class="vc"><span>Make ${verLabel(v.version)} live again? It becomes ${verLabel(S.live.version + 1)}.</span><button class="btn xs primary" data-act="restore-go" data-v="${v.version}">Restore</button><button class="lnk" data-act="restore-no">Cancel</button></div>` : ""}`).join("")}`;
   el.hidden = false;
   const b = document.querySelector('[data-act="versions"]'); if(b){ const r = b.getBoundingClientRect(); el.style.left = Math.max(8, Math.min(r.left, document.documentElement.clientWidth - el.offsetWidth - 8)) + "px"; el.style.top = (r.bottom + 6) + "px"; }
 }
@@ -1239,7 +1256,7 @@ function renderDraftbar(){
   const ch = diffList(S.live, S.draft);
   const am = S.draft.aiMeta, nMan = Object.keys(S.draft.manual || {}).filter(k => AI_KEYS(S.draft).includes(k)).length;
   const sug = S.sugBusy ? "AI is updating the text…" : S.mode === "server" && S.ai.enabled ? (S.sugErr ? "AI text update failed; text follows the figures" : `Text suggested by AI${am && am.src === "ai" ? ` · ${ago(am.at)}` : ""}`) : "Text updates with the figures (AI not connected)";
-  let html = `<div class="draftbar"><b>Editing the draft.</b><span>Change any figure, owner, date, dot or tag; card text updates to match. Text you edit yourself is kept.</span><span class="sp"></span>
+  let html = `<div class="draftbar"><b>Editing the draft.</b><span>Card text follows the figures; your own edits are kept.</span><span class="sp"></span>
     <span class="aist">${h(sug)}${nMan ? ` · ${nMan} kept as you edited` : ""} <button class="lnk" data-act="suggest">Refresh text</button></span><span class="save" id="saveSt"></span>
     <span><b id="chgN">${ch.length}</b> change${ch.length === 1 ? "" : "s"} vs live</span>`;
   if(S.discardConfirm) html += `<button class="btn sm primary" data-act="discard-go">Discard all changes</button><button class="btn sm ghost" data-act="cancel">Cancel</button>`;
@@ -1251,7 +1268,6 @@ function renderDraftbar(){
 function renderDashboard(){
   const d = cur(), keep = S.focus;
   hideTip(); clearFocus(true);
-  $("#kicker").innerHTML = editing() ? `<span contenteditable="true" data-edit="d:header.kicker">${h(d.header.kicker)}</span>` : h(d.header.kicker);
   document.body.classList.toggle("edit", editing());
   renderDraftbar(); renderSubs(d); renderHighlights(d); renderCards(d); renderIssues();
   finTable($("#tCom"), d.commercial, "com");
@@ -1261,7 +1277,15 @@ function renderDashboard(){
   $("#wif").innerHTML = !editing() && wis.length ? `<span class="wifbar">What-if, not saved: ${wis.map(([id, x]) => `${h(findRow(S.live, id).metric)}${"dv" in x ? ` deal ${blank(x.dv) ? "N/A" : money(x.dv)}` : ""}${"w" in x ? ` at ${blank(x.w) ? "N/A" : x.w + "%"}` : ""}${"off" in x ? (x.off ? " excluded" : " included") : ""}`).join(", ")} <button class="lnk" data-act="wif-reset">Reset</button></span>` : "";
   opsTable($("#tOps"));
   $("#opsNote").innerHTML = d.opsNote ? h(d.opsNote) : ""; $("#opsNote").hidden = !d.opsNote;
+  if(editing()) wrapDates();
   if(keep){ const kk = keep.startsWith("esc") ? "esc" : keep.startsWith("hl") ? "hl" : "iss"; setFocus(kk, +keep.slice(kk.length), false); }
+}
+function wrapDates(root){
+  (root || document).querySelectorAll("#page input.ci.date").forEach(inp => {
+    if(inp.parentElement.classList.contains("dpk")) return;
+    const w = document.createElement("span"); w.className = "dpk"; const v = document.createElement("span"); v.className = "dpv";
+    v.textContent = inp.value ? fmtDate(inp.value) : "Set date"; inp.parentNode.insertBefore(w, inp); w.appendChild(v); w.appendChild(inp);
+  });
 }
 function renderAll(){ renderBar(); renderDashboard(); if(S.modal) renderModal(); }
 
@@ -1615,6 +1639,14 @@ function closeModal(){ S.modal = null; $("#modal").hidden = true; $("#modal").in
 function ccLabel(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).name).filter(Boolean), ...(S.ops.settings.cc ? [S.ops.settings.cc] : [])].join(", "); }
 function ccEmails(m){ return [...[...m.cc].map(k => (S.ops.directory[k] || {}).email).filter(Boolean), ...String(S.ops.settings.cc || "").split(/[\s,;]+/).filter(Boolean)]; }
 function recips(){ return [...S.modal.sel].map(k => S.ops.directory[k]).filter(p => p && p.email); }
+function fuHistory(m){
+  const list = S.ops.outbox.filter(x => x.ref === m.ctx.ref);
+  if(!list.length) return `<div class="fr"><span>History</span><span class="muted">No earlier follow-ups on this issue.</span></div>`;
+  return `<div class="fr fr-top"><span>History</span><div class="fhl">${list.map(x => { const r = replyState(x);
+    return `<details class="fhi"><summary><b>${h(fmtDate(x.at.slice(0, 10)))}</b> to ${h(toNames(x))}${(x.cc || []).length ? `<span class="muted"> · cc ${h(x.cc.join(", "))}</span>` : ""}<span class="muted"> · ${h(DELIV[x.status] || x.status || "")}</span>
+      <span class="fus ${r.k}"><i class="dot ${r.k === "ok" ? "green" : r.k === "bad" ? "red" : "amber"}"></i>${h(r.t)}</span>${x.replied ? "" : `<button class="lnk" data-act="fureply" data-mid="${h(x.id)}" data-v="1">Mark replied</button>`}</summary>
+      <div class="fhs">${h(x.subject || "")}</div><pre class="fhb">${h(x.body || "")}</pre></details>`; }).join("")}</div></div>`;
+}
 function renderModal(){
   const m = S.modal, el = $("#modal"); if(!m){ el.hidden = true; return; }
   const dir = S.ops.directory, st = S.ops.settings, rc = recips();
@@ -1626,6 +1658,7 @@ function renderModal(){
         ${m.toOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-rc="${h(k)}" ${m.sel.has(k) ? "checked" : ""}>${h(p.name)}${p.title ? ` <span class="ttl">(${h(p.title)})</span>` : ""}<small>${h(p.email)}</small></label>`).join("")}
           ${m.contacts ? Object.entries(dir).map(([k, p]) => `<div class="ce"><input class="in" data-c="${h(k)}" data-cf="name" value="${h(p.name)}" aria-label="Name"><input class="in" type="email" data-c="${h(k)}" data-cf="email" value="${h(p.email)}" aria-label="Email"></div>`).join("") : ""}
           <button class="lnk" data-act="mcontacts">${m.contacts ? "Done" : "Edit emails"}</button></div>` : ""}</div></div>
+      ${fuHistory(m)}
       ${(m.ctx.risks || []).length ? `<div class="fr fr-top"><span>Issues</span><div class="rkl">${m.ctx.risks.map((x, i) => `<label class="rk"><input type="checkbox" data-rk="${i}" ${m.pick.has(i) ? "checked" : ""}><i class="dot ${x.st === "nodata" ? "nodata nd" : x.st}"></i><span><b>${h(x.label)}</b>: ${h(x.text)}</span></label>`).join("")}</div></div>` : ""}
       <div class="fr"><span>CC</span><div class="dd"><button class="ddb" id="mCcB" data-act="mcc" aria-expanded="${m.ccOpen}">${ccLabel(m) ? h(ccLabel(m)) : '<span class="ph">Optional</span>'}</button>
         ${m.ccOpen ? `<div class="ddm">${Object.entries(dir).map(([k, p]) => `<label><input type="checkbox" data-ccp="${h(k)}" ${m.cc.has(k) ? "checked" : ""}>${h(p.name)}${p.title ? ` <span class="ttl">(${h(p.title)})</span>` : ""}<small>${h(p.email)}</small></label>`).join("")}
@@ -1677,6 +1710,7 @@ async function sendModal(){
 }
 
 /* ---------- clicks ---------- */
+document.addEventListener("click", e => { const di = e.target.closest(".dpk input"); if(di && di.showPicker){ try{ di.showPicker(); }catch(err){} } }, true);
 document.addEventListener("click", async e => {
   const pb = e.target.closest("[data-pop]");
   if(!$("#pop").hidden && !e.target.closest("#pop") && !pb) closePop();
@@ -1714,7 +1748,7 @@ document.addEventListener("click", async e => {
     case "follow": openModal(a.dataset.ref); break;
     case "rowtog": { const k = "r:" + a.dataset.rid; S.collapsed[k] = !S.collapsed[k]; savePrefs(); renderDashboard(); break; }
     case "fuhist": S.fuOpen[a.dataset.id] = !S.fuOpen[a.dataset.id]; renderCards(cur()); break;
-    case "fureply": { const m2 = S.ops.outbox.find(x => x.id === a.dataset.mid); if(m2){ if(a.dataset.v === "1") m2.replied = { at: new Date().toISOString() }; else delete m2.replied; saveOps(); renderCards(cur()); } break; }
+    case "fureply": { const m2 = S.ops.outbox.find(x => x.id === a.dataset.mid); if(m2){ if(a.dataset.v === "1") m2.replied = { at: new Date().toISOString() }; else delete m2.replied; saveOps(); renderCards(cur()); if(S.modal) renderModal(); } break; }
     case "pub": S.pubConfirm = true; renderDraftbar(); break;
     case "discard": S.discardConfirm = true; renderDraftbar(); break;
     case "cancel": S.pubConfirm = S.discardConfirm = false; renderDraftbar(); break;
@@ -1763,7 +1797,7 @@ async function publish(){
     S.history.unshift(histEntry(live)); S.live = normalize(live); S.draft = normalize(live); saveLocal();
   }
   S.pubConfirm = false; S.view = "live"; renderAll();
-  toast(`Published v${S.live.version}. The President now sees these figures.`);
+  toast(`Published ${verLabel(S.live.version)}. The President now sees these figures.`);
 }
 async function restoreVersion(v){
   if(S.mode === "server"){
@@ -1773,10 +1807,10 @@ async function restoreVersion(v){
     const h0 = S.history.find(x => x.version === v); if(!h0 || !h0.snapshot){ toast("That version isn't stored in this preview."); return; }
     if(!S.history.some(x => x.version === S.live.version)) S.history.unshift(histEntry(S.live));
     const live = Object.assign(clone(h0.snapshot), { version: S.live.version + 1, publishedAt: new Date().toISOString(), publishedBy: "You (preview)" });
-    S.history.unshift(histEntry(live, `Restored from v${v}`)); S.live = normalize(live); S.draft = normalize(live); saveLocal();
+    S.history.unshift(histEntry(live, `Restored from ${verLabel(v)}`)); S.live = normalize(live); S.draft = normalize(live); saveLocal();
   }
   S.vmenu = false; S.restoreAsk = null; S.view = "live"; renderAll();
-  toast(`v${v} is live again as v${S.live.version}.`);
+  toast(`${verLabel(v)} is live again as ${verLabel(S.live.version)}.`);
 }
 async function api(path, opts = {}){
   const r = await fetch("/api/" + path, Object.assign({ headers:{ "content-type":"application/json" }, credentials:"same-origin" }, opts));

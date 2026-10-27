@@ -19,6 +19,7 @@ function who(request, env) {
   return { email, admin: setup || (!!email && admins.includes(email)), setup };
 }
 
+const verLabel = (n) => { n = Math.max(1, +n || 1); const a = Math.floor((n - 1) / 10) + 1, b = (n - 1) % 10; return "v" + a + (b ? "." + b : ""); };
 const read = (env, key) => env.DASH.get(key, "json");
 function histMeta(history, live) {
   const list = (history || []).map(({ version, at, by, note }) => ({ version, at, by, note }));
@@ -67,7 +68,7 @@ async function claude(env, system, user, maxTokens) {
 
 const ISSUES_SYSTEM = `You support the Value Capture Office of a platform business. You review the data behind the President's dashboard and list the issues the President should know about beyond the escalation cards already shown.
 Focus on: figures that disagree between sources or owners, missing or shared owners, stale updates, totals or weights that don't add up or rest on unchecked assumptions, cost trends and cost to serve versus the margin target (costModel holds the NorthPoint deal-model drivers and the revenue per account for each offer), delivery steps that are blocked or have no update, deadlines at risk, and headline text that the figures no longer support.
-Rules: use only the data given; cite the actual figures and dates; leave out anything the escalation cards already cover (same topic, project or figure), even if you would phrase it differently; be concise and specific; no speculation.
+Rules: use only the data given; cite the actual figures and dates; leave out anything the escalation cards or the On Track box (highlights) already cover (same topic, project, row or figure), even if you would phrase it differently; be concise and specific; no speculation.
 Reply with JSON only, no prose, in this shape:
 {"issues":[{"title":"max 8 words","issue":"what is wrong, max 30 words, with figures","impact":"why it matters, max 25 words","next":"who should do what by when, max 25 words","severity":"high|medium|low","category":"Data reporting|Commercial|Cost|Delivery|Ownership","rowIds":["ids of rows or projects from the data; use cm-margin for the deal margin"],"owners":["role names that appear in the data"]}]}
 Return 3 to 6 issues, most severe first.`;
@@ -226,7 +227,7 @@ export async function onRequest({ request, env, params }) {
     if (!h0 || !valid(h0.snapshot)) return J({ error: "That version isn't stored." }, 404);
     if (valid(prev) && !history.some((x) => x.version === prev.version)) history.unshift({ version: prev.version, at: prev.publishedAt, by: prev.publishedBy || "", note: "", snapshot: prev });
     const live = { ...h0.snapshot, version: ((prev && prev.version) || 0) + 1, publishedAt: new Date().toISOString(), publishedBy: me.email || "admin" };
-    history.unshift({ version: live.version, at: live.publishedAt, by: live.publishedBy, note: `Restored from v${h0.version}`, snapshot: live });
+    history.unshift({ version: live.version, at: live.publishedAt, by: live.publishedBy, note: `Restored from ${verLabel(h0.version)}`, snapshot: live });
     const kept = history.slice(0, 40);
     await Promise.all([write(env, "live", live), write(env, "draft", live), write(env, "history", kept)]);
     return J({ live, history: histMeta(kept, live) });
